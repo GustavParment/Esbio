@@ -139,3 +139,26 @@ type VATReport struct {
     TotalSales    float64          `json:"total_sales"`
     TotalVAT      float64          `json:"total_vat"`
 }
+
+type ScheduledTask struct {
+    TaskID             int     `json:"task_id"`
+    UserID             int     `json:"user_id"`
+    Description        string  `json:"description"`
+    Prompt             string  `json:"prompt"`
+    TemplateVoucherID  *int    `json:"template_voucher_id"`
+    DayOfMonth         int     `json:"day_of_month"`
+    Active             bool    `json:"active"`
+    LastRunAt          *string `json:"last_run_at"`
+    NextRunAt          *string `json:"next_run_at"`
+    CreatedAt          string  `json:"created_at"`
+    UpdatedAt          string  `json:"updated_at"`
+}
+
+type AgentMessage struct {
+    MessageID      int    `json:"message_id"`
+    UserID         int    `json:"user_id"`
+    ConversationID string `json:"conversation_id"`
+    Role           string `json:"role"`
+    Content        string `json:"content"`
+    CreatedAt      string `json:"created_at"`
+}

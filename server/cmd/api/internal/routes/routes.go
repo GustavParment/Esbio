@@ -16,6 +16,7 @@ func SetupRoutes(
 	authHandler *handlers.AuthHandler,
 	pdfHandler *handlers.PDFHandler,
 	reportHandler *handlers.ReportHandler,
+	agentHandler *handlers.AgentHandler,
 	authMiddleware gin.HandlerFunc) {
 
 	v1 := router.Group("/api/v1")
@@ -81,6 +82,15 @@ func SetupRoutes(
 			reports.GET("/income-statement", reportHandler.GetIncomeStatement)
 			reports.GET("/balance-sheet", reportHandler.GetBalanceSheet)
 			reports.GET("/vat", reportHandler.GetVATReport)
+		}
+
+		agent := v1.Group("/agent", authMiddleware)
+		{
+			agent.POST("/chat", agentHandler.Chat)
+			agent.GET("/messages/:conversationId", agentHandler.GetMessages)
+			agent.GET("/tasks", agentHandler.GetScheduledTasks)
+			agent.PUT("/tasks/:id/toggle", agentHandler.ToggleScheduledTask)
+			agent.DELETE("/tasks/:id", agentHandler.DeleteScheduledTask)
 		}
 	}
 }

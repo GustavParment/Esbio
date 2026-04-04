@@ -1,0 +1,23 @@
+# Environment files (contain secrets)
+.env
+server/cmd/.env
+
+# OS files
+.DS_Store
+
+# PID files
+.backend.pid
+.frontend.pid
+
+# Node
+node_modules/
+
+# Next.js
+.next/
+
+# Go
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib

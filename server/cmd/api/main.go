@@ -30,12 +30,23 @@ func main() {
 	lineItemRepo := repository.NewLineItemRepository(db)
 	voucherRepo := repository.NewVoucherRepository(db)
 	reportRepo := repository.NewReportRepository(db)
+	scheduledTaskRepo := repository.NewScheduledTaskRepository(db)
+	agentMessageRepo := repository.NewAgentMessageRepository(db)
 
 	userService := service.NewUserService(userRepo)
 	accountService := service.NewAccountService(accountRepo)
 	lineItemService := service.NewLineItemService(lineItemRepo)
 	voucherService := service.NewVoucherService(voucherRepo, lineItemRepo)
 	reportService := service.NewReportService(reportRepo)
+	scheduledTaskService := service.NewScheduledTaskService(scheduledTaskRepo)
+	agentService := service.NewAgentService(
+		cfg.GeminiAPIKey,
+		voucherService,
+		accountService,
+		lineItemService,
+		reportService,
+		scheduledTaskService,
+	)
 
 	userHandler := handlers.NewUserHandler(userService)
 	accountHandler := handlers.NewAccountHandler(accountService)
@@ -44,6 +55,7 @@ func main() {
 	authHandler := handlers.NewAuthHandler(userService, jwtManager)
 	pdfHandler := handlers.NewPDFHandler(voucherService, accountService)
 	reportHandler := handlers.NewReportHandler(reportService)
+	agentHandler := handlers.NewAgentHandler(agentService, scheduledTaskService, agentMessageRepo)
 
 	authMiddleware := middleware.AuthMiddleware(jwtManager)
 
@@ -52,7 +64,12 @@ func main() {
 	// Add CORS middleware
 	router.Use(middleware.CORSMiddleware())
 
-	routes.SetupRoutes(router, userHandler, accountHandler, lineItemHandler, voucherHandler, authHandler, pdfHandler, reportHandler, authMiddleware)
+	routes.SetupRoutes(router, userHandler, accountHandler, lineItemHandler, voucherHandler, authHandler, pdfHandler, reportHandler, agentHandler, authMiddleware)
+
+	// Start the scheduler for recurring tasks
+	schedulerService := service.NewSchedulerService(scheduledTaskService, agentService)
+	schedulerService.Start()
+	defer schedulerService.Stop()
 
 	log.Println("Starting server on", cfg.ServerPort)
 	if err := router.Run(cfg.ServerPort); err != nil {

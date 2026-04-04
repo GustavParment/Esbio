@@ -76,6 +76,7 @@ app/
 ├── vouchers/               Voucher CRUD + corrections
 ├── accounts/               Account CRUD + ledger
 ├── reports/                Income statement, balance sheet, VAT report
+├── agent/                  AI assistant chat + scheduled tasks
 └── users/                  User management (Admin)
 
 components/
@@ -117,6 +118,29 @@ Domain-specific modules (`auth.ts`, `vouchers.ts`, `accounts.ts`, etc.) expose t
 6. On app load, AuthContext calls /auth/me to restore session
 7. ProtectedRoute redirects to /auth/login if no session
 ```
+
+## AI Agent
+
+Eskio includes an AI-powered bookkeeping assistant built on the Claude API (Anthropic).
+
+```
+User message → Agent Handler → Claude API (with tool definitions)
+                                      │
+                              Claude decides to call tools
+                                      │
+                              Agent executes tools against existing services
+                                      │
+                              Result returned to Claude → response to user
+```
+
+**Key components:**
+- **AgentService** — orchestrates Claude API calls with a tool-use loop (max 10 iterations)
+- **10 tools** — wrapping existing services (voucher CRUD, reports, account ledger, scheduled tasks)
+- **SchedulerService** — background goroutine checking for due tasks every 60 seconds
+- **ScheduledTaskService** — CRUD for recurring monthly tasks with next-run calculation
+- **System prompt** — Swedish-language, BAS chart of accounts aware, enforces double-entry rules
+
+The agent uses direct HTTP calls to the Anthropic API (no SDK dependency).
 
 ## Security
 

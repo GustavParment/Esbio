@@ -76,11 +76,12 @@ The frontend starts on `http://localhost:3000`.
 
 ### Backend (`server/cmd/.env`)
 
-| Variable      | Default                                                          | Description          |
-|---------------|------------------------------------------------------------------|----------------------|
-| `DB_URL`      | `postgres://postgres:postgres@localhost:5433/bookkeeping?sslmode=disable` | PostgreSQL connection string |
-| `JWT_SECRET`  | `your-secret-key-change-this-in-production`                      | JWT signing key      |
-| `PORT`        | `8080`                                                           | Server port          |
+| Variable            | Default                                                          | Description              |
+|---------------------|------------------------------------------------------------------|--------------------------|
+| `DATABASE_URL`      | `postgres://postgres:postgres@localhost:5433/bookkeeping?sslmode=disable` | PostgreSQL connection string |
+| `JWT_SECRET`        | `your-secret-key-change-this-in-production`                      | JWT signing key          |
+| `SERVER_PORT`       | `:8080`                                                          | Server port              |
+| `ANTHROPIC_API_KEY` | (empty)                                                          | Required for AI agent    |
 
 ### Frontend (`client/.env.local`)
 
@@ -105,9 +106,9 @@ Eskio/
 ├── server/                  Go backend
 │   ├── cmd/api/main.go      Entry point
 │   ├── cmd/api/internal/
-│   │   ├── handlers/        HTTP handlers
-│   │   ├── service/         Business logic
-│   │   ├── repository/      Database access
+│   │   ├── handlers/        HTTP handlers (incl. agent)
+│   │   ├── service/         Business logic (incl. agent, scheduler)
+│   │   ├── repository/      Database access (incl. scheduled tasks, messages)
 │   │   ├── domain/          Data models
 │   │   ├── dto/             Request/response DTOs
 │   │   ├── middleware/      Auth & CORS

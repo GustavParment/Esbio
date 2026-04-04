@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/lib/contexts/AuthContext";
+import { useTheme } from "@/lib/contexts/ThemeContext";
 import { useState } from "react";
 
 const navigation = [
@@ -10,6 +11,7 @@ const navigation = [
   { name: "Verifikat", href: "/vouchers", icon: "📝" },
   { name: "Konton", href: "/accounts", icon: "💰" },
   { name: "Rapporter", href: "/reports", icon: "📈" },
+  { name: "Assistent", href: "/agent", icon: "🤖" },
 ];
 
 const adminNavigation = [
@@ -19,6 +21,7 @@ const adminNavigation = [
 export default function Sidebar() {
   const pathname = usePathname();
   const { user, logout } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const isActive = (href: string) => pathname?.startsWith(href);
@@ -103,6 +106,17 @@ export default function Sidebar() {
           </>
         )}
       </nav>
+
+      {/* Dark mode toggle */}
+      <div className="px-3 pb-2">
+        <button
+          onClick={toggleTheme}
+          className="flex items-center w-full px-3 py-2 text-sm font-medium rounded-md text-gray-300 hover:bg-gray-800 hover:text-white transition-colors"
+        >
+          <span className="mr-3 text-lg">{theme === "dark" ? "☀️" : "🌙"}</span>
+          {theme === "dark" ? "Ljust läge" : "Mörkt läge"}
+        </button>
+      </div>
 
       {/* User section */}
       <div className="border-t border-gray-800 p-4">

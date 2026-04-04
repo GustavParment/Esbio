@@ -478,3 +478,38 @@ INSERT INTO accounts (account_no, account_name, account_group, tax_standard, typ
 (8990, 'Övriga skatter', 8, '0%', 'P&L', 'Debit'),
 (8999, 'Årets resultat', 8, '0%', 'P&L', 'Credit')
 ON CONFLICT (account_no) DO NOTHING;
+
+-- Migration 005: Create scheduled_tasks table
+CREATE TABLE IF NOT EXISTS scheduled_tasks (
+    task_id SERIAL PRIMARY KEY,
+    user_id INT NOT NULL,
+    description TEXT NOT NULL,
+    prompt TEXT NOT NULL,
+    template_voucher_id INT,
+    day_of_month INT NOT NULL CHECK (day_of_month >= 1 AND day_of_month <= 31),
+    active BOOLEAN NOT NULL DEFAULT true,
+    last_run_at TIMESTAMP,
+    next_run_at TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
+    FOREIGN KEY (template_voucher_id) REFERENCES vouchers(voucher_id) ON DELETE SET NULL
+);
+
+CREATE INDEX idx_scheduled_tasks_user ON scheduled_tasks(user_id);
+CREATE INDEX idx_scheduled_tasks_next_run ON scheduled_tasks(next_run_at);
+CREATE INDEX idx_scheduled_tasks_active ON scheduled_tasks(active);
+
+-- Migration 006: Create agent_messages table
+CREATE TABLE IF NOT EXISTS agent_messages (
+    message_id SERIAL PRIMARY KEY,
+    user_id INT NOT NULL,
+    conversation_id VARCHAR(36) NOT NULL,
+    role VARCHAR(20) NOT NULL CHECK (role IN ('user', 'assistant')),
+    content TEXT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
+);
+
+CREATE INDEX idx_agent_messages_user ON agent_messages(user_id);
+CREATE INDEX idx_agent_messages_conversation ON agent_messages(conversation_id);

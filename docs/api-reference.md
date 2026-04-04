@@ -225,3 +225,66 @@ Returns VAT (moms) breakdown by tax rate for revenue accounts (3000-3999):
   "total_sales": 120000.00,
   "total_vat": 27400.00
 }
+```
+
+---
+
+## Agent
+
+The agent is an AI-powered bookkeeping assistant that can create vouchers, look up accounts, generate reports, and schedule recurring tasks.
+
+Requires the `ANTHROPIC_API_KEY` environment variable to be set in `server/cmd/.env`.
+
+| Method | Endpoint                      | Description              | Auth |
+|--------|-------------------------------|--------------------------|------|
+| POST   | `/agent/chat`                 | Send message to agent    | Yes  |
+| GET    | `/agent/messages/:conversationId` | Get conversation history | Yes  |
+| GET    | `/agent/tasks`                | List scheduled tasks     | Yes  |
+| PUT    | `/agent/tasks/:id/toggle`     | Pause/resume a task      | Yes  |
+| DELETE | `/agent/tasks/:id`            | Delete a scheduled task  | Yes  |
+
+### POST /agent/chat
+
+```json
+{
+  "message": "Skapa ett konsultarvode på 64 350 kr inkl moms",
+  "conversation_id": ""
+}
+```
+
+Response:
+```json
+{
+  "response": "Jag har skapat verifikat #34 med konsultarvode...",
+  "conversation_id": "conv-1-42"
+}
+```
+
+The agent has access to the following tools:
+- `get_voucher` — fetch a voucher by ID
+- `get_vouchers_by_period` — list vouchers for a period (YYYY-MM)
+- `get_user_vouchers` — list vouchers by a specific user
+- `create_voucher` — create a voucher with line items
+- `get_account_ledger` — account transaction history with running balance
+- `search_accounts` — search the BAS chart of accounts
+- `get_income_statement` — income statement for a date range
+- `get_balance_sheet` — balance sheet as of a date
+- `create_scheduled_task` — schedule a recurring monthly voucher
+- `list_scheduled_tasks` — list a user's scheduled tasks
+
+### Scheduled Tasks
+
+Scheduled tasks are recurring jobs that the agent executes automatically. A background scheduler checks for due tasks every 60 seconds.
+
+```json
+{
+  "task_id": 1,
+  "user_id": 1,
+  "description": "Konsultarvode månatlig",
+  "prompt": "Skapa konsultarvode på 64350 kr inkl moms",
+  "template_voucher_id": 26,
+  "day_of_month": 30,
+  "active": true,
+  "last_run_at": "2025-06-30T08:00:00",
+  "next_run_at": "2025-07-30T08:00:00"
+}

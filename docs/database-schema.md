@@ -105,11 +105,53 @@ CHECK (
 )
 ```
 
+### scheduled_tasks
+
+| Column              | Type      | Constraints                                    |
+|---------------------|-----------|------------------------------------------------|
+| task_id             | SERIAL    | PRIMARY KEY                                    |
+| user_id             | INT       | NOT NULL, FK -> users, ON DELETE CASCADE       |
+| description         | TEXT      | NOT NULL                                       |
+| prompt              | TEXT      | NOT NULL                                       |
+| template_voucher_id | INT       | FK -> vouchers, ON DELETE SET NULL             |
+| day_of_month        | INT       | NOT NULL, CHECK (1-31)                         |
+| active              | BOOLEAN   | NOT NULL, DEFAULT true                         |
+| last_run_at         | TIMESTAMP | Nullable                                       |
+| next_run_at         | TIMESTAMP | Nullable                                       |
+| created_at          | TIMESTAMP | DEFAULT CURRENT_TIMESTAMP                      |
+| updated_at          | TIMESTAMP | DEFAULT CURRENT_TIMESTAMP                      |
+
+**Indexes:** `idx_scheduled_tasks_user`, `idx_scheduled_tasks_next_run`, `idx_scheduled_tasks_active`
+
+Used by the AI agent's scheduler to execute recurring voucher creation.
+
+---
+
+### agent_messages
+
+| Column          | Type        | Constraints                              |
+|-----------------|-------------|------------------------------------------|
+| message_id      | SERIAL      | PRIMARY KEY                              |
+| user_id         | INT         | NOT NULL, FK -> users, ON DELETE CASCADE |
+| conversation_id | VARCHAR(36) | NOT NULL                                 |
+| role            | VARCHAR(20) | NOT NULL, CHECK ('user' or 'assistant')  |
+| content         | TEXT        | NOT NULL                                 |
+| created_at      | TIMESTAMP   | DEFAULT CURRENT_TIMESTAMP                |
+
+**Indexes:** `idx_agent_messages_user`, `idx_agent_messages_conversation`
+
+Stores chat history between users and the AI assistant.
+
+---
+
 ## Key Relationships
 
 - A **user** can create many **vouchers** (`created_by` FK)
 - A **voucher** has many **line items** (cascade delete)
 - Each **line item** references one **account** (restrict delete)
 - A **voucher** can correct another voucher (self-referencing FK pair)
+- A **user** can have many **scheduled tasks** (cascade delete)
+- A **scheduled task** can reference a template **voucher** (set null on delete)
+- A **user** can have many **agent messages** (cascade delete)
 - Deleting a user is restricted if they have vouchers
 - Deleting an account is restricted if it has line items

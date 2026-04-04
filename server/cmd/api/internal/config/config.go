@@ -9,10 +9,12 @@ import (
 )
 
 type Config struct {
-	JWTSecret     string
-	JWTExpiration time.Duration
-	ServerPort    string
-	DatabaseURL   string
+	JWTSecret      string
+	JWTExpiration  time.Duration
+	ServerPort     string
+	DatabaseURL    string
+	AnthropicAPIKey string
+	GeminiAPIKey    string
 }
 
 func LoadConfig() *Config {
@@ -21,10 +23,12 @@ func LoadConfig() *Config {
 	}
 
 	return &Config{
-		JWTSecret:     getEnv("JWT_SECRET", "your-secret-key-change-this-in-production"),
-		JWTExpiration: time.Hour * 24 * 7,
-		ServerPort:    getEnv("SERVER_PORT", ":8080"),
-		DatabaseURL:   getEnv("DATABASE_URL", "postgres://postgres:postgres@localhost:5432/bookkeeping?sslmode=disable"),
+		JWTSecret:       getEnv("JWT_SECRET", "your-secret-key-change-this-in-production"),
+		JWTExpiration:   time.Hour * 24 * 7,
+		ServerPort:      getEnv("SERVER_PORT", ":8080"),
+		DatabaseURL:     getEnv("DATABASE_URL", "postgres://postgres:postgres@localhost:5432/bookkeeping?sslmode=disable"),
+		AnthropicAPIKey: getEnv("ANTHROPIC_API_KEY", ""),
+		GeminiAPIKey:    getEnv("GEMINI_API_KEY", ""),
 	}
 }
 
