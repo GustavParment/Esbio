@@ -39,25 +39,34 @@ func NewAgentService(
 	}
 }
 
-const systemPrompt = `Du är en bokföringsassistent för Eskio, ett svenskt bokföringssystem som använder BAS-kontoplanen.
+const systemPromptTemplate = `Du är en bokföringsassistent för Eskio, ett svenskt bokföringssystem som använder BAS-kontoplanen.
 
-Du hjälper användare med:
-- Skapa verifikat (vouchers) med korrekta konton och belopp
-- Visa kontosaldon och transaktioner
-- Generera rapporter (resultaträkning, balansräkning, momsrapport)
-- Schemalägga återkommande verifikat
+VIKTIGT - VAR PROAKTIV:
+- Skapa verifikat DIREKT när användaren ger tillräcklig info (belopp + typ av transaktion)
+- Fråga INTE i onödan. Om användaren säger "5000 kr försäljning" har du all info du behöver
+- Använd DAGENS DATUM om inget datum anges: %s
+- Använd NUVARANDE PERIOD om ingen period anges: %s
+- Använd alltid user_id %d (den inloggade användaren)
+- Om referensnummer saknas, använd tom sträng
+- Om kontonummer inte specificeras, välj rätt BAS-konto själv
 
-Viktiga regler:
-- Alla verifikat måste balansera (debet = kredit)
-- Använd svenska BAS-kontonummer (t.ex. 1930 Företagskonto, 3301 Försäljning tjänster, 2611 Utgående moms)
-- Moms (VAT) i Sverige: 25%, 12%, 6%, eller 0%
-- Period-format: YYYY-MM
-- Datum-format: YYYY-MM-DD
-- Belopp i svenska kronor (SEK)
+Vanliga konteringar:
+- Försäljning tjänster 25%% moms: Debet 1930 (totalbelopp), Kredit 3301 (exkl moms), Kredit 2611 (momsbelopp)
+- Försäljning varor 25%% moms: Debet 1930 (totalbelopp), Kredit 3010 (exkl moms), Kredit 2611 (momsbelopp)
+- Lokalhyra: Debet 6010 (belopp), Kredit 1930 (belopp)
+- Konsultarvode (kostnad): Debet 6550 (belopp), Kredit 1930 (belopp)
+- Löner: Debet 5010 (belopp), Kredit 1930 (belopp)
 
-När du skapar verifikat med moms, separera alltid momsen på eget konto (t.ex. 2611 för utgående moms 25%).
+Momsberäkning:
+- "5000 kr exkl moms 25%%" → moms = 5000 * 0.25 = 1250, total = 6250
+- "5000 kr inkl moms 25%%" → exkl = 5000 / 1.25 = 4000, moms = 1000
 
-Svara alltid på svenska. Var koncis och tydlig.`
+Regler:
+- Alla verifikat MÅSTE balansera (debet = kredit)
+- Moms i Sverige: 25%%, 12%%, 6%%, eller 0%%
+- Separera ALLTID momsen på eget konto (2611 för utgående moms 25%%)
+
+Svara alltid på svenska. Var koncis. AGERA direkt, fråga bara om absolut nödvändig info saknas.`
 
 // Gemini API types
 type geminiRequest struct {
@@ -329,7 +338,26 @@ func (s *AgentService) getToolDeclarations() []geminiToolDecl {
 	}
 }
 
-func (s *AgentService) executeTool(name string, args map[string]interface{}) (string, error) {
+func (s *AgentService) executeTool(name string, args map[string]interface{}, authenticatedUserID int) (string, error) {
+	// SECURITY: Enforce authenticated user ID on all tools (prevents prompt injection)
+	args["user_id"] = float64(authenticatedUserID)
+	args["created_by"] = float64(authenticatedUserID)
+
+	// SECURITY: Rate limit - max voucher amount per single creation
+	if name == "create_voucher" {
+		if amount := floatFromArg(args["total_amount"]); amount > 10000000 {
+			return "Fel: Maxbelopp per verifikat är 10 000 000 kr. Kontakta admin för större belopp.", nil
+		}
+	}
+
+	// SECURITY: Prevent creating too many scheduled tasks
+	if name == "create_scheduled_task" {
+		tasks, err := s.scheduledTaskService.GetTasksByUserID(authenticatedUserID)
+		if err == nil && len(tasks) >= 20 {
+			return "Fel: Max 20 schemalagda uppgifter per användare.", nil
+		}
+	}
+
 	// Convert args to JSON for consistent parsing
 	input, _ := json.Marshal(args)
 
@@ -515,6 +543,11 @@ func (s *AgentService) Chat(userID int, conversationID string, userMessage strin
 		return "", fmt.Errorf("GEMINI_API_KEY is not configured")
 	}
 
+	now := time.Now()
+	todayStr := now.Format("2006-01-02")
+	periodStr := fmt.Sprintf("%d-%02d", now.Year(), now.Month())
+	systemPrompt := fmt.Sprintf(systemPromptTemplate, todayStr, periodStr, userID)
+
 	contents := []geminiContent{
 		{
 			Role:  "user",
@@ -604,7 +637,7 @@ func (s *AgentService) Chat(userID int, conversationID string, userMessage strin
 		var responseParts []geminiPart
 		for _, part := range parts {
 			if part.FunctionCall != nil {
-				result, err := s.executeTool(part.FunctionCall.Name, part.FunctionCall.Args)
+				result, err := s.executeTool(part.FunctionCall.Name, part.FunctionCall.Args, userID)
 				if err != nil {
 					result = fmt.Sprintf("Fel: %s", err.Error())
 				}
