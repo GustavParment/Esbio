@@ -79,6 +79,8 @@ func SetupRoutes(
 		reports := v1.Group("/reports", authMiddleware)
 		{
 			reports.GET("/income-statement", reportHandler.GetIncomeStatement)
+			reports.GET("/balance-sheet", reportHandler.GetBalanceSheet)
+			reports.GET("/vat", reportHandler.GetVATReport)
 		}
 	}
 }

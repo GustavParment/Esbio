@@ -17,7 +17,7 @@ export default function ReportsPage() {
       description: "Visa företagets tillgångar och skulder",
       icon: "⚖️",
       color: "bg-green-500",
-      href: null,
+      href: "/reports/balance-sheet",
     },
     {
       name: "Kontoutdrag",
@@ -38,7 +38,7 @@ export default function ReportsPage() {
       description: "Visa momsunderlag och beräkningar",
       icon: "💶",
       color: "bg-red-500",
-      href: null,
+      href: "/reports/vat",
     },
     {
       name: "Period jämförelse",

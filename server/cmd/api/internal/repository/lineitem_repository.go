@@ -48,7 +48,7 @@ func (r *lineItemRepository) CreateLineItem(lineItem *domain.LineItem) error {
 
 func (r *lineItemRepository) GetLineItemByID(lineID int) (*domain.LineItem, error) {
 	query := `
-		SELECT line_id, voucher_id, account_no, debit_amount, credit_amount, tax_code, project_id, cost_center_id
+		SELECT line_id, voucher_id, account_no, debit_amount, credit_amount, COALESCE(tax_code, 0), COALESCE(project_id, 0), COALESCE(cost_center_id, 0)
 		FROM line_items
 		WHERE line_id = $1
 	`
@@ -75,7 +75,7 @@ func (r *lineItemRepository) GetLineItemByID(lineID int) (*domain.LineItem, erro
 
 func (r *lineItemRepository) GetLineItemsByVoucherID(voucherID int) ([]*domain.LineItem, error) {
 	query := `
-		SELECT line_id, voucher_id, account_no, debit_amount, credit_amount, tax_code, project_id, cost_center_id
+		SELECT line_id, voucher_id, account_no, debit_amount, credit_amount, COALESCE(tax_code, 0), COALESCE(project_id, 0), COALESCE(cost_center_id, 0)
 		FROM line_items
 		WHERE voucher_id = $1
 		ORDER BY line_id
@@ -110,7 +110,7 @@ func (r *lineItemRepository) GetLineItemsByVoucherID(voucherID int) ([]*domain.L
 
 func (r *lineItemRepository) GetLineItemsByAccountNo(accountNo int) ([]*domain.LineItem, error) {
 	query := `
-		SELECT line_id, voucher_id, account_no, debit_amount, credit_amount, tax_code, project_id, cost_center_id
+		SELECT line_id, voucher_id, account_no, debit_amount, credit_amount, COALESCE(tax_code, 0), COALESCE(project_id, 0), COALESCE(cost_center_id, 0)
 		FROM line_items
 		WHERE account_no = $1
 		ORDER BY line_id

@@ -50,3 +50,48 @@ func (s *ReportService) GetIncomeStatement(fromDate, toDate string) (*domain.Inc
 
 	return statement, nil
 }
+
+func (s *ReportService) GetBalanceSheet(asOfDate string) (*domain.BalanceSheet, error) {
+	if asOfDate == "" {
+		return nil, errors.New("as_of_date is required")
+	}
+
+	_, err := time.Parse("2006-01-02", asOfDate)
+	if err != nil {
+		return nil, fmt.Errorf("invalid as_of_date format, expected YYYY-MM-DD: %w", err)
+	}
+
+	sheet, err := s.repository.GetBalanceSheet(asOfDate)
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate balance sheet: %w", err)
+	}
+
+	return sheet, nil
+}
+
+func (s *ReportService) GetVATReport(fromDate, toDate string) (*domain.VATReport, error) {
+	if fromDate == "" || toDate == "" {
+		return nil, errors.New("from_date and to_date are required")
+	}
+
+	from, err := time.Parse("2006-01-02", fromDate)
+	if err != nil {
+		return nil, fmt.Errorf("invalid from_date format, expected YYYY-MM-DD: %w", err)
+	}
+
+	to, err := time.Parse("2006-01-02", toDate)
+	if err != nil {
+		return nil, fmt.Errorf("invalid to_date format, expected YYYY-MM-DD: %w", err)
+	}
+
+	if from.After(to) {
+		return nil, errors.New("from_date must be before or equal to to_date")
+	}
+
+	report, err := s.repository.GetVATReport(fromDate, toDate)
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate VAT report: %w", err)
+	}
+
+	return report, nil
+}

@@ -8,6 +8,33 @@ echo ""
 # Get the script directory
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
+# Check if Docker daemon is running, start it if not
+echo "🐳 Checking Docker..."
+if ! docker info > /dev/null 2>&1; then
+    echo "🔄 Docker is not running. Starting Docker Desktop..."
+    open -a Docker
+    # Wait for Docker daemon to be ready
+    echo "⏳ Waiting for Docker to start..."
+    while ! docker info > /dev/null 2>&1; do
+        sleep 2
+    done
+    echo "✅ Docker is running"
+else
+    echo "✅ Docker is already running"
+fi
+echo ""
+
+# Fix docker-credential-desktop not found in PATH (common Docker Desktop issue)
+if [ -f "$HOME/.docker/config.json" ]; then
+    if grep -q '"credsStore": "desktop"' "$HOME/.docker/config.json" && \
+       ! command -v docker-credential-desktop > /dev/null 2>&1; then
+        echo "⚠️  Fixing Docker credential helper (docker-credential-desktop not in PATH)..."
+        # Temporarily remove credsStore so docker compose doesn't fail on pull
+        sed -i.bak 's/"credsStore": "desktop"/"credsStore": ""/g' "$HOME/.docker/config.json"
+        DOCKER_CREDS_FIXED=true
+    fi
+fi
+
 # Check if PostgreSQL container is running
 echo "📦 Checking PostgreSQL container..."
 if docker ps | grep -q eskio-postgres; then
@@ -16,7 +43,16 @@ else
     echo "🔄 Starting PostgreSQL container..."
     cd "$SCRIPT_DIR/server" && docker compose up -d
     echo "⏳ Waiting for PostgreSQL to be ready..."
-    sleep 3
+    # Wait for healthcheck to pass
+    until docker exec eskio-postgres pg_isready -U postgres > /dev/null 2>&1; do
+        sleep 2
+    done
+    echo "✅ PostgreSQL is ready"
+fi
+
+# Restore docker config if we modified it
+if [ "$DOCKER_CREDS_FIXED" = true ] && [ -f "$HOME/.docker/config.json.bak" ]; then
+    mv "$HOME/.docker/config.json.bak" "$HOME/.docker/config.json"
 fi
 echo ""
 

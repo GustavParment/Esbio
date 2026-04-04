@@ -107,3 +107,35 @@ type IncomeStatement struct {
     TotalExpenses float64                `json:"total_expenses"` // Sum of all expenses
     NetResult     float64                `json:"net_result"`     // Total income - Total expenses
 }
+
+type BalanceSheetEntry struct {
+    AccountNo   int     `json:"account_no"`
+    AccountName string  `json:"account_name"`
+    Balance     float64 `json:"balance"`
+}
+
+type BalanceSheet struct {
+    AsOfDate          string              `json:"as_of_date"`
+    Assets            []BalanceSheetEntry `json:"assets"`             // Group 1: Tillgångar
+    EquityLiabilities []BalanceSheetEntry `json:"equity_liabilities"` // Group 2: Eget kapital & skulder
+    TotalAssets       float64             `json:"total_assets"`
+    TotalEquityLiab   float64             `json:"total_equity_liabilities"`
+    NetResult         float64             `json:"net_result"` // P&L result carried into equity
+}
+
+type VATReportEntry struct {
+    TaxCode      int     `json:"tax_code"`       // 25, 12, 6, 0
+    TaxRate      string  `json:"tax_rate"`       // "25%", "12%", "6%", "0%"
+    TotalSales   float64 `json:"total_sales"`    // Revenue (credit side of income accounts)
+    TotalVAT     float64 `json:"total_vat"`      // Calculated VAT amount
+}
+
+type VATReport struct {
+    Period struct {
+        FromDate string `json:"from_date"`
+        ToDate   string `json:"to_date"`
+    } `json:"period"`
+    Entries       []VATReportEntry `json:"entries"`
+    TotalSales    float64          `json:"total_sales"`
+    TotalVAT      float64          `json:"total_vat"`
+}
