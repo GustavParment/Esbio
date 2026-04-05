@@ -28,6 +28,19 @@ export interface ScheduledTask {
   updated_at: string;
 }
 
+export interface AgentUsageSummary {
+  total_prompt_tokens: number;
+  total_completion_tokens: number;
+  total_tokens: number;
+  request_count: number;
+  estimated_cost_sek: number;
+  month_prompt_tokens: number;
+  month_completion_tokens: number;
+  month_total_tokens: number;
+  month_request_count: number;
+  month_estimated_cost_sek: number;
+}
+
 export const agentApi = {
   chat: async (message: string, conversationId?: string): Promise<ChatResponse> => {
     return apiClient.post<ChatResponse>("/agent/chat", {
@@ -50,5 +63,9 @@ export const agentApi = {
 
   deleteTask: async (taskId: number): Promise<void> => {
     return apiClient.delete<void>(`/agent/tasks/${taskId}`);
+  },
+
+  getUsage: async (): Promise<AgentUsageSummary> => {
+    return apiClient.get<AgentUsageSummary>("/agent/usage");
   },
 };

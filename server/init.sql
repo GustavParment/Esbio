@@ -6,6 +6,8 @@ CREATE TABLE IF NOT EXISTS users (
     user_id SERIAL PRIMARY KEY,
     first_name VARCHAR(50) NOT NULL,
     last_name VARCHAR(50) NOT NULL,
+    company_name VARCHAR(200),
+    org_number VARCHAR(20),
     email VARCHAR(255) UNIQUE NOT NULL,
     password_hash VARCHAR(255) NOT NULL,
     role VARCHAR(50) NOT NULL DEFAULT 'Bookkeeper',
@@ -513,3 +515,17 @@ CREATE TABLE IF NOT EXISTS agent_messages (
 
 CREATE INDEX idx_agent_messages_user ON agent_messages(user_id);
 CREATE INDEX idx_agent_messages_conversation ON agent_messages(conversation_id);
+
+-- Migration 007: Create agent_usage table
+CREATE TABLE IF NOT EXISTS agent_usage (
+    usage_id SERIAL PRIMARY KEY,
+    user_id INT NOT NULL,
+    prompt_tokens INT NOT NULL DEFAULT 0,
+    completion_tokens INT NOT NULL DEFAULT 0,
+    total_tokens INT NOT NULL DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
+);
+
+CREATE INDEX idx_agent_usage_user ON agent_usage(user_id);
+CREATE INDEX idx_agent_usage_created ON agent_usage(created_at);

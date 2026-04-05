@@ -41,10 +41,41 @@ type User struct {
     UserID       int    `json:"user_id" validate:"omitempty,gt=0"`
     FirstName    string `json:"first_name" validate:"required,min=1,max=50"`
     LastName     string `json:"last_name" validate:"required,min=1,max=50"`
-    Name         string `json:"name"`                                          // Computed: FirstName + LastName
+    Name         string `json:"name"`
+    CompanyName  string `json:"company_name"`
+    OrgNumber    string `json:"org_number"`
     Email        string `json:"email" validate:"required,email"`
     PasswordHash string `json:"password_hash" validate:"required,min=8"`
     Role         string `json:"role" validate:"omitempty,oneof=Admin Bookkeeper Manager"`
+}
+
+type AccountBalance struct {
+    AccountNo   int     `json:"account_no"`
+    AccountName string  `json:"account_name"`
+    Type        string  `json:"type"`
+    Balance     float64 `json:"balance"`
+}
+
+type AgentUsage struct {
+    UsageID          int    `json:"usage_id"`
+    UserID           int    `json:"user_id"`
+    PromptTokens     int    `json:"prompt_tokens"`
+    CompletionTokens int    `json:"completion_tokens"`
+    TotalTokens      int    `json:"total_tokens"`
+    CreatedAt        string `json:"created_at"`
+}
+
+type AgentUsageSummary struct {
+    TotalPromptTokens     int     `json:"total_prompt_tokens"`
+    TotalCompletionTokens int     `json:"total_completion_tokens"`
+    TotalTokens           int     `json:"total_tokens"`
+    RequestCount          int     `json:"request_count"`
+    EstimatedCostSEK      float64 `json:"estimated_cost_sek"`
+    MonthPromptTokens     int     `json:"month_prompt_tokens"`
+    MonthCompletionTokens int     `json:"month_completion_tokens"`
+    MonthTotalTokens      int     `json:"month_total_tokens"`
+    MonthRequestCount     int     `json:"month_request_count"`
+    MonthEstimatedCostSEK float64 `json:"month_estimated_cost_sek"`
 }
 
 type Account struct {

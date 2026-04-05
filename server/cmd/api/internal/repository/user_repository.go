@@ -24,11 +24,11 @@ func NewUserRepository(db *sql.DB) UserRepository {
 
 func (r *userRepository) CreateUser(user *domain.User) error {
 	query := `
-		INSERT INTO users (first_name, last_name, email, password_hash, role)
-		VALUES ($1, $2, $3, $4, $5)
+		INSERT INTO users (first_name, last_name, company_name, org_number, email, password_hash, role)
+		VALUES ($1, $2, $3, $4, $5, $6, $7)
 		RETURNING user_id
 	`
-	err := r.db.QueryRow(query, user.FirstName, user.LastName, user.Email, user.PasswordHash, user.Role).Scan(&user.UserID)
+	err := r.db.QueryRow(query, user.FirstName, user.LastName, user.CompanyName, user.OrgNumber, user.Email, user.PasswordHash, user.Role).Scan(&user.UserID)
 	if err != nil {
 		return fmt.Errorf("failed to create user: %w", err)
 	}
@@ -38,10 +38,13 @@ func (r *userRepository) CreateUser(user *domain.User) error {
 
 func scanUser(row interface{ Scan(...interface{}) error }) (*domain.User, error) {
 	user := &domain.User{}
+	var companyName, orgNumber sql.NullString
 	err := row.Scan(
 		&user.UserID,
 		&user.FirstName,
 		&user.LastName,
+		&companyName,
+		&orgNumber,
 		&user.Email,
 		&user.PasswordHash,
 		&user.Role,
@@ -50,12 +53,14 @@ func scanUser(row interface{ Scan(...interface{}) error }) (*domain.User, error)
 		return nil, err
 	}
 	user.Name = user.FirstName + " " + user.LastName
+	user.CompanyName = companyName.String
+	user.OrgNumber = orgNumber.String
 	return user, nil
 }
 
 func (r *userRepository) GetUserByID(userID int) (*domain.User, error) {
 	query := `
-		SELECT user_id, first_name, last_name, email, password_hash, role
+		SELECT user_id, first_name, last_name, company_name, org_number, email, password_hash, role
 		FROM users
 		WHERE user_id = $1
 	`
@@ -71,7 +76,7 @@ func (r *userRepository) GetUserByID(userID int) (*domain.User, error) {
 
 func (r *userRepository) GetUserByEmail(email string) (*domain.User, error) {
 	query := `
-		SELECT user_id, first_name, last_name, email, password_hash, role
+		SELECT user_id, first_name, last_name, company_name, org_number, email, password_hash, role
 		FROM users
 		WHERE email = $1
 	`
@@ -88,10 +93,10 @@ func (r *userRepository) GetUserByEmail(email string) (*domain.User, error) {
 func (r *userRepository) UpdateUser(user *domain.User) error {
 	query := `
 		UPDATE users
-		SET first_name = $1, last_name = $2, email = $3, password_hash = $4, role = $5
-		WHERE user_id = $6
+		SET first_name = $1, last_name = $2, company_name = $3, org_number = $4, email = $5, password_hash = $6, role = $7
+		WHERE user_id = $8
 	`
-	_, err := r.db.Exec(query, user.FirstName, user.LastName, user.Email, user.PasswordHash, user.Role, user.UserID)
+	_, err := r.db.Exec(query, user.FirstName, user.LastName, user.CompanyName, user.OrgNumber, user.Email, user.PasswordHash, user.Role, user.UserID)
 	if err != nil {
 		return fmt.Errorf("failed to update user: %w", err)
 	}

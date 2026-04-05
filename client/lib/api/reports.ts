@@ -62,4 +62,21 @@ export const reportsApi = {
   getVATReport: async (fromDate: string, toDate: string): Promise<VATReport> => {
     return apiClient.get<VATReport>(`/reports/vat?from_date=${fromDate}&to_date=${toDate}`);
   },
+
+  downloadSIE: async (fromDate: string, toDate: string): Promise<void> => {
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/api/v1";
+    const response = await fetch(`${baseUrl}/reports/sie?from_date=${fromDate}&to_date=${toDate}`, {
+      credentials: "include",
+    });
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({ error: "Export failed" }));
+      throw new Error(err.error || "Failed to download SIE file");
+    }
+    const blob = await response.blob();
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = `bokforing_${fromDate.replace(/-/g, "")}_${toDate.replace(/-/g, "")}.se`;
+    a.click();
+    URL.revokeObjectURL(a.href);
+  },
 };

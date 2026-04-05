@@ -16,17 +16,20 @@ type AgentHandler struct {
 	agentService   *service.AgentService
 	taskService    *service.ScheduledTaskService
 	messageRepo    repository.AgentMessageRepository
+	usageRepo      repository.AgentUsageRepository
 }
 
 func NewAgentHandler(
 	agentService *service.AgentService,
 	taskService *service.ScheduledTaskService,
 	messageRepo repository.AgentMessageRepository,
+	usageRepo repository.AgentUsageRepository,
 ) *AgentHandler {
 	return &AgentHandler{
 		agentService: agentService,
 		taskService:  taskService,
 		messageRepo:  messageRepo,
+		usageRepo:    usageRepo,
 	}
 }
 
@@ -156,4 +159,21 @@ func (h *AgentHandler) DeleteScheduledTask(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "task deleted"})
+}
+
+// GetUsage handles GET /agent/usage
+func (h *AgentHandler) GetUsage(c *gin.Context) {
+	userID, exists := c.Get("userID")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "user not authenticated"})
+		return
+	}
+
+	summary, err := h.usageRepo.GetUsageSummary(userID.(int))
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, summary)
 }

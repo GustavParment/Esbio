@@ -32,6 +32,7 @@ func main() {
 	reportRepo := repository.NewReportRepository(db)
 	scheduledTaskRepo := repository.NewScheduledTaskRepository(db)
 	agentMessageRepo := repository.NewAgentMessageRepository(db)
+	agentUsageRepo := repository.NewAgentUsageRepository(db)
 
 	userService := service.NewUserService(userRepo)
 	accountService := service.NewAccountService(accountRepo)
@@ -46,6 +47,7 @@ func main() {
 		lineItemService,
 		reportService,
 		scheduledTaskService,
+		agentUsageRepo,
 	)
 
 	userHandler := handlers.NewUserHandler(userService)
@@ -55,7 +57,9 @@ func main() {
 	authHandler := handlers.NewAuthHandler(userService, jwtManager)
 	pdfHandler := handlers.NewPDFHandler(voucherService, accountService)
 	reportHandler := handlers.NewReportHandler(reportService)
-	agentHandler := handlers.NewAgentHandler(agentService, scheduledTaskService, agentMessageRepo)
+	sieGenerator := service.NewSIEGenerator(reportRepo, userService)
+	sieHandler := handlers.NewSIEHandler(sieGenerator)
+	agentHandler := handlers.NewAgentHandler(agentService, scheduledTaskService, agentMessageRepo, agentUsageRepo)
 
 	authMiddleware := middleware.AuthMiddleware(jwtManager)
 
@@ -64,7 +68,7 @@ func main() {
 	// Add CORS middleware
 	router.Use(middleware.CORSMiddleware())
 
-	routes.SetupRoutes(router, userHandler, accountHandler, lineItemHandler, voucherHandler, authHandler, pdfHandler, reportHandler, agentHandler, authMiddleware)
+	routes.SetupRoutes(router, userHandler, accountHandler, lineItemHandler, voucherHandler, authHandler, pdfHandler, reportHandler, sieHandler, agentHandler, authMiddleware)
 
 	// Start the scheduler for recurring tasks
 	schedulerService := service.NewSchedulerService(scheduledTaskService, agentService)

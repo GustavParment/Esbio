@@ -6,6 +6,8 @@ export interface User {
   first_name: string;
   last_name: string;
   name: string;
+  company_name?: string;
+  org_number?: string;
   email: string;
   role: UserRole;
   created_at: string;
@@ -24,6 +26,8 @@ export interface UpdateUserRequest {
   email?: string;
   password?: string;
   role?: UserRole;
+  company_name?: string;
+  org_number?: string;
 }
 
 // Account types

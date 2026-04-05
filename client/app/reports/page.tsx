@@ -41,11 +41,11 @@ export default function ReportsPage() {
       href: "/reports/vat",
     },
     {
-      name: "Period jämförelse",
-      description: "Jämför resultat mellan olika perioder",
-      icon: "📈",
-      color: "bg-indigo-500",
-      href: null,
+      name: "SIE4-export",
+      description: "Exportera bokföring för Skatteverket",
+      icon: "📁",
+      color: "bg-gray-600",
+      href: "/reports/sie",
     },
   ];
 
@@ -96,14 +96,6 @@ export default function ReportsPage() {
         })}
       </div>
 
-      {/* Coming soon notice */}
-      <div className="mt-12 bg-blue-50 border border-blue-200 rounded-xl p-6">
-        <h3 className="text-lg font-semibold text-blue-900 mb-2">🚧 Under utveckling</h3>
-        <p className="text-blue-800">
-          Rapportfunktionen är under utveckling. Snart kommer du att kunna generera och exportera
-          alla typer av finansiella rapporter direkt från systemet.
-        </p>
-      </div>
     </DashboardLayout>
   );
 }

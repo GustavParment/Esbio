@@ -10,6 +10,9 @@ type ReportRepository interface {
 	GetIncomeStatement(fromDate, toDate string, userID int) (*domain.IncomeStatement, error)
 	GetBalanceSheet(asOfDate string, userID int) (*domain.BalanceSheet, error)
 	GetVATReport(fromDate, toDate string, userID int) (*domain.VATReport, error)
+	GetAccountBalances(beforeDate string, userID int) ([]domain.AccountBalance, error)
+	GetVouchersWithLines(fromDate, toDate string, userID int) ([]*domain.Voucher, error)
+	GetUsedAccounts(userID int) ([]*domain.Account, error)
 }
 
 type reportRepository struct {
@@ -246,4 +249,115 @@ func (r *reportRepository) GetVATReport(fromDate, toDate string, userID int) (*d
 	}
 
 	return report, nil
+}
+
+func (r *reportRepository) GetAccountBalances(beforeDate string, userID int) ([]domain.AccountBalance, error) {
+	query := `
+		SELECT a.account_no, a.account_name, a.type,
+			   COALESCE(SUM(l.debit_amount - l.credit_amount), 0) as balance
+		FROM accounts a
+		LEFT JOIN line_items l ON a.account_no = l.account_no
+		LEFT JOIN vouchers v ON l.voucher_id = v.voucher_id
+			AND v.date < $1
+			AND v.corrected_by_voucher_id IS NULL
+			AND v.created_by = $2
+		GROUP BY a.account_no, a.account_name, a.type
+		HAVING COALESCE(SUM(l.debit_amount - l.credit_amount), 0) != 0
+		ORDER BY a.account_no
+	`
+	rows, err := r.db.Query(query, beforeDate, userID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get account balances: %w", err)
+	}
+	defer rows.Close()
+
+	var balances []domain.AccountBalance
+	for rows.Next() {
+		var b domain.AccountBalance
+		if err := rows.Scan(&b.AccountNo, &b.AccountName, &b.Type, &b.Balance); err != nil {
+			return nil, fmt.Errorf("failed to scan balance: %w", err)
+		}
+		balances = append(balances, b)
+	}
+	return balances, nil
+}
+
+func (r *reportRepository) GetVouchersWithLines(fromDate, toDate string, userID int) ([]*domain.Voucher, error) {
+	vQuery := `
+		SELECT voucher_id, voucher_number, date, description, reference, total_amount, period,
+		       created_by, corrects_voucher_id, corrected_by_voucher_id
+		FROM vouchers
+		WHERE date >= $1 AND date <= $2
+		  AND corrected_by_voucher_id IS NULL
+		  AND created_by = $3
+		ORDER BY voucher_number
+	`
+	rows, err := r.db.Query(vQuery, fromDate, toDate, userID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get vouchers for SIE: %w", err)
+	}
+	defer rows.Close()
+
+	var vouchers []*domain.Voucher
+	for rows.Next() {
+		v := &domain.Voucher{}
+		if err := rows.Scan(&v.VoucherID, &v.VoucherNumber, &v.Date.Time, &v.Description,
+			&v.Reference, &v.TotalAmount, &v.Period, &v.CreatedBy,
+			&v.CorrectsVoucherID, &v.CorrectedByVoucherID); err != nil {
+			return nil, fmt.Errorf("failed to scan voucher: %w", err)
+		}
+		vouchers = append(vouchers, v)
+	}
+
+	// Fetch line items for each voucher
+	liQuery := `
+		SELECT line_id, voucher_id, account_no, debit_amount, credit_amount,
+		       COALESCE(tax_code, 0), COALESCE(project_id, 0), COALESCE(cost_center_id, 0)
+		FROM line_items WHERE voucher_id = $1 ORDER BY line_id
+	`
+	for _, v := range vouchers {
+		liRows, err := r.db.Query(liQuery, v.VoucherID)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get line items: %w", err)
+		}
+		for liRows.Next() {
+			li := domain.LineItem{}
+			if err := liRows.Scan(&li.LineID, &li.VoucherID, &li.AccountNo,
+				&li.DebitAmount, &li.CreditAmount, &li.TaxCode, &li.ProjectID, &li.CostCenterID); err != nil {
+				liRows.Close()
+				return nil, fmt.Errorf("failed to scan line item: %w", err)
+			}
+			v.Lines = append(v.Lines, li)
+		}
+		liRows.Close()
+	}
+
+	return vouchers, nil
+}
+
+func (r *reportRepository) GetUsedAccounts(userID int) ([]*domain.Account, error) {
+	query := `
+		SELECT DISTINCT a.account_no, a.account_name, a.account_group, a.tax_standard, a.type, a.standard_side
+		FROM accounts a
+		INNER JOIN line_items l ON a.account_no = l.account_no
+		INNER JOIN vouchers v ON l.voucher_id = v.voucher_id
+		WHERE v.created_by = $1
+		ORDER BY a.account_no
+	`
+	rows, err := r.db.Query(query, userID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get used accounts: %w", err)
+	}
+	defer rows.Close()
+
+	var accounts []*domain.Account
+	for rows.Next() {
+		a := &domain.Account{}
+		if err := rows.Scan(&a.AccountNo, &a.AccountName, &a.AccountGroup,
+			&a.TaxStandard, &a.Type, &a.StandardSide); err != nil {
+			return nil, fmt.Errorf("failed to scan account: %w", err)
+		}
+		accounts = append(accounts, a)
+	}
+	return accounts, nil
 }

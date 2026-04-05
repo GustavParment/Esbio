@@ -501,34 +501,72 @@ export default function LandingPage() {
 
           <div className="features-grid">
             <div className="feature-card">
-              <div className="feature-icon">📷</div>
+              <div className="feature-icon">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{color: "var(--teal)"}}><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+              </div>
               <h3>Kvittoläsning med AI</h3>
               <p>Ta en bild på kvittot. Eskio läser av belopp, datum och leverantör och skapar verifikaten åt dig automatiskt.</p>
             </div>
             <div className="feature-card">
-              <div className="feature-icon">📈</div>
+              <div className="feature-icon">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{color: "var(--teal)"}}><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+              </div>
               <h3>Automatisk kontering</h3>
               <p>AI:n lär sig ditt företag och konterar transaktioner korrekt direkt. Du godkänner, vi sköter resten.</p>
             </div>
             <div className="feature-card">
-              <div className="feature-icon">💰</div>
+              <div className="feature-icon">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{color: "var(--teal)"}}><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+              </div>
               <h3>Momsrapporter på ett klick</h3>
               <p>Korrekt momsredovisning varje kvartal. Eskio sammanställer rapporten och du godkänner med BankID.</p>
             </div>
             <div className="feature-card">
-              <div className="feature-icon">📋</div>
+              <div className="feature-icon">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{color: "var(--teal)"}}><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+              </div>
               <h3>Fakturering inbyggt</h3>
               <p>Skapa och skicka fakturor direkt i Eskio. Betalningar bokförs automatiskt när kunden betalar.</p>
             </div>
             <div className="feature-card">
-              <div className="feature-icon">🔒</div>
+              <div className="feature-icon">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{color: "var(--teal)"}}><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+              </div>
               <h3>Bankkoppling</h3>
               <p>Koppla ditt företagskonto så importeras alla transaktioner automatiskt, varje dag.</p>
             </div>
             <div className="feature-card">
-              <div className="feature-icon">⚡</div>
+              <div className="feature-icon">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{color: "var(--teal)"}}><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+              </div>
               <h3>Årsredovisning med AI</h3>
               <p>Eskio hjälper dig att sammanställa och lämna in din årsredovisning till Bolagsverket utan revisorskostnader.</p>
+            </div>
+          </div>
+        </section>
+
+        {/* ESTER AI DEMO */}
+        <section className="landing-section" style={{ textAlign: "center" }}>
+          <div className="section-label">Ester AI</div>
+          <h2 className="section-title">Din personliga bokföringsassistent</h2>
+          <p className="section-sub">Berätta vad du vill göra — Ester sköter resten. Skapa verifikat, schemalägga bokföringar och få svar på dina frågor.</p>
+
+          <div style={{ maxWidth: "900px", margin: "0 auto" }}>
+            <div style={{ position: "relative" }}>
+              <div style={{
+                position: "absolute", inset: "-1px", borderRadius: "20px",
+                background: "linear-gradient(135deg, var(--border-teal), transparent 60%)",
+                zIndex: 0
+              }} />
+              <img
+                src="/ester-demo.png"
+                alt="Ester AI demo"
+                style={{
+                  width: "100%", borderRadius: "20px",
+                  border: "1px solid var(--l-border)",
+                  position: "relative", zIndex: 1
+                }}
+              />
             </div>
           </div>
         </section>

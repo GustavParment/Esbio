@@ -3,9 +3,11 @@ package service
 import (
 	"bytes"
 	"cmd/api/internal/domain"
+	"cmd/api/internal/repository"
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -19,6 +21,7 @@ type AgentService struct {
 	lineItemService      *LineItemService
 	reportService        *ReportService
 	scheduledTaskService *ScheduledTaskService
+	usageRepo            repository.AgentUsageRepository
 }
 
 func NewAgentService(
@@ -28,6 +31,7 @@ func NewAgentService(
 	lineItemService *LineItemService,
 	reportService *ReportService,
 	scheduledTaskService *ScheduledTaskService,
+	usageRepo repository.AgentUsageRepository,
 ) *AgentService {
 	return &AgentService{
 		apiKey:               apiKey,
@@ -36,6 +40,7 @@ func NewAgentService(
 		lineItemService:      lineItemService,
 		reportService:        reportService,
 		scheduledTaskService: scheduledTaskService,
+		usageRepo:            usageRepo,
 	}
 }
 
@@ -123,6 +128,11 @@ type geminiResponse struct {
 		} `json:"content"`
 		FinishReason string `json:"finishReason"`
 	} `json:"candidates"`
+	UsageMetadata *struct {
+		PromptTokenCount     int `json:"promptTokenCount"`
+		CandidatesTokenCount int `json:"candidatesTokenCount"`
+		TotalTokenCount      int `json:"totalTokenCount"`
+	} `json:"usageMetadata"`
 	Error *struct {
 		Message string `json:"message"`
 	} `json:"error"`
@@ -609,6 +619,19 @@ func (s *AgentService) Chat(userID int, conversationID string, userMessage strin
 
 		if geminiResp.Error != nil {
 			return "", fmt.Errorf("Gemini API error: %s", geminiResp.Error.Message)
+		}
+
+		// Track token usage
+		if geminiResp.UsageMetadata != nil && s.usageRepo != nil {
+			usage := &domain.AgentUsage{
+				UserID:           userID,
+				PromptTokens:     geminiResp.UsageMetadata.PromptTokenCount,
+				CompletionTokens: geminiResp.UsageMetadata.CandidatesTokenCount,
+				TotalTokens:      geminiResp.UsageMetadata.TotalTokenCount,
+			}
+			if err := s.usageRepo.SaveUsage(usage); err != nil {
+				log.Printf("[Agent] Failed to save usage: %v", err)
+			}
 		}
 
 		if len(geminiResp.Candidates) == 0 {
