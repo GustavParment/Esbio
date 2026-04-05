@@ -41,11 +41,11 @@ export default function VouchersPage() {
     try {
       let data: Voucher[];
 
-      // Always show only the user's own vouchers
-      const allUserVouchers = await vouchersApi.getByUser(user.user_id);
+      // Fetch vouchers for the selected company (scoped by cookie)
+      const companyVouchers = await vouchersApi.getByCompany();
       data = currentPeriod
-        ? allUserVouchers.filter(v => v.period === currentPeriod)
-        : allUserVouchers;
+        ? companyVouchers.filter(v => v.period === currentPeriod)
+        : companyVouchers;
 
       setVouchers(Array.isArray(data) ? data : []);
     } catch (error) {

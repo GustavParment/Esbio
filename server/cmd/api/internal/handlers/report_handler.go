@@ -17,18 +17,18 @@ func NewReportHandler(reportService *service.ReportService) *ReportHandler {
 	}
 }
 
-func getUserID(c *gin.Context) (int, bool) {
-	userID, exists := c.Get("userID")
+func getCompanyID(c *gin.Context) (int, bool) {
+	companyID, exists := c.Get("companyID")
 	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "user not authenticated"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "no company selected"})
 		return 0, false
 	}
-	return userID.(int), true
+	return companyID.(int), true
 }
 
 // GetIncomeStatement handles GET /reports/income-statement
 func (h *ReportHandler) GetIncomeStatement(c *gin.Context) {
-	uid, ok := getUserID(c)
+	cid, ok := getCompanyID(c)
 	if !ok {
 		return
 	}
@@ -41,7 +41,7 @@ func (h *ReportHandler) GetIncomeStatement(c *gin.Context) {
 		return
 	}
 
-	statement, err := h.reportService.GetIncomeStatement(fromDate, toDate, uid)
+	statement, err := h.reportService.GetIncomeStatement(fromDate, toDate, cid)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
@@ -52,7 +52,7 @@ func (h *ReportHandler) GetIncomeStatement(c *gin.Context) {
 
 // GetBalanceSheet handles GET /reports/balance-sheet
 func (h *ReportHandler) GetBalanceSheet(c *gin.Context) {
-	uid, ok := getUserID(c)
+	cid, ok := getCompanyID(c)
 	if !ok {
 		return
 	}
@@ -64,7 +64,7 @@ func (h *ReportHandler) GetBalanceSheet(c *gin.Context) {
 		return
 	}
 
-	sheet, err := h.reportService.GetBalanceSheet(asOfDate, uid)
+	sheet, err := h.reportService.GetBalanceSheet(asOfDate, cid)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
@@ -75,7 +75,7 @@ func (h *ReportHandler) GetBalanceSheet(c *gin.Context) {
 
 // GetVATReport handles GET /reports/vat
 func (h *ReportHandler) GetVATReport(c *gin.Context) {
-	uid, ok := getUserID(c)
+	cid, ok := getCompanyID(c)
 	if !ok {
 		return
 	}
@@ -88,7 +88,7 @@ func (h *ReportHandler) GetVATReport(c *gin.Context) {
 		return
 	}
 
-	report, err := h.reportService.GetVATReport(fromDate, toDate, uid)
+	report, err := h.reportService.GetVATReport(fromDate, toDate, cid)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return

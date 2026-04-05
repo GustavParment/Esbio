@@ -28,6 +28,18 @@ func (h *VoucherHandler) CreateVoucher(c *gin.Context) {
 		return
 	}
 
+	companyID, exists := c.Get("companyID")
+	if !exists {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "no company selected"})
+		return
+	}
+	voucher.CompanyID = companyID.(int)
+
+	userID, exists := c.Get("userID")
+	if exists {
+		voucher.CreatedBy = userID.(int)
+	}
+
 	if err := h.voucherService.CreateVoucher(&voucher); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -67,9 +79,15 @@ func (h *VoucherHandler) GetAllVouchers(c *gin.Context) {
 
 // GetVouchersByPeriod handles GET /vouchers/period/:period
 func (h *VoucherHandler) GetVouchersByPeriod(c *gin.Context) {
+	companyID, exists := c.Get("companyID")
+	if !exists {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "no company selected"})
+		return
+	}
+
 	period := c.Param("period")
 
-	vouchers, err := h.voucherService.GetVouchersByPeriod(period)
+	vouchers, err := h.voucherService.GetVouchersByPeriod(companyID.(int), period)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
@@ -78,16 +96,15 @@ func (h *VoucherHandler) GetVouchersByPeriod(c *gin.Context) {
 	c.JSON(http.StatusOK, vouchers)
 }
 
-// GetVouchersByCreatedBy handles GET /vouchers/user/:userId
-func (h *VoucherHandler) GetVouchersByCreatedBy(c *gin.Context) {
-	userIDParam := c.Param("userId")
-	userID, err := strconv.Atoi(userIDParam)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid user ID"})
+// GetVouchersByCompanyID handles GET /vouchers/company
+func (h *VoucherHandler) GetVouchersByCompanyID(c *gin.Context) {
+	companyID, exists := c.Get("companyID")
+	if !exists {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "no company selected"})
 		return
 	}
 
-	vouchers, err := h.voucherService.GetVouchersByCreatedBy(userID)
+	vouchers, err := h.voucherService.GetVouchersByCompanyID(companyID.(int))
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -98,13 +115,13 @@ func (h *VoucherHandler) GetVouchersByCreatedBy(c *gin.Context) {
 
 // GetAllPeriods handles GET /vouchers/periods
 func (h *VoucherHandler) GetAllPeriods(c *gin.Context) {
-	userID, exists := c.Get("userID")
+	companyID, exists := c.Get("companyID")
 	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "user not authenticated"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "no company selected"})
 		return
 	}
 
-	periods, err := h.voucherService.GetAllPeriods(userID.(int))
+	periods, err := h.voucherService.GetAllPeriods(companyID.(int))
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

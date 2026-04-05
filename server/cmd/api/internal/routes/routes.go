@@ -18,7 +18,9 @@ func SetupRoutes(
 	reportHandler *handlers.ReportHandler,
 	sieHandler *handlers.SIEHandler,
 	agentHandler *handlers.AgentHandler,
-	authMiddleware gin.HandlerFunc) {
+	companyHandler *handlers.CompanyHandler,
+	authMiddleware gin.HandlerFunc,
+	companyMiddleware gin.HandlerFunc) {
 
 	v1 := router.Group("/api/v1")
 	{
@@ -31,6 +33,15 @@ func SetupRoutes(
 			auth.GET("/me", authMiddleware, authHandler.GetCurrentUser)
 		}
 
+		companies := v1.Group("/companies", authMiddleware)
+		{
+			companies.GET("", companyHandler.ListCompanies)
+			companies.POST("", companyHandler.CreateCompany)
+			companies.POST("/select", companyHandler.SelectCompany)
+			companies.PUT("/:id", companyHandler.UpdateCompany)
+			companies.DELETE("/:id", companyHandler.DeleteCompany)
+		}
+
 		users := v1.Group("/users", authMiddleware)
 		{
 			users.POST("", userHandler.CreateUser)
@@ -40,7 +51,7 @@ func SetupRoutes(
 			users.DELETE("/:id", userHandler.DeleteUser)
 		}
 
-		accounts := v1.Group("/accounts", authMiddleware)
+		accounts := v1.Group("/accounts", authMiddleware, companyMiddleware)
 		{
 			accounts.POST("", accountHandler.CreateAccount)
 			accounts.GET("", accountHandler.GetAllAccounts)
@@ -51,7 +62,7 @@ func SetupRoutes(
 			accounts.DELETE("/:accountNo", accountHandler.DeleteAccount)
 		}
 
-		lineItems := v1.Group("/lineitems", authMiddleware)
+		lineItems := v1.Group("/lineitems", authMiddleware, companyMiddleware)
 		{
 			lineItems.POST("", lineItemHandler.CreateLineItem)
 			lineItems.GET("/:id", lineItemHandler.GetLineItemByID)
@@ -61,14 +72,14 @@ func SetupRoutes(
 			lineItems.DELETE("/:id", lineItemHandler.DeleteLineItem)
 		}
 
-		vouchers := v1.Group("/vouchers", authMiddleware)
+		vouchers := v1.Group("/vouchers", authMiddleware, companyMiddleware)
 		{
 			vouchers.POST("", voucherHandler.CreateVoucher)
 			vouchers.GET("", voucherHandler.GetAllVouchers)
 			vouchers.GET("/periods", voucherHandler.GetAllPeriods)
 			vouchers.GET("/:id", voucherHandler.GetVoucherByID)
 			vouchers.GET("/period/:period", voucherHandler.GetVouchersByPeriod)
-			vouchers.GET("/user/:userId", voucherHandler.GetVouchersByCreatedBy)
+			vouchers.GET("/company", voucherHandler.GetVouchersByCompanyID)
 			vouchers.GET("/:id/validate", voucherHandler.ValidateVoucherBalance)
 			vouchers.POST("/:id/correct", voucherHandler.CreateCorrectionVoucher)
 			vouchers.POST("/:id/correct-with-changes", voucherHandler.CreateCorrectionWithChanges)
@@ -78,7 +89,7 @@ func SetupRoutes(
 			vouchers.DELETE("/:id", middleware.RequireRole("Admin"), voucherHandler.DeleteVoucher)
 		}
 
-		reports := v1.Group("/reports", authMiddleware)
+		reports := v1.Group("/reports", authMiddleware, companyMiddleware)
 		{
 			reports.GET("/income-statement", reportHandler.GetIncomeStatement)
 			reports.GET("/balance-sheet", reportHandler.GetBalanceSheet)
@@ -86,7 +97,7 @@ func SetupRoutes(
 			reports.GET("/sie", sieHandler.ExportSIE)
 		}
 
-		agent := v1.Group("/agent", authMiddleware)
+		agent := v1.Group("/agent", authMiddleware, companyMiddleware)
 		{
 			agent.POST("/chat", agentHandler.Chat)
 			agent.GET("/messages/:conversationId", agentHandler.GetMessages)

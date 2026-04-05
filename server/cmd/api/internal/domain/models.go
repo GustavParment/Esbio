@@ -49,6 +49,16 @@ type User struct {
     Role         string `json:"role" validate:"omitempty,oneof=Admin Bookkeeper Manager"`
 }
 
+type Company struct {
+    CompanyID   int    `json:"company_id"`
+    CompanyName string `json:"company_name"`
+    OrgNumber   string `json:"org_number"`
+    Plan        string `json:"plan"`
+    CreatedBy   int    `json:"created_by"`
+    CreatedAt   string `json:"created_at"`
+    UpdatedAt   string `json:"updated_at"`
+}
+
 type AccountBalance struct {
     AccountNo   int     `json:"account_no"`
     AccountName string  `json:"account_name"`
@@ -59,6 +69,7 @@ type AccountBalance struct {
 type AgentUsage struct {
     UsageID          int    `json:"usage_id"`
     UserID           int    `json:"user_id"`
+    CompanyID        int    `json:"company_id"`
     PromptTokens     int    `json:"prompt_tokens"`
     CompletionTokens int    `json:"completion_tokens"`
     TotalTokens      int    `json:"total_tokens"`
@@ -99,14 +110,15 @@ type LineItem struct {
 }
 
 type Voucher struct {
-    VoucherID            int          `json:"voucher_id"`              // Unikt ID
-    VoucherNumber        int          `json:"voucher_number"`          // Löpnummer för verifikat (1, 2, 3...)
-    Date                 FlexibleDate `json:"date"`                    // Datum då händelsen inträffade
-    Description          string       `json:"description"`             // Beskrivning av transaktionen
-    Reference            string       `json:"reference"`               // Fakturanummer, kvitto-ID, etc.
-    TotalAmount          float64      `json:"total_amount"`            // Totalbelopp
-    Period               string       `json:"period"`                  // Period (t.ex. "2025-01")
-    CreatedBy            int          `json:"created_by"`              // Foreign Key till UserID
+    VoucherID            int          `json:"voucher_id"`
+    VoucherNumber        int          `json:"voucher_number"`
+    Date                 FlexibleDate `json:"date"`
+    Description          string       `json:"description"`
+    Reference            string       `json:"reference"`
+    TotalAmount          float64      `json:"total_amount"`
+    Period               string       `json:"period"`
+    CreatedBy            int          `json:"created_by"`
+    CompanyID            int          `json:"company_id"`
     CorrectsVoucherID    *int         `json:"corrects_voucher_id"`     // ID för verifikat som detta rättar
     CorrectedByVoucherID *int         `json:"corrected_by_voucher_id"` // ID för verifikat som rättat detta
     Lines                []LineItem   `json:"lines"`                   // Lista över Verifikatraderna
@@ -176,6 +188,7 @@ type VATReport struct {
 type ScheduledTask struct {
     TaskID             int     `json:"task_id"`
     UserID             int     `json:"user_id"`
+    CompanyID          int     `json:"company_id"`
     Description        string  `json:"description"`
     Prompt             string  `json:"prompt"`
     TemplateVoucherID  *int    `json:"template_voucher_id"`
@@ -190,6 +203,7 @@ type ScheduledTask struct {
 type AgentMessage struct {
     MessageID      int    `json:"message_id"`
     UserID         int    `json:"user_id"`
+    CompanyID      int    `json:"company_id"`
     ConversationID string `json:"conversation_id"`
     Role           string `json:"role"`
     Content        string `json:"content"`

@@ -18,7 +18,7 @@ func NewReportService(repo repository.ReportRepository) *ReportService {
 	}
 }
 
-func (s *ReportService) GetIncomeStatement(fromDate, toDate string, userID int) (*domain.IncomeStatement, error) {
+func (s *ReportService) GetIncomeStatement(fromDate, toDate string, companyID int) (*domain.IncomeStatement, error) {
 	// Validate dates
 	if fromDate == "" || toDate == "" {
 		return nil, errors.New("from_date and to_date are required")
@@ -43,7 +43,7 @@ func (s *ReportService) GetIncomeStatement(fromDate, toDate string, userID int) 
 	}
 
 	// Get income statement from repository
-	statement, err := s.repository.GetIncomeStatement(fromDate, toDate, userID)
+	statement, err := s.repository.GetIncomeStatement(fromDate, toDate, companyID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate income statement: %w", err)
 	}
@@ -51,7 +51,7 @@ func (s *ReportService) GetIncomeStatement(fromDate, toDate string, userID int) 
 	return statement, nil
 }
 
-func (s *ReportService) GetBalanceSheet(asOfDate string, userID int) (*domain.BalanceSheet, error) {
+func (s *ReportService) GetBalanceSheet(asOfDate string, companyID int) (*domain.BalanceSheet, error) {
 	if asOfDate == "" {
 		return nil, errors.New("as_of_date is required")
 	}
@@ -61,7 +61,7 @@ func (s *ReportService) GetBalanceSheet(asOfDate string, userID int) (*domain.Ba
 		return nil, fmt.Errorf("invalid as_of_date format, expected YYYY-MM-DD: %w", err)
 	}
 
-	sheet, err := s.repository.GetBalanceSheet(asOfDate, userID)
+	sheet, err := s.repository.GetBalanceSheet(asOfDate, companyID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate balance sheet: %w", err)
 	}
@@ -69,7 +69,7 @@ func (s *ReportService) GetBalanceSheet(asOfDate string, userID int) (*domain.Ba
 	return sheet, nil
 }
 
-func (s *ReportService) GetVATReport(fromDate, toDate string, userID int) (*domain.VATReport, error) {
+func (s *ReportService) GetVATReport(fromDate, toDate string, companyID int) (*domain.VATReport, error) {
 	if fromDate == "" || toDate == "" {
 		return nil, errors.New("from_date and to_date are required")
 	}
@@ -88,7 +88,7 @@ func (s *ReportService) GetVATReport(fromDate, toDate string, userID int) (*doma
 		return nil, errors.New("from_date must be before or equal to to_date")
 	}
 
-	report, err := s.repository.GetVATReport(fromDate, toDate, userID)
+	report, err := s.repository.GetVATReport(fromDate, toDate, companyID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate VAT report: %w", err)
 	}

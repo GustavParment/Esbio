@@ -9,7 +9,7 @@ import (
 type ScheduledTaskRepository interface {
 	CreateTask(task *domain.ScheduledTask) error
 	GetTaskByID(taskID int) (*domain.ScheduledTask, error)
-	GetTasksByUserID(userID int) ([]*domain.ScheduledTask, error)
+	GetTasksByCompanyID(companyID int) ([]*domain.ScheduledTask, error)
 	GetDueTasks() ([]*domain.ScheduledTask, error)
 	UpdateTask(task *domain.ScheduledTask) error
 	UpdateLastRun(taskID int, lastRunAt string, nextRunAt string) error
@@ -26,12 +26,13 @@ func NewScheduledTaskRepository(db *sql.DB) ScheduledTaskRepository {
 
 func (r *scheduledTaskRepository) CreateTask(task *domain.ScheduledTask) error {
 	query := `
-		INSERT INTO scheduled_tasks (user_id, description, prompt, template_voucher_id, day_of_month, active, next_run_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7)
+		INSERT INTO scheduled_tasks (user_id, company_id, description, prompt, template_voucher_id, day_of_month, active, next_run_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
 		RETURNING task_id, created_at, updated_at
 	`
 	err := r.db.QueryRow(query,
 		task.UserID,
+		task.CompanyID,
 		task.Description,
 		task.Prompt,
 		task.TemplateVoucherID,
@@ -47,13 +48,13 @@ func (r *scheduledTaskRepository) CreateTask(task *domain.ScheduledTask) error {
 
 func (r *scheduledTaskRepository) GetTaskByID(taskID int) (*domain.ScheduledTask, error) {
 	query := `
-		SELECT task_id, user_id, description, prompt, template_voucher_id, day_of_month,
+		SELECT task_id, user_id, company_id, description, prompt, template_voucher_id, day_of_month,
 		       active, last_run_at, next_run_at, created_at, updated_at
 		FROM scheduled_tasks WHERE task_id = $1
 	`
 	task := &domain.ScheduledTask{}
 	err := r.db.QueryRow(query, taskID).Scan(
-		&task.TaskID, &task.UserID, &task.Description, &task.Prompt,
+		&task.TaskID, &task.UserID, &task.CompanyID, &task.Description, &task.Prompt,
 		&task.TemplateVoucherID, &task.DayOfMonth, &task.Active,
 		&task.LastRunAt, &task.NextRunAt, &task.CreatedAt, &task.UpdatedAt,
 	)
@@ -66,13 +67,13 @@ func (r *scheduledTaskRepository) GetTaskByID(taskID int) (*domain.ScheduledTask
 	return task, nil
 }
 
-func (r *scheduledTaskRepository) GetTasksByUserID(userID int) ([]*domain.ScheduledTask, error) {
+func (r *scheduledTaskRepository) GetTasksByCompanyID(companyID int) ([]*domain.ScheduledTask, error) {
 	query := `
-		SELECT task_id, user_id, description, prompt, template_voucher_id, day_of_month,
+		SELECT task_id, user_id, company_id, description, prompt, template_voucher_id, day_of_month,
 		       active, last_run_at, next_run_at, created_at, updated_at
-		FROM scheduled_tasks WHERE user_id = $1 ORDER BY created_at DESC
+		FROM scheduled_tasks WHERE company_id = $1 ORDER BY created_at DESC
 	`
-	rows, err := r.db.Query(query, userID)
+	rows, err := r.db.Query(query, companyID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get scheduled tasks: %w", err)
 	}
@@ -82,7 +83,7 @@ func (r *scheduledTaskRepository) GetTasksByUserID(userID int) ([]*domain.Schedu
 	for rows.Next() {
 		task := &domain.ScheduledTask{}
 		err := rows.Scan(
-			&task.TaskID, &task.UserID, &task.Description, &task.Prompt,
+			&task.TaskID, &task.UserID, &task.CompanyID, &task.Description, &task.Prompt,
 			&task.TemplateVoucherID, &task.DayOfMonth, &task.Active,
 			&task.LastRunAt, &task.NextRunAt, &task.CreatedAt, &task.UpdatedAt,
 		)
@@ -96,7 +97,7 @@ func (r *scheduledTaskRepository) GetTasksByUserID(userID int) ([]*domain.Schedu
 
 func (r *scheduledTaskRepository) GetDueTasks() ([]*domain.ScheduledTask, error) {
 	query := `
-		SELECT task_id, user_id, description, prompt, template_voucher_id, day_of_month,
+		SELECT task_id, user_id, company_id, description, prompt, template_voucher_id, day_of_month,
 		       active, last_run_at, next_run_at, created_at, updated_at
 		FROM scheduled_tasks
 		WHERE active = true AND next_run_at <= NOW()
@@ -112,7 +113,7 @@ func (r *scheduledTaskRepository) GetDueTasks() ([]*domain.ScheduledTask, error)
 	for rows.Next() {
 		task := &domain.ScheduledTask{}
 		err := rows.Scan(
-			&task.TaskID, &task.UserID, &task.Description, &task.Prompt,
+			&task.TaskID, &task.UserID, &task.CompanyID, &task.Description, &task.Prompt,
 			&task.TemplateVoucherID, &task.DayOfMonth, &task.Active,
 			&task.LastRunAt, &task.NextRunAt, &task.CreatedAt, &task.UpdatedAt,
 		)

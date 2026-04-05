@@ -40,7 +40,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = async (credentials: LoginRequest) => {
     const response = await authApi.login(credentials);
     setUser(response.user);
-    router.push("/dashboard");
+    router.push("/companies");
   };
 
   const register = async (data: RegisterRequest) => {

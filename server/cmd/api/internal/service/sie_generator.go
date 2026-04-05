@@ -11,43 +11,40 @@ import (
 )
 
 type SIEGenerator struct {
-	reportRepo  repository.ReportRepository
-	userService *UserService
+	reportRepo     repository.ReportRepository
+	companyService *CompanyService
 }
 
-func NewSIEGenerator(reportRepo repository.ReportRepository, userService *UserService) *SIEGenerator {
+func NewSIEGenerator(reportRepo repository.ReportRepository, companyService *CompanyService) *SIEGenerator {
 	return &SIEGenerator{
-		reportRepo:  reportRepo,
-		userService: userService,
+		reportRepo:     reportRepo,
+		companyService: companyService,
 	}
 }
 
-func (g *SIEGenerator) GenerateSIE4(fromDate, toDate string, userID int) ([]byte, error) {
-	// 1. Fetch user info
-	user, err := g.userService.GetUserByID(userID)
+func (g *SIEGenerator) GenerateSIE4(fromDate, toDate string, companyID int) ([]byte, error) {
+	// 1. Fetch company info
+	company, err := g.companyService.GetCompanyByID(companyID)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get user: %w", err)
+		return nil, fmt.Errorf("failed to get company: %w", err)
 	}
 
-	companyName := user.CompanyName
-	if companyName == "" {
-		companyName = user.FirstName + " " + user.LastName
-	}
+	companyName := company.CompanyName
 
 	// 2. Fetch used accounts
-	accounts, err := g.reportRepo.GetUsedAccounts(userID)
+	accounts, err := g.reportRepo.GetUsedAccounts(companyID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get accounts: %w", err)
 	}
 
 	// 3. Fetch opening balances (before fromDate)
-	openingBalances, err := g.reportRepo.GetAccountBalances(fromDate, userID)
+	openingBalances, err := g.reportRepo.GetAccountBalances(fromDate, companyID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get opening balances: %w", err)
 	}
 
 	// 4. Fetch vouchers with line items
-	vouchers, err := g.reportRepo.GetVouchersWithLines(fromDate, toDate, userID)
+	vouchers, err := g.reportRepo.GetVouchersWithLines(fromDate, toDate, companyID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get vouchers: %w", err)
 	}
@@ -97,8 +94,8 @@ func (g *SIEGenerator) GenerateSIE4(fromDate, toDate string, userID int) ([]byte
 	w("#PROGRAM \"Eskio\" \"1.0\"")
 	w("#GEN %s", now.Format("20060102"))
 	w("#FNAMN \"%s\"", companyName)
-	if user.OrgNumber != "" {
-		w("#ORGNR %s", user.OrgNumber)
+	if company.OrgNumber != "" {
+		w("#ORGNR %s", company.OrgNumber)
 	}
 	w("#KPTYP BAS2024")
 	w("#RAR 0 %s %s", fromCompact, toCompact)

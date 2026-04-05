@@ -8,7 +8,7 @@ import (
 
 type AgentUsageRepository interface {
 	SaveUsage(usage *domain.AgentUsage) error
-	GetUsageSummary(userID int) (*domain.AgentUsageSummary, error)
+	GetUsageSummary(companyID int) (*domain.AgentUsageSummary, error)
 }
 
 type agentUsageRepository struct {
@@ -21,15 +21,15 @@ func NewAgentUsageRepository(db *sql.DB) AgentUsageRepository {
 
 func (r *agentUsageRepository) SaveUsage(usage *domain.AgentUsage) error {
 	query := `
-		INSERT INTO agent_usage (user_id, prompt_tokens, completion_tokens, total_tokens)
-		VALUES ($1, $2, $3, $4)
+		INSERT INTO agent_usage (user_id, company_id, prompt_tokens, completion_tokens, total_tokens)
+		VALUES ($1, $2, $3, $4, $5)
 		RETURNING usage_id, created_at
 	`
-	return r.db.QueryRow(query, usage.UserID, usage.PromptTokens, usage.CompletionTokens, usage.TotalTokens).
+	return r.db.QueryRow(query, usage.UserID, usage.CompanyID, usage.PromptTokens, usage.CompletionTokens, usage.TotalTokens).
 		Scan(&usage.UsageID, &usage.CreatedAt)
 }
 
-func (r *agentUsageRepository) GetUsageSummary(userID int) (*domain.AgentUsageSummary, error) {
+func (r *agentUsageRepository) GetUsageSummary(companyID int) (*domain.AgentUsageSummary, error) {
 	query := `
 		SELECT
 			COALESCE(SUM(prompt_tokens), 0),
@@ -37,10 +37,10 @@ func (r *agentUsageRepository) GetUsageSummary(userID int) (*domain.AgentUsageSu
 			COALESCE(SUM(total_tokens), 0),
 			COUNT(*)
 		FROM agent_usage
-		WHERE user_id = $1
+		WHERE company_id = $1
 	`
 	summary := &domain.AgentUsageSummary{}
-	err := r.db.QueryRow(query, userID).Scan(
+	err := r.db.QueryRow(query, companyID).Scan(
 		&summary.TotalPromptTokens,
 		&summary.TotalCompletionTokens,
 		&summary.TotalTokens,
@@ -58,10 +58,10 @@ func (r *agentUsageRepository) GetUsageSummary(userID int) (*domain.AgentUsageSu
 			COALESCE(SUM(total_tokens), 0),
 			COUNT(*)
 		FROM agent_usage
-		WHERE user_id = $1
+		WHERE company_id = $1
 		  AND created_at >= date_trunc('month', CURRENT_DATE)
 	`
-	err = r.db.QueryRow(monthQuery, userID).Scan(
+	err = r.db.QueryRow(monthQuery, companyID).Scan(
 		&summary.MonthPromptTokens,
 		&summary.MonthCompletionTokens,
 		&summary.MonthTotalTokens,

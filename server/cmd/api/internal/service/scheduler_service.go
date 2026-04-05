@@ -72,7 +72,7 @@ func (s *SchedulerService) checkAndRunTasks() {
 
 		// Execute through the agent
 		conversationID := fmt.Sprintf("scheduler-%d-%s", task.TaskID, currentDate)
-		response, err := s.agentService.Chat(task.UserID, conversationID, prompt, nil)
+		response, err := s.agentService.Chat(task.UserID, task.CompanyID, conversationID, prompt, nil)
 		if err != nil {
 			log.Printf("[Scheduler] Error running task #%d: %v", task.TaskID, err)
 			continue

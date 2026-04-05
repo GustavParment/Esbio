@@ -41,6 +41,12 @@ func (h *AgentHandler) Chat(c *gin.Context) {
 		return
 	}
 
+	companyID, exists := c.Get("companyID")
+	if !exists {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "no company selected"})
+		return
+	}
+
 	var req struct {
 		Message        string `json:"message" binding:"required"`
 		ConversationID string `json:"conversation_id"`
@@ -51,6 +57,7 @@ func (h *AgentHandler) Chat(c *gin.Context) {
 	}
 
 	uid := userID.(int)
+	cid := companyID.(int)
 
 	// Generate conversation ID if not provided
 	if req.ConversationID == "" {
@@ -67,6 +74,7 @@ func (h *AgentHandler) Chat(c *gin.Context) {
 	// Save user message
 	userMsg := &domain.AgentMessage{
 		UserID:         uid,
+		CompanyID:      cid,
 		ConversationID: req.ConversationID,
 		Role:           "user",
 		Content:        req.Message,
@@ -74,7 +82,7 @@ func (h *AgentHandler) Chat(c *gin.Context) {
 	h.messageRepo.SaveMessage(userMsg)
 
 	// Get agent response with conversation history
-	response, err := h.agentService.Chat(uid, req.ConversationID, req.Message, historyMessages)
+	response, err := h.agentService.Chat(uid, cid, req.ConversationID, req.Message, historyMessages)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -83,6 +91,7 @@ func (h *AgentHandler) Chat(c *gin.Context) {
 	// Save assistant message
 	assistantMsg := &domain.AgentMessage{
 		UserID:         uid,
+		CompanyID:      cid,
 		ConversationID: req.ConversationID,
 		Role:           "assistant",
 		Content:        response,
@@ -111,13 +120,13 @@ func (h *AgentHandler) GetMessages(c *gin.Context) {
 
 // GetScheduledTasks handles GET /agent/tasks
 func (h *AgentHandler) GetScheduledTasks(c *gin.Context) {
-	userID, exists := c.Get("userID")
+	companyID, exists := c.Get("companyID")
 	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "user not authenticated"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "no company selected"})
 		return
 	}
 
-	tasks, err := h.taskService.GetTasksByUserID(userID.(int))
+	tasks, err := h.taskService.GetTasksByCompanyID(companyID.(int))
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -163,13 +172,13 @@ func (h *AgentHandler) DeleteScheduledTask(c *gin.Context) {
 
 // GetUsage handles GET /agent/usage
 func (h *AgentHandler) GetUsage(c *gin.Context) {
-	userID, exists := c.Get("userID")
+	companyID, exists := c.Get("companyID")
 	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "user not authenticated"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "no company selected"})
 		return
 	}
 
-	summary, err := h.usageRepo.GetUsageSummary(userID.(int))
+	summary, err := h.usageRepo.GetUsageSummary(companyID.(int))
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

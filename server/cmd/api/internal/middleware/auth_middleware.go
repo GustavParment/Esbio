@@ -2,7 +2,9 @@ package middleware
 
 import (
 	"cmd/api/internal/auth"
+	"cmd/api/internal/repository"
 	"net/http"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 )
@@ -80,4 +82,49 @@ func GetUserRoleFromContext(c *gin.Context) (string, bool) {
 		return "", false
 	}
 	return role.(string), true
+}
+
+// CompanyMiddleware validates company_id cookie and verifies ownership
+func CompanyMiddleware(companyRepo repository.CompanyRepository) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		userID, exists := c.Get("userID")
+		if !exists {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "not authenticated"})
+			c.Abort()
+			return
+		}
+
+		companyIDStr, err := c.Cookie("company_id")
+		if err != nil || companyIDStr == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "no company selected", "code": "NO_COMPANY"})
+			c.Abort()
+			return
+		}
+
+		companyID, err := strconv.Atoi(companyIDStr)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid company_id"})
+			c.Abort()
+			return
+		}
+
+		owns, err := companyRepo.UserOwnsCompany(userID.(int), companyID)
+		if err != nil || !owns {
+			c.JSON(http.StatusForbidden, gin.H{"error": "access denied to this company"})
+			c.Abort()
+			return
+		}
+
+		c.Set("companyID", companyID)
+		c.Next()
+	}
+}
+
+// GetCompanyIDFromContext retrieves the company ID from the Gin context
+func GetCompanyIDFromContext(c *gin.Context) (int, bool) {
+	companyID, exists := c.Get("companyID")
+	if !exists {
+		return 0, false
+	}
+	return companyID.(int), true
 }

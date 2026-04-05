@@ -26,6 +26,7 @@ func main() {
 	jwtManager := auth.NewJWTManager(cfg.JWTSecret, cfg.JWTExpiration)
 
 	userRepo := repository.NewUserRepository(db)
+	companyRepo := repository.NewCompanyRepository(db)
 	accountRepo := repository.NewAccountRepository(db)
 	lineItemRepo := repository.NewLineItemRepository(db)
 	voucherRepo := repository.NewVoucherRepository(db)
@@ -35,6 +36,7 @@ func main() {
 	agentUsageRepo := repository.NewAgentUsageRepository(db)
 
 	userService := service.NewUserService(userRepo)
+	companyService := service.NewCompanyService(companyRepo)
 	accountService := service.NewAccountService(accountRepo)
 	lineItemService := service.NewLineItemService(lineItemRepo)
 	voucherService := service.NewVoucherService(voucherRepo, lineItemRepo)
@@ -57,18 +59,20 @@ func main() {
 	authHandler := handlers.NewAuthHandler(userService, jwtManager)
 	pdfHandler := handlers.NewPDFHandler(voucherService, accountService)
 	reportHandler := handlers.NewReportHandler(reportService)
-	sieGenerator := service.NewSIEGenerator(reportRepo, userService)
+	companyHandler := handlers.NewCompanyHandler(companyService)
+	sieGenerator := service.NewSIEGenerator(reportRepo, companyService)
 	sieHandler := handlers.NewSIEHandler(sieGenerator)
 	agentHandler := handlers.NewAgentHandler(agentService, scheduledTaskService, agentMessageRepo, agentUsageRepo)
 
 	authMiddleware := middleware.AuthMiddleware(jwtManager)
+	companyMiddleware := middleware.CompanyMiddleware(companyRepo)
 
 	router := gin.Default()
 
 	// Add CORS middleware
 	router.Use(middleware.CORSMiddleware())
 
-	routes.SetupRoutes(router, userHandler, accountHandler, lineItemHandler, voucherHandler, authHandler, pdfHandler, reportHandler, sieHandler, agentHandler, authMiddleware)
+	routes.SetupRoutes(router, userHandler, accountHandler, lineItemHandler, voucherHandler, authHandler, pdfHandler, reportHandler, sieHandler, agentHandler, companyHandler, authMiddleware, companyMiddleware)
 
 	// Start the scheduler for recurring tasks
 	schedulerService := service.NewSchedulerService(scheduledTaskService, agentService)

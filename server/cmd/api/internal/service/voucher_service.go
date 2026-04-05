@@ -81,8 +81,8 @@ func (s *VoucherService) GetVoucherByID(voucherID int) (*domain.Voucher, error) 
 	return voucher, nil
 }
 
-func (s *VoucherService) GetVoucherByNumber(userID int, voucherNumber int) (*domain.Voucher, error) {
-	voucher, err := s.repository.GetVoucherByNumber(userID, voucherNumber)
+func (s *VoucherService) GetVoucherByNumber(companyID int, voucherNumber int) (*domain.Voucher, error) {
+	voucher, err := s.repository.GetVoucherByNumber(companyID, voucherNumber)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get voucher: %w", err)
 	}
@@ -110,13 +110,13 @@ func (s *VoucherService) GetAllVouchers() ([]*domain.Voucher, error) {
 	return vouchers, nil
 }
 
-// GetVouchersByPeriod retrieves vouchers by period
-func (s *VoucherService) GetVouchersByPeriod(period string) ([]*domain.Voucher, error) {
+// GetVouchersByPeriod retrieves vouchers by period for a specific company
+func (s *VoucherService) GetVouchersByPeriod(companyID int, period string) ([]*domain.Voucher, error) {
 	if len(period) != 7 {
 		return nil, errors.New("period must be in format YYYY-MM (e.g., '2025-01')")
 	}
 
-	vouchers, err := s.repository.GetVouchersByPeriod(period)
+	vouchers, err := s.repository.GetVouchersByPeriod(companyID, period)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get vouchers by period: %w", err)
 	}
@@ -124,23 +124,23 @@ func (s *VoucherService) GetVouchersByPeriod(period string) ([]*domain.Voucher, 
 	return vouchers, nil
 }
 
-// GetVouchersByCreatedBy retrieves vouchers by user
-func (s *VoucherService) GetVouchersByCreatedBy(userID int) ([]*domain.Voucher, error) {
-	if userID <= 0 {
-		return nil, errors.New("invalid user ID")
+// GetVouchersByCompanyID retrieves vouchers by company
+func (s *VoucherService) GetVouchersByCompanyID(companyID int) ([]*domain.Voucher, error) {
+	if companyID <= 0 {
+		return nil, errors.New("invalid company ID")
 	}
 
-	vouchers, err := s.repository.GetVouchersByCreatedBy(userID)
+	vouchers, err := s.repository.GetVouchersByCompanyID(companyID)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get vouchers by user: %w", err)
+		return nil, fmt.Errorf("failed to get vouchers by company: %w", err)
 	}
 
 	return vouchers, nil
 }
 
-// GetAllPeriods retrieves all unique periods from vouchers for a specific user
-func (s *VoucherService) GetAllPeriods(userID int) ([]string, error) {
-	periods, err := s.repository.GetAllPeriods(userID)
+// GetAllPeriods retrieves all unique periods from vouchers for a specific company
+func (s *VoucherService) GetAllPeriods(companyID int) ([]string, error) {
+	periods, err := s.repository.GetAllPeriods(companyID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get periods: %w", err)
 	}

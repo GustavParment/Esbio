@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/lib/contexts/AuthContext";
+import { useCompany } from "@/lib/contexts/CompanyContext";
 import { useTheme } from "@/lib/contexts/ThemeContext";
 import { useState } from "react";
 
@@ -34,6 +35,7 @@ const adminIcons: Record<string, React.ReactNode> = {
 export default function Sidebar() {
   const pathname = usePathname();
   const { user, logout } = useAuth();
+  const { selectedCompany } = useCompany();
   const { theme, toggleTheme } = useTheme();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -74,6 +76,25 @@ export default function Sidebar() {
       <div className="hidden lg:flex h-16 items-center px-6 bg-[#0F1D1A]">
         <img src="/eskio-logo.png" alt="Eskio" className="h-10" />
       </div>
+
+      {/* Company switcher */}
+      {selectedCompany && (
+        <div className="px-3 py-3 border-b border-[rgba(255,255,255,0.06)]">
+          <Link
+            href="/companies"
+            onClick={() => setMobileMenuOpen(false)}
+            className="flex items-center justify-between px-3 py-2 rounded-lg hover:bg-[#142421] transition-colors"
+          >
+            <div className="min-w-0">
+              <p className="text-sm font-medium text-white truncate">{selectedCompany.company_name}</p>
+              <p className="text-xs text-gray-500">Byt företag</p>
+            </div>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-gray-500 shrink-0 ml-2">
+              <polyline points="6 9 12 15 18 9"/>
+            </svg>
+          </Link>
+        </div>
+      )}
 
       {/* Navigation */}
       <nav className="flex-1 space-y-1 px-3 py-4">

@@ -3,11 +3,13 @@
 import { useEffect, useState } from "react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { useAuth } from "@/lib/contexts/AuthContext";
-import { usersApi } from "@/lib/api/users";
+import { useCompany } from "@/lib/contexts/CompanyContext";
+import { companiesApi } from "@/lib/api/companies";
 import { agentApi, AgentUsageSummary } from "@/lib/api/agent";
 
 export default function SettingsPage() {
-  const { user, refreshUser } = useAuth();
+  const { user } = useAuth();
+  const { selectedCompany, refreshCompanies } = useCompany();
   const [companyName, setCompanyName] = useState("");
   const [orgNumber, setOrgNumber] = useState("");
   const [loading, setLoading] = useState(false);
@@ -16,11 +18,11 @@ export default function SettingsPage() {
   const [usage, setUsage] = useState<AgentUsageSummary | null>(null);
 
   useEffect(() => {
-    if (user) {
-      setCompanyName(user.company_name || "");
-      setOrgNumber(user.org_number || "");
+    if (selectedCompany) {
+      setCompanyName(selectedCompany.company_name || "");
+      setOrgNumber(selectedCompany.org_number || "");
     }
-  }, [user]);
+  }, [selectedCompany]);
 
   useEffect(() => {
     const fetchUsage = async () => {
@@ -28,23 +30,23 @@ export default function SettingsPage() {
         const data = await agentApi.getUsage();
         setUsage(data);
       } catch {
-        // Ignore — usage might not be available
+        // Ignore
       }
     };
     fetchUsage();
   }, []);
 
   const handleSave = async () => {
-    if (!user) return;
+    if (!selectedCompany) return;
     setLoading(true);
     setError("");
     setSuccess("");
     try {
-      await usersApi.update(user.user_id, {
+      await companiesApi.update(selectedCompany.company_id, {
         company_name: companyName,
         org_number: orgNumber,
       });
-      await refreshUser();
+      await refreshCompanies();
       setSuccess("Inställningar sparade!");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Kunde inte spara");
@@ -57,7 +59,7 @@ export default function SettingsPage() {
     <DashboardLayout>
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900">Inställningar</h1>
-        <p className="text-gray-600 mt-2">Hantera din profil och företagsinformation</p>
+        <p className="text-gray-600 mt-2">Hantera företaget och se AI-användning</p>
       </div>
 
       {/* Company Info */}
@@ -122,7 +124,7 @@ export default function SettingsPage() {
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
           <h2 className="text-lg font-semibold text-gray-900 mb-4">Ester AI — Användning</h2>
 
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className="bg-gray-50 rounded-lg p-4">
               <p className="text-sm text-gray-500">Denna månad</p>
               <p className="text-xl font-bold text-gray-900">{usage.month_request_count}</p>

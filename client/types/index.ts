@@ -30,6 +30,22 @@ export interface UpdateUserRequest {
   org_number?: string;
 }
 
+// Company types
+export interface Company {
+  company_id: number;
+  company_name: string;
+  org_number?: string;
+  plan: string;
+  created_by: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CreateCompanyRequest {
+  company_name: string;
+  org_number?: string;
+}
+
 // Account types
 export type AccountType = "P&L" | "BS";
 export type StandardSide = "Debit" | "Credit";

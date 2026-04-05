@@ -357,10 +357,11 @@ func (s *AgentService) getToolDeclarations() []geminiToolDecl {
 	}
 }
 
-func (s *AgentService) executeTool(name string, args map[string]interface{}, authenticatedUserID int) (string, error) {
-	// SECURITY: Enforce authenticated user ID on all tools (prevents prompt injection)
+func (s *AgentService) executeTool(name string, args map[string]interface{}, authenticatedUserID int, companyID int) (string, error) {
+	// SECURITY: Enforce authenticated user ID and company ID on all tools (prevents prompt injection)
 	args["user_id"] = float64(authenticatedUserID)
 	args["created_by"] = float64(authenticatedUserID)
+	args["company_id"] = float64(companyID)
 
 	// SECURITY: Rate limit - max voucher amount per single creation
 	if name == "create_voucher" {
@@ -371,7 +372,7 @@ func (s *AgentService) executeTool(name string, args map[string]interface{}, aut
 
 	// SECURITY: Prevent creating too many scheduled tasks
 	if name == "create_scheduled_task" {
-		tasks, err := s.scheduledTaskService.GetTasksByUserID(authenticatedUserID)
+		tasks, err := s.scheduledTaskService.GetTasksByCompanyID(companyID)
 		if err == nil && len(tasks) >= 20 {
 			return "Fel: Max 20 schemalagda uppgifter per användare.", nil
 		}
@@ -380,7 +381,7 @@ func (s *AgentService) executeTool(name string, args map[string]interface{}, aut
 	switch name {
 	case "get_voucher":
 		voucherNumber := intFromArg(args["voucher_number"])
-		voucher, err := s.voucherService.GetVoucherByNumber(authenticatedUserID, voucherNumber)
+		voucher, err := s.voucherService.GetVoucherByNumber(companyID, voucherNumber)
 		if err != nil {
 			return fmt.Sprintf("Fel: Verifikat #%d hittades inte", voucherNumber), nil
 		}
@@ -389,7 +390,7 @@ func (s *AgentService) executeTool(name string, args map[string]interface{}, aut
 
 	case "get_vouchers_by_period":
 		period, _ := args["period"].(string)
-		vouchers, err := s.voucherService.GetVouchersByPeriod(period)
+		vouchers, err := s.voucherService.GetVouchersByPeriod(companyID, period)
 		if err != nil {
 			return fmt.Sprintf("Fel: %s", err.Error()), nil
 		}
@@ -397,8 +398,7 @@ func (s *AgentService) executeTool(name string, args map[string]interface{}, aut
 		return string(data), nil
 
 	case "get_user_vouchers":
-		userID := intFromArg(args["user_id"])
-		vouchers, err := s.voucherService.GetVouchersByCreatedBy(userID)
+		vouchers, err := s.voucherService.GetVouchersByCompanyID(companyID)
 		if err != nil {
 			return fmt.Sprintf("Fel: %s", err.Error()), nil
 		}
@@ -425,6 +425,7 @@ func (s *AgentService) executeTool(name string, args map[string]interface{}, aut
 			TotalAmount: totalAmount,
 			Period:      period,
 			CreatedBy:   createdBy,
+			CompanyID:   companyID,
 		}
 
 		if err := s.voucherService.CreateVoucher(voucher); err != nil {
@@ -488,7 +489,7 @@ func (s *AgentService) executeTool(name string, args map[string]interface{}, aut
 	case "get_income_statement":
 		fromDate, _ := args["from_date"].(string)
 		toDate, _ := args["to_date"].(string)
-		statement, err := s.reportService.GetIncomeStatement(fromDate, toDate, authenticatedUserID)
+		statement, err := s.reportService.GetIncomeStatement(fromDate, toDate, companyID)
 		if err != nil {
 			return fmt.Sprintf("Fel: %s", err.Error()), nil
 		}
@@ -497,7 +498,7 @@ func (s *AgentService) executeTool(name string, args map[string]interface{}, aut
 
 	case "get_balance_sheet":
 		asOfDate, _ := args["as_of_date"].(string)
-		sheet, err := s.reportService.GetBalanceSheet(asOfDate, authenticatedUserID)
+		sheet, err := s.reportService.GetBalanceSheet(asOfDate, companyID)
 		if err != nil {
 			return fmt.Sprintf("Fel: %s", err.Error()), nil
 		}
@@ -512,6 +513,7 @@ func (s *AgentService) executeTool(name string, args map[string]interface{}, aut
 
 		task := &domain.ScheduledTask{
 			UserID:      userID,
+			CompanyID:   companyID,
 			Description: description,
 			Prompt:      prompt,
 			DayOfMonth:  dayOfMonth,
@@ -532,8 +534,7 @@ func (s *AgentService) executeTool(name string, args map[string]interface{}, aut
 			task.TaskID, description, dayOfMonth), nil
 
 	case "list_scheduled_tasks":
-		userID := intFromArg(args["user_id"])
-		tasks, err := s.scheduledTaskService.GetTasksByUserID(userID)
+		tasks, err := s.scheduledTaskService.GetTasksByCompanyID(companyID)
 		if err != nil {
 			return fmt.Sprintf("Fel: %s", err.Error()), nil
 		}
@@ -545,7 +546,7 @@ func (s *AgentService) executeTool(name string, args map[string]interface{}, aut
 	}
 }
 
-func (s *AgentService) Chat(userID int, conversationID string, userMessage string, history []domain.AgentMessage) (string, error) {
+func (s *AgentService) Chat(userID int, companyID int, conversationID string, userMessage string, history []domain.AgentMessage) (string, error) {
 	if s.apiKey == "" {
 		return "", fmt.Errorf("GEMINI_API_KEY is not configured")
 	}
@@ -625,6 +626,7 @@ func (s *AgentService) Chat(userID int, conversationID string, userMessage strin
 		if geminiResp.UsageMetadata != nil && s.usageRepo != nil {
 			usage := &domain.AgentUsage{
 				UserID:           userID,
+				CompanyID:        companyID,
 				PromptTokens:     geminiResp.UsageMetadata.PromptTokenCount,
 				CompletionTokens: geminiResp.UsageMetadata.CandidatesTokenCount,
 				TotalTokens:      geminiResp.UsageMetadata.TotalTokenCount,
@@ -668,7 +670,7 @@ func (s *AgentService) Chat(userID int, conversationID string, userMessage strin
 		var responseParts []geminiPart
 		for _, part := range parts {
 			if part.FunctionCall != nil {
-				result, err := s.executeTool(part.FunctionCall.Name, part.FunctionCall.Args, userID)
+				result, err := s.executeTool(part.FunctionCall.Name, part.FunctionCall.Args, userID, companyID)
 				if err != nil {
 					result = fmt.Sprintf("Fel: %s", err.Error())
 				}

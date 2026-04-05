@@ -42,8 +42,8 @@ func (s *ScheduledTaskService) GetTaskByID(taskID int) (*domain.ScheduledTask, e
 	return s.repo.GetTaskByID(taskID)
 }
 
-func (s *ScheduledTaskService) GetTasksByUserID(userID int) ([]*domain.ScheduledTask, error) {
-	return s.repo.GetTasksByUserID(userID)
+func (s *ScheduledTaskService) GetTasksByCompanyID(companyID int) ([]*domain.ScheduledTask, error) {
+	return s.repo.GetTasksByCompanyID(companyID)
 }
 
 func (s *ScheduledTaskService) GetDueTasks() ([]*domain.ScheduledTask, error) {

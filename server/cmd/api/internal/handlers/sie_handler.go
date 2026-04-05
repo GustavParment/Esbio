@@ -19,9 +19,9 @@ func NewSIEHandler(sieGenerator *service.SIEGenerator) *SIEHandler {
 
 // ExportSIE handles GET /reports/sie
 func (h *SIEHandler) ExportSIE(c *gin.Context) {
-	userID, exists := c.Get("userID")
+	companyID, exists := c.Get("companyID")
 	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "user not authenticated"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "no company selected"})
 		return
 	}
 
@@ -33,7 +33,7 @@ func (h *SIEHandler) ExportSIE(c *gin.Context) {
 		return
 	}
 
-	sieBytes, err := h.sieGenerator.GenerateSIE4(fromDate, toDate, userID.(int))
+	sieBytes, err := h.sieGenerator.GenerateSIE4(fromDate, toDate, companyID.(int))
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

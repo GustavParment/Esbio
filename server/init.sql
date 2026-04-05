@@ -32,7 +32,21 @@ CREATE TABLE IF NOT EXISTS accounts (
 CREATE INDEX idx_accounts_group ON accounts(account_group);
 CREATE INDEX idx_accounts_type ON accounts(type);
 
--- Migration 003: Create vouchers table
+-- Migration 003: Create companies table
+CREATE TABLE IF NOT EXISTS companies (
+    company_id SERIAL PRIMARY KEY,
+    company_name VARCHAR(200) NOT NULL,
+    org_number VARCHAR(20),
+    plan VARCHAR(20) NOT NULL DEFAULT 'free',
+    created_by INT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (created_by) REFERENCES users(user_id) ON DELETE RESTRICT
+);
+
+CREATE INDEX idx_companies_created_by ON companies(created_by);
+
+-- Migration 004: Create vouchers table
 CREATE TABLE IF NOT EXISTS vouchers (
     voucher_id SERIAL PRIMARY KEY,
     voucher_number INTEGER NOT NULL,
@@ -42,20 +56,23 @@ CREATE TABLE IF NOT EXISTS vouchers (
     total_amount DECIMAL(15, 2) NOT NULL,
     period VARCHAR(7) NOT NULL,
     created_by INT NOT NULL,
+    company_id INT NOT NULL,
     corrects_voucher_id INT NULL,
     corrected_by_voucher_id INT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (created_by) REFERENCES users(user_id) ON DELETE RESTRICT,
+    FOREIGN KEY (company_id) REFERENCES companies(company_id) ON DELETE RESTRICT,
     FOREIGN KEY (corrects_voucher_id) REFERENCES vouchers(voucher_id) ON DELETE SET NULL,
     FOREIGN KEY (corrected_by_voucher_id) REFERENCES vouchers(voucher_id) ON DELETE SET NULL
 );
 
 CREATE INDEX idx_vouchers_period ON vouchers(period);
 CREATE INDEX idx_vouchers_created_by ON vouchers(created_by);
+CREATE INDEX idx_vouchers_company ON vouchers(company_id);
 CREATE INDEX idx_vouchers_date ON vouchers(date);
 CREATE INDEX idx_vouchers_number ON vouchers(voucher_number);
-ALTER TABLE vouchers ADD CONSTRAINT vouchers_user_number_unique UNIQUE (created_by, voucher_number);
+ALTER TABLE vouchers ADD CONSTRAINT vouchers_company_number_unique UNIQUE (company_id, voucher_number);
 
 -- Migration 004: Create line_items table
 CREATE TABLE IF NOT EXISTS line_items (
@@ -485,6 +502,7 @@ ON CONFLICT (account_no) DO NOTHING;
 CREATE TABLE IF NOT EXISTS scheduled_tasks (
     task_id SERIAL PRIMARY KEY,
     user_id INT NOT NULL,
+    company_id INT NOT NULL,
     description TEXT NOT NULL,
     prompt TEXT NOT NULL,
     template_voucher_id INT,
@@ -495,10 +513,12 @@ CREATE TABLE IF NOT EXISTS scheduled_tasks (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
+    FOREIGN KEY (company_id) REFERENCES companies(company_id) ON DELETE CASCADE,
     FOREIGN KEY (template_voucher_id) REFERENCES vouchers(voucher_id) ON DELETE SET NULL
 );
 
 CREATE INDEX idx_scheduled_tasks_user ON scheduled_tasks(user_id);
+CREATE INDEX idx_scheduled_tasks_company ON scheduled_tasks(company_id);
 CREATE INDEX idx_scheduled_tasks_next_run ON scheduled_tasks(next_run_at);
 CREATE INDEX idx_scheduled_tasks_active ON scheduled_tasks(active);
 
@@ -506,26 +526,32 @@ CREATE INDEX idx_scheduled_tasks_active ON scheduled_tasks(active);
 CREATE TABLE IF NOT EXISTS agent_messages (
     message_id SERIAL PRIMARY KEY,
     user_id INT NOT NULL,
+    company_id INT NOT NULL,
     conversation_id VARCHAR(36) NOT NULL,
     role VARCHAR(20) NOT NULL CHECK (role IN ('user', 'assistant')),
     content TEXT NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
+    FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
+    FOREIGN KEY (company_id) REFERENCES companies(company_id) ON DELETE CASCADE
 );
 
 CREATE INDEX idx_agent_messages_user ON agent_messages(user_id);
+CREATE INDEX idx_agent_messages_company ON agent_messages(company_id);
 CREATE INDEX idx_agent_messages_conversation ON agent_messages(conversation_id);
 
 -- Migration 007: Create agent_usage table
 CREATE TABLE IF NOT EXISTS agent_usage (
     usage_id SERIAL PRIMARY KEY,
     user_id INT NOT NULL,
+    company_id INT NOT NULL,
     prompt_tokens INT NOT NULL DEFAULT 0,
     completion_tokens INT NOT NULL DEFAULT 0,
     total_tokens INT NOT NULL DEFAULT 0,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
+    FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
+    FOREIGN KEY (company_id) REFERENCES companies(company_id) ON DELETE CASCADE
 );
 
 CREATE INDEX idx_agent_usage_user ON agent_usage(user_id);
+CREATE INDEX idx_agent_usage_company ON agent_usage(company_id);
 CREATE INDEX idx_agent_usage_created ON agent_usage(created_at);

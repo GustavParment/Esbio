@@ -14,8 +14,8 @@ export const vouchersApi = {
     return apiClient.get<Voucher[]>(`/vouchers/period/${period}`);
   },
 
-  getByUser: async (userId: number): Promise<Voucher[]> => {
-    return apiClient.get<Voucher[]>(`/vouchers/user/${userId}`);
+  getByCompany: async (): Promise<Voucher[]> => {
+    return apiClient.get<Voucher[]>("/vouchers/company");
   },
 
   getAllPeriods: async (): Promise<string[]> => {

@@ -26,10 +26,8 @@ export default function DashboardPage() {
       }
 
       try {
-        // Only fetch user's own vouchers (or all if Admin)
-        const vouchersPromise = user.role === "Admin"
-          ? vouchersApi.getAll()
-          : vouchersApi.getByUser(user.user_id);
+        // Fetch vouchers for the selected company
+        const vouchersPromise = vouchersApi.getByCompany();
 
         const [vouchersData, accountsData] = await Promise.all([
           vouchersPromise,
