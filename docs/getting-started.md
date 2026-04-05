@@ -70,7 +70,11 @@ The frontend starts on `http://localhost:3000`.
 1. Go to [http://localhost:3000/auth/register](http://localhost:3000/auth/register)
 2. Create an account (default role: Bookkeeper)
 3. Log in at [http://localhost:3000/auth/login](http://localhost:3000/auth/login)
-4. You'll land on the dashboard
+4. You'll be redirected to the **company selector** at `/companies`
+5. Create a new company (name, org number) or select an existing one
+6. After selecting a company, you'll land on the dashboard
+7. All data (vouchers, reports, etc.) is scoped to the selected company
+8. To switch companies, use the company switch link in the sidebar
 
 ## Environment Variables
 
@@ -81,7 +85,7 @@ The frontend starts on `http://localhost:3000`.
 | `DATABASE_URL`      | `postgres://postgres:postgres@localhost:5433/bookkeeping?sslmode=disable` | PostgreSQL connection string |
 | `JWT_SECRET`        | `your-secret-key-change-this-in-production`                      | JWT signing key          |
 | `SERVER_PORT`       | `:8080`                                                          | Server port              |
-| `ANTHROPIC_API_KEY` | (empty)                                                          | Required for AI agent    |
+| `GEMINI_API_KEY`    | (empty)                                                          | Required for Ester AI agent |
 
 ### Frontend (`client/.env.local`)
 
@@ -111,7 +115,7 @@ Eskio/
 │   │   ├── repository/      Database access (incl. scheduled tasks, messages)
 │   │   ├── domain/          Data models
 │   │   ├── dto/             Request/response DTOs
-│   │   ├── middleware/      Auth & CORS
+│   │   ├── middleware/      Auth, CORS & Company middleware
 │   │   ├── routes/          Route definitions
 │   │   ├── auth/            JWT management
 │   │   ├── config/          Configuration

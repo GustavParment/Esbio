@@ -1,6 +1,6 @@
 # API Reference
 
-All endpoints are prefixed with `/api/v1`. Authenticated endpoints require a valid JWT cookie.
+All endpoints are prefixed with `/api/v1`. Authenticated endpoints require a valid JWT cookie. Most endpoints also require a `company_id` cookie (set via company selection) and the CompanyMiddleware verifies that the authenticated user owns the selected company.
 
 ## Authentication
 
@@ -34,7 +34,49 @@ Roles: `Admin`, `Bookkeeper`, `Manager`. Defaults to `Bookkeeper`.
 }
 ```
 
-Response sets an httpOnly cookie named `token` (7-day expiry).
+Response sets an httpOnly cookie named `token` (7-day expiry). After login, the user should be directed to `/companies` to select a company before accessing the app.
+
+---
+
+## Companies
+
+| Method | Endpoint                  | Description                     | Auth |
+|--------|---------------------------|---------------------------------|------|
+| GET    | `/companies`              | List current user's companies   | Yes  |
+| POST   | `/companies`              | Create a new company            | Yes  |
+| POST   | `/companies/select`       | Set company_id cookie           | Yes  |
+| PUT    | `/companies/:id`          | Update company                  | Yes  |
+| DELETE | `/companies/:id`          | Delete company                  | Yes  |
+
+### POST /companies
+
+```json
+{
+  "company_name": "Acme AB",
+  "org_number": "556123-4567",
+  "plan": "free"
+}
+```
+
+### POST /companies/select
+
+Sets a `company_id` httpOnly cookie that scopes all subsequent requests to the selected company.
+
+```json
+{
+  "company_id": 1
+}
+```
+
+### PUT /companies/:id
+
+```json
+{
+  "company_name": "Acme AB (updated)",
+  "org_number": "556123-4567",
+  "plan": "pro"
+}
+```
 
 ---
 
@@ -93,7 +135,7 @@ Returns ledger entries with running balance. Corrected vouchers are excluded.
 | GET    | `/vouchers/periods`                   | Get all unique periods         | Yes   |
 | GET    | `/vouchers/:id`                       | Get voucher with line items    | Yes   |
 | GET    | `/vouchers/period/:period`            | Get vouchers by period         | Yes   |
-| GET    | `/vouchers/user/:userId`              | Get vouchers by creator        | Yes   |
+| GET    | `/vouchers/company`                   | Get vouchers for selected company | Yes |
 | GET    | `/vouchers/:id/validate`              | Check if debit = credit        | Yes   |
 | POST   | `/vouchers/:id/correct`               | Create reversal voucher        | Yes   |
 | POST   | `/vouchers/:id/correct-with-changes`  | Create correction with updates | Yes   |
@@ -110,7 +152,6 @@ Returns ledger entries with running balance. Corrected vouchers are excluded.
   "reference": "F-1234",
   "total_amount": 10000.00,
   "period": "2025-01",
-  "created_by": 1,
   "lines": [
     { "account_no": 1930, "debit_amount": 10000, "credit_amount": 0, "tax_code": 25 },
     { "account_no": 3010, "debit_amount": 0, "credit_amount": 10000, "tax_code": 25 }
@@ -233,7 +274,7 @@ Returns VAT (moms) breakdown by tax rate for revenue accounts (3000-3999):
 
 Ester AI is Eskio's intelligent bookkeeping assistant. She can create vouchers, look up accounts, generate reports, and schedule recurring tasks. See [ester-ai.md](./ester-ai.md) for full documentation including security model.
 
-Requires the `ANTHROPIC_API_KEY` environment variable to be set in `server/cmd/.env`.
+Requires the `GEMINI_API_KEY` environment variable to be set in `server/cmd/.env`. Ester is company-scoped: all tool calls use the selected company_id from the cookie.
 
 | Method | Endpoint                      | Description              | Auth |
 |--------|-------------------------------|--------------------------|------|
@@ -263,8 +304,9 @@ Response:
 The agent has access to the following tools:
 - `get_voucher` — fetch a voucher by ID
 - `get_vouchers_by_period` — list vouchers for a period (YYYY-MM)
-- `get_user_vouchers` — list vouchers by a specific user
+- `get_company_vouchers` — list vouchers for the selected company
 - `create_voucher` — create a voucher with line items
+- `correct_voucher` — create a reversal + new correct voucher
 - `get_account_ledger` — account transaction history with running balance
 - `search_accounts` — search the BAS chart of accounts
 - `get_income_statement` — income statement for a date range
@@ -279,7 +321,7 @@ Scheduled tasks are recurring jobs that the agent executes automatically. A back
 ```json
 {
   "task_id": 1,
-  "user_id": 1,
+  "company_id": 1,
   "description": "Konsultarvode månatlig",
   "prompt": "Skapa konsultarvode på 64350 kr inkl moms",
   "template_voucher_id": 26,

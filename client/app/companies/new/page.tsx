@@ -11,7 +11,7 @@ export default function CreateCompanyPage() {
   const [orgNumber, setOrgNumber] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const { refreshCompanies, selectCompany } = useCompany();
+  const { refreshCompanies } = useCompany();
   const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -24,13 +24,12 @@ export default function CreateCompanyPage() {
     setLoading(true);
     setError("");
     try {
-      const company = await companiesApi.create({
+      await companiesApi.create({
         company_name: companyName.trim(),
         org_number: orgNumber.trim() || undefined,
       });
       await refreshCompanies();
-      await selectCompany(company.company_id);
-      router.push("/dashboard");
+      router.push("/companies");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Kunde inte skapa företag");
     } finally {

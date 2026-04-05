@@ -5,15 +5,17 @@ Eskio uses PostgreSQL 15. The schema is defined in `server/init.sql` and initial
 ## Entity Relationship
 
 ```
-┌──────────┐       ┌──────────────┐       ┌──────────────┐
-│  users   │───1:N─│   vouchers   │───1:N─│  line_items  │
-└──────────┘       └──────────────┘       └──────┬───────┘
-                    │            │                │
-                    │ self-ref   │                │
-                    │ (corrects/ │          ┌─────┴──────┐
-                    │ corrected) │          │  accounts  │
-                    └────────────┘          └────────────┘
+┌──────────┐       ┌────────────┐       ┌──────────────┐       ┌──────────────┐
+│  users   │───1:N─│ companies  │───1:N─│   vouchers   │───1:N─│  line_items  │
+└──────────┘       └────────────┘       └──────────────┘       └──────┬───────┘
+                                         │            │                │
+                                         │ self-ref   │                │
+                                         │ (corrects/ │          ┌─────┴──────┐
+                                         │ corrected) │          │  accounts  │
+                                         └────────────┘          └────────────┘
 ```
+
+All data (vouchers, reports, scheduled tasks, agent messages) is scoped to a company, not directly to a user. A user can own multiple companies.
 
 ## Tables
 
@@ -32,6 +34,22 @@ Eskio uses PostgreSQL 15. The schema is defined in `server/init.sql` and initial
 **Indexes:** `idx_users_email` on email
 
 **Roles:** `Admin`, `Bookkeeper`, `Manager`
+
+---
+
+### companies
+
+| Column        | Type          | Constraints                              |
+|---------------|---------------|------------------------------------------|
+| company_id    | SERIAL        | PRIMARY KEY                              |
+| company_name  | VARCHAR(255)  | NOT NULL                                 |
+| org_number    | VARCHAR(20)   | Nullable                                 |
+| plan          | VARCHAR(50)   | NOT NULL, DEFAULT 'free'                 |
+| created_by    | INT           | NOT NULL, FK -> users, ON DELETE CASCADE |
+| created_at    | TIMESTAMP     | DEFAULT CURRENT_TIMESTAMP                |
+| updated_at    | TIMESTAMP     | DEFAULT CURRENT_TIMESTAMP                |
+
+A user can own multiple companies. The `created_by` column links to the owning user. All data (vouchers, scheduled tasks, agent messages) is scoped via `company_id`. The SIE4 export uses company info (company_name, org_number) from this table.
 
 ---
 
@@ -65,13 +83,14 @@ Uses the Swedish BAS chart of accounts. Accounts are pre-seeded via `init.sql` a
 | reference               | VARCHAR(255)  | Nullable                            |
 | total_amount            | DECIMAL(15,2) | NOT NULL                            |
 | period                  | VARCHAR(7)    | NOT NULL (format: YYYY-MM)          |
+| company_id              | INT           | NOT NULL, FK -> companies, ON DELETE CASCADE |
 | created_by              | INT           | FK -> users, ON DELETE RESTRICT     |
 | corrects_voucher_id     | INT           | FK -> vouchers, ON DELETE SET NULL  |
 | corrected_by_voucher_id | INT           | FK -> vouchers, ON DELETE SET NULL  |
 | created_at              | TIMESTAMP     | DEFAULT CURRENT_TIMESTAMP           |
 | updated_at              | TIMESTAMP     | DEFAULT CURRENT_TIMESTAMP           |
 
-**Indexes:** `idx_vouchers_period`, `idx_vouchers_created_by`, `idx_vouchers_date`, `idx_vouchers_number`
+**Indexes:** `idx_vouchers_period`, `idx_vouchers_created_by`, `idx_vouchers_company`, `idx_vouchers_date`, `idx_vouchers_number`
 
 **Correction model:** When voucher A is corrected by voucher B:
 - A.corrected_by_voucher_id = B.voucher_id
@@ -110,6 +129,7 @@ CHECK (
 | Column              | Type      | Constraints                                    |
 |---------------------|-----------|------------------------------------------------|
 | task_id             | SERIAL    | PRIMARY KEY                                    |
+| company_id          | INT       | NOT NULL, FK -> companies, ON DELETE CASCADE   |
 | user_id             | INT       | NOT NULL, FK -> users, ON DELETE CASCADE       |
 | description         | TEXT      | NOT NULL                                       |
 | prompt              | TEXT      | NOT NULL                                       |
@@ -132,6 +152,7 @@ Used by the AI agent's scheduler to execute recurring voucher creation.
 | Column          | Type        | Constraints                              |
 |-----------------|-------------|------------------------------------------|
 | message_id      | SERIAL      | PRIMARY KEY                              |
+| company_id      | INT         | NOT NULL, FK -> companies, ON DELETE CASCADE |
 | user_id         | INT         | NOT NULL, FK -> users, ON DELETE CASCADE |
 | conversation_id | VARCHAR(36) | NOT NULL                                 |
 | role            | VARCHAR(20) | NOT NULL, CHECK ('user' or 'assistant')  |
@@ -146,12 +167,19 @@ Stores chat history between users and the AI assistant.
 
 ## Key Relationships
 
+- A **user** can own many **companies** (`created_by` FK)
+- A **company** has many **vouchers** (`company_id` FK)
 - A **user** can create many **vouchers** (`created_by` FK)
 - A **voucher** has many **line items** (cascade delete)
 - Each **line item** references one **account** (restrict delete)
 - A **voucher** can correct another voucher (self-referencing FK pair)
-- A **user** can have many **scheduled tasks** (cascade delete)
+- A **company** has many **scheduled tasks** (`company_id` FK, cascade delete)
 - A **scheduled task** can reference a template **voucher** (set null on delete)
-- A **user** can have many **agent messages** (cascade delete)
+- A **company** has many **agent messages** (`company_id` FK, cascade delete)
 - Deleting a user is restricted if they have vouchers
+- Deleting a company cascades to its vouchers, scheduled tasks, and agent messages
 - Deleting an account is restricted if it has line items
+
+## Data Isolation
+
+All queries filter by `company_id` (not `user_id` or `created_by`) to ensure strict data isolation between companies. The `company_id` is read from the cookie and verified by CompanyMiddleware on every request.

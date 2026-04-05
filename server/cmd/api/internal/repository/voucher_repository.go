@@ -109,7 +109,7 @@ func (r *voucherRepository) MarkVoucherAsCorrected(voucherID int, correctedByID 
 
 func (r *voucherRepository) GetVoucherByID(voucherID int) (*domain.Voucher, error) {
 	query := `
-		SELECT voucher_id, voucher_number, date, description, reference, total_amount, period, created_by, corrects_voucher_id, corrected_by_voucher_id
+		SELECT voucher_id, voucher_number, date, description, reference, total_amount, period, created_by, company_id, corrects_voucher_id, corrected_by_voucher_id
 		FROM vouchers
 		WHERE voucher_id = $1
 	`
@@ -123,6 +123,7 @@ func (r *voucherRepository) GetVoucherByID(voucherID int) (*domain.Voucher, erro
 		&voucher.TotalAmount,
 		&voucher.Period,
 		&voucher.CreatedBy,
+		&voucher.CompanyID,
 		&voucher.CorrectsVoucherID,
 		&voucher.CorrectedByVoucherID,
 	)
@@ -138,7 +139,7 @@ func (r *voucherRepository) GetVoucherByID(voucherID int) (*domain.Voucher, erro
 
 func (r *voucherRepository) GetVoucherByNumber(companyID int, voucherNumber int) (*domain.Voucher, error) {
 	query := `
-		SELECT voucher_id, voucher_number, date, description, reference, total_amount, period, created_by, corrects_voucher_id, corrected_by_voucher_id
+		SELECT voucher_id, voucher_number, date, description, reference, total_amount, period, created_by, company_id, corrects_voucher_id, corrected_by_voucher_id
 		FROM vouchers
 		WHERE company_id = $1 AND voucher_number = $2
 	`
@@ -152,6 +153,7 @@ func (r *voucherRepository) GetVoucherByNumber(companyID int, voucherNumber int)
 		&voucher.TotalAmount,
 		&voucher.Period,
 		&voucher.CreatedBy,
+		&voucher.CompanyID,
 		&voucher.CorrectsVoucherID,
 		&voucher.CorrectedByVoucherID,
 	)
@@ -166,7 +168,7 @@ func (r *voucherRepository) GetVoucherByNumber(companyID int, voucherNumber int)
 
 func (r *voucherRepository) GetAllVouchers() ([]*domain.Voucher, error) {
 	query := `
-		SELECT voucher_id, voucher_number, date, description, reference, total_amount, period, created_by, corrects_voucher_id, corrected_by_voucher_id
+		SELECT voucher_id, voucher_number, date, description, reference, total_amount, period, created_by, company_id, corrects_voucher_id, corrected_by_voucher_id
 		FROM vouchers
 		ORDER BY voucher_number DESC
 	`
@@ -188,6 +190,7 @@ func (r *voucherRepository) GetAllVouchers() ([]*domain.Voucher, error) {
 			&voucher.TotalAmount,
 			&voucher.Period,
 			&voucher.CreatedBy,
+			&voucher.CompanyID,
 			&voucher.CorrectsVoucherID,
 			&voucher.CorrectedByVoucherID,
 		)
@@ -202,7 +205,7 @@ func (r *voucherRepository) GetAllVouchers() ([]*domain.Voucher, error) {
 
 func (r *voucherRepository) GetVouchersByPeriod(companyID int, period string) ([]*domain.Voucher, error) {
 	query := `
-		SELECT voucher_id, voucher_number, date, description, reference, total_amount, period, created_by, corrects_voucher_id, corrected_by_voucher_id
+		SELECT voucher_id, voucher_number, date, description, reference, total_amount, period, created_by, company_id, corrects_voucher_id, corrected_by_voucher_id
 		FROM vouchers
 		WHERE company_id = $1 AND period = $2
 		ORDER BY voucher_number DESC
@@ -225,6 +228,7 @@ func (r *voucherRepository) GetVouchersByPeriod(companyID int, period string) ([
 			&voucher.TotalAmount,
 			&voucher.Period,
 			&voucher.CreatedBy,
+			&voucher.CompanyID,
 			&voucher.CorrectsVoucherID,
 			&voucher.CorrectedByVoucherID,
 		)
@@ -239,7 +243,7 @@ func (r *voucherRepository) GetVouchersByPeriod(companyID int, period string) ([
 
 func (r *voucherRepository) GetVouchersByCompanyID(companyID int) ([]*domain.Voucher, error) {
 	query := `
-		SELECT voucher_id, voucher_number, date, description, reference, total_amount, period, created_by, corrects_voucher_id, corrected_by_voucher_id
+		SELECT voucher_id, voucher_number, date, description, reference, total_amount, period, created_by, company_id, corrects_voucher_id, corrected_by_voucher_id
 		FROM vouchers
 		WHERE company_id = $1
 		ORDER BY voucher_number DESC
@@ -262,6 +266,7 @@ func (r *voucherRepository) GetVouchersByCompanyID(companyID int) ([]*domain.Vou
 			&voucher.TotalAmount,
 			&voucher.Period,
 			&voucher.CreatedBy,
+			&voucher.CompanyID,
 			&voucher.CorrectsVoucherID,
 			&voucher.CorrectedByVoucherID,
 		)

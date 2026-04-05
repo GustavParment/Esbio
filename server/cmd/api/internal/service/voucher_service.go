@@ -271,6 +271,7 @@ func (s *VoucherService) CreateCorrectionVoucher(originalVoucherID int, userID i
 		TotalAmount: originalVoucher.TotalAmount,
 		Period:      originalVoucher.Period,
 		CreatedBy:   userID,
+		CompanyID:   originalVoucher.CompanyID,
 	}
 
 	// Create the correction voucher in database
@@ -353,6 +354,7 @@ func (s *VoucherService) CreateCorrectionWithChanges(
 		TotalAmount: newTotal,
 		Period:      newPeriod,
 		CreatedBy:   userID,
+		CompanyID:   originalVoucher.CompanyID,
 	}
 
 	// Create the new voucher in database using CreateCorrectionVoucher to link it

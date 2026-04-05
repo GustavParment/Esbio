@@ -56,8 +56,8 @@ VIKTIGT - VAR PROAKTIV:
 - Om kontonummer inte specificeras, välj rätt BAS-konto själv
 
 Vanliga konteringar:
-- Försäljning tjänster 25%% moms: Debet 1930 (totalbelopp), Kredit 3301 (exkl moms), Kredit 2611 (momsbelopp)
-- Försäljning varor 25%% moms: Debet 1930 (totalbelopp), Kredit 3010 (exkl moms), Kredit 2611 (momsbelopp)
+- Försäljning tjänster 25%% moms: Debet 1930 (totalbelopp), Kredit 3301 (exkl moms), Kredit 2612 (momsbelopp) — OBS: 2612 för tjänster, INTE 2611
+- Försäljning varor 25%% moms: Debet 1930 (totalbelopp), Kredit 3010 (exkl moms), Kredit 2611 (momsbelopp) — OBS: 2611 för varor
 - Lokalhyra: Debet 6010 (belopp), Kredit 1930 (belopp)
 - Konsultarvode (kostnad): Debet 6550 (belopp), Kredit 1930 (belopp)
 - Löner: Debet 5010 (belopp), Kredit 1930 (belopp)
@@ -339,6 +339,46 @@ func (s *AgentService) getToolDeclarations() []geminiToolDecl {
 					},
 				},
 				{
+					Name:        "correct_voucher",
+					Description: "Skapa ett rättelseverifikat som reverserar ett befintligt verifikat och sedan skapar ett nytt korrekt verifikat. Används när ett verifikat har fel konto, belopp eller annan information.",
+					Parameters: map[string]interface{}{
+						"type": "object",
+						"properties": map[string]interface{}{
+							"voucher_number": map[string]interface{}{
+								"type":        "integer",
+								"description": "Verifikatnumret som ska rättas (t.ex. 1 för verifikat #1)",
+							},
+							"new_line_items": map[string]interface{}{
+								"type": "array",
+								"items": map[string]interface{}{
+									"type": "object",
+									"properties": map[string]interface{}{
+										"account_no": map[string]interface{}{
+											"type":        "integer",
+											"description": "Kontonummer (BAS)",
+										},
+										"debit_amount": map[string]interface{}{
+											"type":        "number",
+											"description": "Debetbelopp (0 om kredit)",
+										},
+										"credit_amount": map[string]interface{}{
+											"type":        "number",
+											"description": "Kreditbelopp (0 om debet)",
+										},
+										"tax_code": map[string]interface{}{
+											"type":        "integer",
+											"description": "Momskod (25, 12, 6, eller 0)",
+										},
+									},
+									"required": []string{"account_no", "debit_amount", "credit_amount", "tax_code"},
+								},
+								"description": "Nya korrekta konteringsrader",
+							},
+						},
+						"required": []string{"voucher_number", "new_line_items"},
+					},
+				},
+				{
 					Name:        "list_scheduled_tasks",
 					Description: "Lista alla schemalagda uppgifter för en användare",
 					Parameters: map[string]interface{}{
@@ -392,7 +432,7 @@ func (s *AgentService) executeTool(name string, args map[string]interface{}, aut
 		period, _ := args["period"].(string)
 		vouchers, err := s.voucherService.GetVouchersByPeriod(companyID, period)
 		if err != nil {
-			return fmt.Sprintf("Fel: %s", err.Error()), nil
+			return fmt.Sprintf("Fel: %s", sanitizeError(err)), nil
 		}
 		data, _ := json.Marshal(vouchers)
 		return string(data), nil
@@ -400,7 +440,7 @@ func (s *AgentService) executeTool(name string, args map[string]interface{}, aut
 	case "get_user_vouchers":
 		vouchers, err := s.voucherService.GetVouchersByCompanyID(companyID)
 		if err != nil {
-			return fmt.Sprintf("Fel: %s", err.Error()), nil
+			return fmt.Sprintf("Fel: %s", sanitizeError(err)), nil
 		}
 		data, _ := json.Marshal(vouchers)
 		return string(data), nil
@@ -429,7 +469,7 @@ func (s *AgentService) executeTool(name string, args map[string]interface{}, aut
 		}
 
 		if err := s.voucherService.CreateVoucher(voucher); err != nil {
-			return fmt.Sprintf("Fel vid skapande av verifikat: %s", err.Error()), nil
+			return fmt.Sprintf("Fel vid skapande av verifikat: %s", sanitizeError(err)), nil
 		}
 
 		// Create line items
@@ -448,7 +488,7 @@ func (s *AgentService) executeTool(name string, args map[string]interface{}, aut
 					TaxCode:      intFromArg(li["tax_code"]),
 				}
 				if err := s.lineItemService.CreateLineItem(lineItem); err != nil {
-					return fmt.Sprintf("Verifikat #%d skapat men fel vid konteringsrad: %s", voucher.VoucherNumber, err.Error()), nil
+					return fmt.Sprintf("Verifikat #%d skapat men fel vid konteringsrad: %s", voucher.VoucherNumber, sanitizeError(err)), nil
 				}
 			}
 		}
@@ -461,7 +501,7 @@ func (s *AgentService) executeTool(name string, args map[string]interface{}, aut
 		period, _ := args["period"].(string)
 		ledger, err := s.accountService.GetLedger(accountNo, period)
 		if err != nil {
-			return fmt.Sprintf("Fel: %s", err.Error()), nil
+			return fmt.Sprintf("Fel: %s", sanitizeError(err)), nil
 		}
 		data, _ := json.Marshal(ledger)
 		return string(data), nil
@@ -470,7 +510,7 @@ func (s *AgentService) executeTool(name string, args map[string]interface{}, aut
 		query, _ := args["query"].(string)
 		accounts, err := s.accountService.GetAllAccounts()
 		if err != nil {
-			return fmt.Sprintf("Fel: %s", err.Error()), nil
+			return fmt.Sprintf("Fel: %s", sanitizeError(err)), nil
 		}
 		var results []domain.Account
 		q := strings.ToLower(query)
@@ -491,7 +531,7 @@ func (s *AgentService) executeTool(name string, args map[string]interface{}, aut
 		toDate, _ := args["to_date"].(string)
 		statement, err := s.reportService.GetIncomeStatement(fromDate, toDate, companyID)
 		if err != nil {
-			return fmt.Sprintf("Fel: %s", err.Error()), nil
+			return fmt.Sprintf("Fel: %s", sanitizeError(err)), nil
 		}
 		data, _ := json.Marshal(statement)
 		return string(data), nil
@@ -500,7 +540,7 @@ func (s *AgentService) executeTool(name string, args map[string]interface{}, aut
 		asOfDate, _ := args["as_of_date"].(string)
 		sheet, err := s.reportService.GetBalanceSheet(asOfDate, companyID)
 		if err != nil {
-			return fmt.Sprintf("Fel: %s", err.Error()), nil
+			return fmt.Sprintf("Fel: %s", sanitizeError(err)), nil
 		}
 		data, _ := json.Marshal(sheet)
 		return string(data), nil
@@ -528,15 +568,84 @@ func (s *AgentService) executeTool(name string, args map[string]interface{}, aut
 		}
 
 		if err := s.scheduledTaskService.CreateTask(task); err != nil {
-			return fmt.Sprintf("Fel: %s", err.Error()), nil
+			return fmt.Sprintf("Fel: %s", sanitizeError(err)), nil
 		}
 		return fmt.Sprintf("Schemalagd uppgift skapad (ID: %d). '%s' körs den %d:e varje månad.",
 			task.TaskID, description, dayOfMonth), nil
 
+	case "correct_voucher":
+		voucherNumber := intFromArg(args["voucher_number"])
+
+		// 1. Get the original voucher
+		originalVoucher, err := s.voucherService.GetVoucherByNumber(companyID, voucherNumber)
+		if err != nil {
+			return fmt.Sprintf("Fel: Verifikat #%d hittades inte", voucherNumber), nil
+		}
+
+		// 2. Create correction (reversal) via the existing service method
+		correctionVoucher, err := s.voucherService.CreateCorrectionVoucher(originalVoucher.VoucherID, authenticatedUserID)
+		if err != nil {
+			return fmt.Sprintf("Fel vid rättelse: %s", sanitizeError(err)), nil
+		}
+
+		// 3. Create new correct voucher with the provided line items
+		newLineItems, ok := args["new_line_items"].([]interface{})
+		if !ok || len(newLineItems) == 0 {
+			return fmt.Sprintf("Rättelseverifikat #%d skapat (reversering av #%d). Inget nytt verifikat skapades — inga nya konteringsrader angavs.",
+				correctionVoucher.VoucherNumber, voucherNumber), nil
+		}
+
+		// Calculate total amount from new line items
+		var totalAmount float64
+		for _, liRaw := range newLineItems {
+			li, ok := liRaw.(map[string]interface{})
+			if !ok {
+				continue
+			}
+			debit := floatFromArg(li["debit_amount"])
+			if debit > 0 {
+				totalAmount += debit
+			}
+		}
+
+		now := time.Now()
+		newVoucher := &domain.Voucher{
+			Date:        domain.FlexibleDate{Time: now},
+			Description: fmt.Sprintf("Rättelse av verifikat #%d", voucherNumber),
+			Reference:   originalVoucher.Reference,
+			TotalAmount: totalAmount,
+			Period:      fmt.Sprintf("%d-%02d", now.Year(), now.Month()),
+			CreatedBy:   authenticatedUserID,
+			CompanyID:   companyID,
+		}
+
+		if err := s.voucherService.CreateVoucher(newVoucher); err != nil {
+			return fmt.Sprintf("Reversering skapad (#%d) men kunde inte skapa nytt verifikat: %s",
+				correctionVoucher.VoucherNumber, sanitizeError(err)), nil
+		}
+
+		for _, liRaw := range newLineItems {
+			li, ok := liRaw.(map[string]interface{})
+			if !ok {
+				continue
+			}
+			lineItem := &domain.LineItem{
+				VoucherID:    newVoucher.VoucherID,
+				AccountNo:    intFromArg(li["account_no"]),
+				DebitAmount:  floatFromArg(li["debit_amount"]),
+				CreditAmount: floatFromArg(li["credit_amount"]),
+				TaxCode:      intFromArg(li["tax_code"]),
+			}
+			s.lineItemService.CreateLineItem(lineItem)
+		}
+
+		return fmt.Sprintf("Rättelse klar! Verifikat #%d reverserat med verifikat #%d. Nytt korrekt verifikat #%d skapat.",
+			voucherNumber, correctionVoucher.VoucherNumber, newVoucher.VoucherNumber), nil
+
 	case "list_scheduled_tasks":
 		tasks, err := s.scheduledTaskService.GetTasksByCompanyID(companyID)
 		if err != nil {
-			return fmt.Sprintf("Fel: %s", err.Error()), nil
+			return fmt.Sprintf("Fel: %s", sanitizeError(err)), nil
 		}
 		data, _ := json.Marshal(tasks)
 		return string(data), nil
@@ -672,7 +781,7 @@ func (s *AgentService) Chat(userID int, companyID int, conversationID string, us
 			if part.FunctionCall != nil {
 				result, err := s.executeTool(part.FunctionCall.Name, part.FunctionCall.Args, userID, companyID)
 				if err != nil {
-					result = fmt.Sprintf("Fel: %s", err.Error())
+					result = fmt.Sprintf("Fel: %s", sanitizeError(err))
 				}
 
 				responseParts = append(responseParts, geminiPart{
@@ -693,6 +802,30 @@ func (s *AgentService) Chat(userID int, companyID int, conversationID string, us
 	}
 
 	return "Jag kunde inte slutföra uppgiften efter flera försök.", nil
+}
+
+// sanitizeError removes sensitive database/internal details from error messages
+func sanitizeError(err error) string {
+	msg := err.Error()
+	// Don't expose SQL errors, constraint names, or internal details
+	sensitivePatterns := []string{
+		"violates foreign key",
+		"violates unique constraint",
+		"duplicate key",
+		"sql:",
+		"pq:",
+		"failed to scan",
+		"failed to query",
+		"connection refused",
+		"database",
+	}
+	for _, pattern := range sensitivePatterns {
+		if strings.Contains(strings.ToLower(msg), strings.ToLower(pattern)) {
+			log.Printf("[Agent] Sanitized error: %s", msg)
+			return "Ett internt fel uppstod. Försök igen."
+		}
+	}
+	return msg
 }
 
 // Helper functions for Gemini's JSON number handling
