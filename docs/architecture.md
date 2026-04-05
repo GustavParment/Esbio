@@ -119,28 +119,29 @@ Domain-specific modules (`auth.ts`, `vouchers.ts`, `accounts.ts`, etc.) expose t
 7. ProtectedRoute redirects to /auth/login if no session
 ```
 
-## AI Agent
+## Ester AI (Bookkeeping Assistant)
 
-Eskio includes an AI-powered bookkeeping assistant built on the Claude API (Anthropic).
+Eskio includes **Ester AI**, an intelligent bookkeeping assistant powered by Gemini 2.5 Flash (Google).
 
 ```
-User message → Agent Handler → Claude API (with tool definitions)
+User message → Agent Handler → Gemini API (with tool definitions)
                                       │
-                              Claude decides to call tools
+                              Gemini decides to call tools
                                       │
                               Agent executes tools against existing services
+                              (user ID enforced server-side)
                                       │
-                              Result returned to Claude → response to user
+                              Result returned to Gemini → response to user
 ```
 
 **Key components:**
-- **AgentService** — orchestrates Claude API calls with a tool-use loop (max 10 iterations)
+- **AgentService** — orchestrates Gemini API calls with a tool-use loop (max 10 iterations)
 - **10 tools** — wrapping existing services (voucher CRUD, reports, account ledger, scheduled tasks)
 - **SchedulerService** — background goroutine checking for due tasks every 60 seconds
 - **ScheduledTaskService** — CRUD for recurring monthly tasks with next-run calculation
-- **System prompt** — Swedish-language, BAS chart of accounts aware, enforces double-entry rules
+- **System prompt** — Swedish-language, BAS-aware, with security rules against prompt injection
 
-The agent uses direct HTTP calls to the Anthropic API (no SDK dependency).
+**Security:** User ID is enforced server-side on all tool calls. See [ester-ai.md](./ester-ai.md) for full security documentation.
 
 ## Security
 

@@ -98,7 +98,13 @@ func (h *VoucherHandler) GetVouchersByCreatedBy(c *gin.Context) {
 
 // GetAllPeriods handles GET /vouchers/periods
 func (h *VoucherHandler) GetAllPeriods(c *gin.Context) {
-	periods, err := h.voucherService.GetAllPeriods()
+	userID, exists := c.Get("userID")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "user not authenticated"})
+		return
+	}
+
+	periods, err := h.voucherService.GetAllPeriods(userID.(int))
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

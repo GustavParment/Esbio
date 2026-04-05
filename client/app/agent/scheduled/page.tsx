@@ -65,7 +65,7 @@ export default function ScheduledTasksPage() {
             href="/agent"
             className="text-blue-600 hover:text-blue-700 font-medium mb-4 inline-block"
           >
-            &larr; Tillbaka till assistent
+            &larr; Tillbaka till Ester AI
           </Link>
           <h1 className="text-3xl font-bold text-gray-900">Schemalagda uppgifter</h1>
           <p className="text-gray-600 mt-2">
@@ -85,7 +85,7 @@ export default function ScheduledTasksPage() {
           <div className="text-5xl mb-4">📅</div>
           <p className="text-gray-500 mb-4">Inga schemalagda uppgifter</p>
           <p className="text-gray-400 text-sm max-w-md mx-auto">
-            Be assistenten att schemalägga ett verifikat, t.ex. &quot;Skapa konsultarvode varje
+            Be Ester att schemalägga ett verifikat, t.ex. &quot;Skapa konsultarvode varje
             månad den 30:e&quot;
           </p>
           <Link

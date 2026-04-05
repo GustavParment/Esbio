@@ -29,9 +29,14 @@ export default function LoginPage() {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 px-4">
       <div className="max-w-md w-full">
         <div className="bg-white rounded-2xl shadow-xl p-8">
+          {/* Back to landing */}
+          <Link href="/" className="text-blue-600 hover:text-blue-700 font-medium text-sm mb-6 inline-block">
+            &larr; Tillbaka till startsidan
+          </Link>
+
           {/* Logo */}
           <div className="text-center mb-8">
-            <h1 className="text-4xl font-bold text-gray-900 mb-2">📚 Eskio</h1>
+            <img src="/eskio-logo.png" alt="Eskio" className="h-16 mx-auto mb-2" />
             <p className="text-gray-600">Svensk bokföringssystem enligt BAS</p>
           </div>
 

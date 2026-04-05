@@ -5,11 +5,19 @@
 :root {
   --background: #f9fafb;
   --foreground: #171717;
+  --brand: #2D9F83;
+  --brand-hover: #238B72;
+  --brand-light: rgba(45,159,131,0.1);
+  --brand-border: rgba(45,159,131,0.25);
 }
 
 .dark {
   --background: #0a0a0a;
   --foreground: #ededed;
+  --brand: #3DBFA0;
+  --brand-hover: #2D9F83;
+  --brand-light: rgba(61,191,160,0.12);
+  --brand-border: rgba(61,191,160,0.25);
 }
 
 @theme inline {
@@ -25,7 +33,49 @@ body {
   font-family: Arial, Helvetica, sans-serif;
 }
 
-/* Dark mode overrides for common UI patterns */
+/* ============================================
+   GLOBAL COLOR OVERRIDE: blue → brand teal
+   This maps all Tailwind blue-* classes to our teal brand color
+   so we don't need to change every component file.
+   ============================================ */
+
+/* Backgrounds */
+.bg-blue-600 { background-color: var(--brand) !important; }
+.bg-blue-700 { background-color: var(--brand-hover) !important; }
+.bg-blue-500 { background-color: var(--brand) !important; }
+.bg-blue-50 { background-color: var(--brand-light) !important; }
+.bg-blue-100 { background-color: var(--brand-light) !important; }
+.hover\:bg-blue-700:hover { background-color: var(--brand-hover) !important; }
+.hover\:bg-blue-600:hover { background-color: var(--brand) !important; }
+.hover\:bg-blue-50:hover { background-color: var(--brand-light) !important; }
+
+/* Text */
+.text-blue-600 { color: var(--brand) !important; }
+.text-blue-700 { color: var(--brand-hover) !important; }
+.text-blue-500 { color: var(--brand) !important; }
+.text-blue-800 { color: var(--brand-hover) !important; }
+.text-blue-900 { color: var(--brand-hover) !important; }
+.hover\:text-blue-600:hover { color: var(--brand) !important; }
+.hover\:text-blue-700:hover { color: var(--brand-hover) !important; }
+
+/* Borders */
+.border-blue-500 { border-color: var(--brand) !important; }
+.border-blue-200 { border-color: var(--brand-border) !important; }
+.border-blue-300 { border-color: var(--brand-border) !important; }
+.hover\:border-blue-300:hover { border-color: var(--brand-border) !important; }
+
+/* Focus rings */
+.focus\:ring-blue-500:focus { --tw-ring-color: var(--brand) !important; }
+.focus\:ring-blue-600:focus { --tw-ring-color: var(--brand) !important; }
+
+/* Spinners / animations */
+.border-t-blue-500 { border-top-color: var(--brand) !important; }
+.border-b-blue-500 { border-bottom-color: var(--brand) !important; }
+
+/* ============================================
+   DARK MODE OVERRIDES
+   ============================================ */
+
 .dark .bg-white {
   background-color: #111827 !important;
 }
@@ -83,7 +133,7 @@ body {
 .dark input:focus,
 .dark select:focus,
 .dark textarea:focus {
-  border-color: #3b82f6 !important;
+  border-color: var(--brand) !important;
 }
 
 /* Dark mode table headers */
@@ -93,10 +143,6 @@ body {
 }
 
 /* Dark mode colored backgrounds */
-.dark .bg-blue-50 {
-  background-color: #1e293b !important;
-}
-
 .dark .bg-green-50 {
   background-color: #14261a !important;
 }
@@ -109,16 +155,27 @@ body {
   background-color: #2d1f0e !important;
 }
 
-.dark .border-blue-200 {
-  border-color: #1e40af !important;
-}
-
 .dark .border-green-200 {
   border-color: #166534 !important;
 }
 
 .dark .border-red-200 {
   border-color: #991b1b !important;
+}
+
+/* Dark mode table row hover */
+.dark .hover\:bg-gray-50:hover {
+  background-color: #1f2937 !important;
+}
+
+/* Dark mode auth pages background */
+.dark .from-blue-50,
+.dark .from-indigo-50 {
+  --tw-gradient-from: #0a0a0a !important;
+}
+.dark .to-indigo-100,
+.dark .to-blue-100 {
+  --tw-gradient-to: #0a0a0a !important;
 }
 
 /* Dark mode shadows */
@@ -128,8 +185,3 @@ body {
   box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.4), 0 1px 2px -1px rgb(0 0 0 / 0.4) !important;
 }
 
-/* Dark mode login/register page */
-.dark .bg-gradient-to-br {
-  background-image: none !important;
-  background-color: #0a0a0a !important;
-}

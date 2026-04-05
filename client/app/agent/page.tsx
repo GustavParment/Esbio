@@ -16,7 +16,7 @@ export default function AgentPage() {
   const [loading, setLoading] = useState(false);
   const [conversationId, setConversationId] = useState<string>("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLTextAreaElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -25,6 +25,28 @@ export default function AgentPage() {
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  // Handle mobile keyboard - resize container to fit visible area
+  const containerRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const viewport = window.visualViewport;
+    if (!viewport) return;
+
+    const handleResize = () => {
+      if (containerRef.current) {
+        const offsetTop = containerRef.current.getBoundingClientRect().top;
+        const availableHeight = viewport.height - offsetTop;
+        containerRef.current.style.height = `${availableHeight - 16}px`;
+      }
+    };
+
+    viewport.addEventListener("resize", handleResize);
+    viewport.addEventListener("scroll", handleResize);
+    return () => {
+      viewport.removeEventListener("resize", handleResize);
+      viewport.removeEventListener("scroll", handleResize);
+    };
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -47,19 +69,12 @@ export default function AgentPage() {
         ...prev,
         {
           role: "assistant",
-          content: "Fel: Kunde inte kommunicera med agenten. Kontrollera att GEMINI_API_KEY är konfigurerad.",
+          content: "Fel: Kunde inte kommunicera med Ester AI. Kontrollera att GEMINI_API_KEY är konfigurerad.",
         },
       ]);
     } finally {
       setLoading(false);
       inputRef.current?.focus();
-    }
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      handleSubmit(e);
     }
   };
 
@@ -71,11 +86,11 @@ export default function AgentPage() {
 
   return (
     <DashboardLayout>
-      <div className="flex flex-col h-[calc(100vh-10rem)] md:h-[calc(100vh-8rem)]">
+      <div ref={containerRef} className="flex flex-col" style={{ height: "calc(100dvh - 10rem)" }}>
         {/* Header */}
-        <div className="mb-4">
-          <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Assistent</h1>
-          <p className="text-gray-600 text-sm mt-1">AI-driven bokföringsassistent</p>
+        <div className="mb-3 shrink-0">
+          <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Ester AI</h1>
+          <p className="text-gray-600 text-sm mt-1">Din intelligenta bokföringsassistent</p>
           <div className="grid grid-cols-2 gap-3 mt-3">
             <button
               onClick={startNewConversation}
@@ -93,18 +108,15 @@ export default function AgentPage() {
         </div>
 
         {/* Messages */}
-        <div className="flex-1 overflow-y-auto bg-white rounded-xl shadow-sm border border-gray-200 p-4 mb-4">
+        <div className="flex-1 min-h-0 overflow-y-auto bg-white rounded-xl shadow-sm border border-gray-200 p-4 mb-3">
           {messages.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-full text-center">
-              <div className="text-5xl mb-4">🤖</div>
-              <h2 className="text-xl font-semibold text-gray-900 mb-2">
-                Hej! Jag är din bokföringsassistent.
-              </h2>
-              <p className="text-gray-500 max-w-md mb-6">
+            <div className="flex flex-col items-center justify-center h-full text-center px-2">
+              <img src="/ester-banner.png" alt="Ester AI" className="w-24 h-24 rounded-full mb-4" />
+              <p className="text-gray-500 text-sm max-w-md mb-6">
                 Jag kan hjälpa dig att skapa verifikat, visa rapporter, kontrollera saldon och
                 schemalägga återkommande bokföringar.
               </p>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-w-lg">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-2 w-full max-w-lg">
                 {[
                   "Visa resultaträkning för 2025",
                   "Skapa ett konsultarvode på 50 000 kr inkl moms",
@@ -129,8 +141,11 @@ export default function AgentPage() {
               {messages.map((msg, idx) => (
                 <div
                   key={idx}
-                  className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
+                  className={`flex items-end gap-2 ${msg.role === "user" ? "justify-end" : "justify-start"}`}
                 >
+                  {msg.role === "assistant" && (
+                    <img src="/ester-banner.png" alt="Ester" className="w-7 h-7 rounded-full shrink-0" />
+                  )}
                   <div
                     className={`max-w-[80%] rounded-2xl px-4 py-3 ${
                       msg.role === "user"
@@ -159,16 +174,17 @@ export default function AgentPage() {
         </div>
 
         {/* Input */}
-        <form onSubmit={handleSubmit} className="flex gap-2 md:gap-3 pb-2">
-          <textarea
+        <form onSubmit={handleSubmit} className="flex gap-2 shrink-0 pb-1">
+          <input
             ref={inputRef}
+            type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            onKeyDown={handleKeyDown}
             placeholder="Skriv ett meddelande..."
-            rows={1}
-            className="flex-1 min-w-0 px-3 md:px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 placeholder:text-gray-400 resize-none text-sm md:text-base"
+            className="flex-1 min-w-0 px-3 md:px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 placeholder:text-gray-400 text-base"
+            style={{ fontSize: "16px" }}
             disabled={loading}
+            autoComplete="off"
           />
           <button
             type="submit"

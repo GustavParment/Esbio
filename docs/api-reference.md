@@ -229,9 +229,9 @@ Returns VAT (moms) breakdown by tax rate for revenue accounts (3000-3999):
 
 ---
 
-## Agent
+## Ester AI (Agent)
 
-The agent is an AI-powered bookkeeping assistant that can create vouchers, look up accounts, generate reports, and schedule recurring tasks.
+Ester AI is Eskio's intelligent bookkeeping assistant. She can create vouchers, look up accounts, generate reports, and schedule recurring tasks. See [ester-ai.md](./ester-ai.md) for full documentation including security model.
 
 Requires the `ANTHROPIC_API_KEY` environment variable to be set in `server/cmd/.env`.
 

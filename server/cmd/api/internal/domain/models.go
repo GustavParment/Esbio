@@ -38,11 +38,13 @@ func (fd FlexibleDate) MarshalJSON() ([]byte, error) {
 }
 
 type User struct {
-    UserID      int    `json:"user_id" validate:"omitempty,gt=0"`     // Unikt ID
-    Name        string `json:"name" validate:"required,min=2,max=100"`        // Användarens fullständiga namn
-    Email       string `json:"email" validate:"required,email"`       // E-post (unikt)
-    PasswordHash string `json:"password_hash" validate:"required,min=8"` // Krypterat lösenord
-    Role        string `json:"role" validate:"omitempty,oneof=Admin Bookkeeper Manager"`        // T.ex. "Admin", "Bookkeeper"
+    UserID       int    `json:"user_id" validate:"omitempty,gt=0"`
+    FirstName    string `json:"first_name" validate:"required,min=1,max=50"`
+    LastName     string `json:"last_name" validate:"required,min=1,max=50"`
+    Name         string `json:"name"`                                          // Computed: FirstName + LastName
+    Email        string `json:"email" validate:"required,email"`
+    PasswordHash string `json:"password_hash" validate:"required,min=8"`
+    Role         string `json:"role" validate:"omitempty,oneof=Admin Bookkeeper Manager"`
 }
 
 type Account struct {

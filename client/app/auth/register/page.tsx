@@ -6,7 +6,8 @@ import Link from "next/link";
 
 export default function RegisterPage() {
   const { register } = useAuth();
-  const [name, setName] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -22,8 +23,8 @@ export default function RegisterPage() {
       return;
     }
 
-    if (password.length < 6) {
-      setError("Lösenordet måste vara minst 6 tecken långt");
+    if (password.length < 8) {
+      setError("Lösenordet måste vara minst 8 tecken långt");
       return;
     }
 
@@ -31,7 +32,7 @@ export default function RegisterPage() {
 
     try {
       // Default role is "Bookkeeper" - admins can change this later
-      await register({ name, email, password, role: "Bookkeeper" });
+      await register({ name: `${firstName} ${lastName}`, email, password, role: "Bookkeeper" });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Registrering misslyckades");
     } finally {
@@ -43,27 +44,48 @@ export default function RegisterPage() {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 px-4 py-12">
       <div className="max-w-md w-full">
         <div className="bg-white rounded-2xl shadow-xl p-8">
+          {/* Back to login */}
+          <Link href="/auth/login" className="text-blue-600 hover:text-blue-700 font-medium text-sm mb-6 inline-block">
+            &larr; Tillbaka till inloggning
+          </Link>
+
           {/* Logo */}
           <div className="text-center mb-8">
-            <h1 className="text-4xl font-bold text-gray-900 mb-2">📚 Eskio</h1>
+            <img src="/eskio-logo.png" alt="Eskio" className="h-16 mx-auto mb-2" />
             <p className="text-gray-600">Skapa ett nytt konto</p>
           </div>
 
           {/* Register form */}
           <form onSubmit={handleSubmit} className="space-y-5">
-            <div>
-              <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
-                Namn
-              </label>
-              <input
-                id="name"
-                type="text"
-                required
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-gray-900 placeholder:text-gray-400"
-                placeholder="Ditt namn"
-              />
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 mb-2">
+                  Förnamn
+                </label>
+                <input
+                  id="firstName"
+                  type="text"
+                  required
+                  value={firstName}
+                  onChange={(e) => setFirstName(e.target.value)}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-gray-900 placeholder:text-gray-400"
+                  placeholder="Förnamn"
+                />
+              </div>
+              <div>
+                <label htmlFor="lastName" className="block text-sm font-medium text-gray-700 mb-2">
+                  Efternamn
+                </label>
+                <input
+                  id="lastName"
+                  type="text"
+                  required
+                  value={lastName}
+                  onChange={(e) => setLastName(e.target.value)}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-gray-900 placeholder:text-gray-400"
+                  placeholder="Efternamn"
+                />
+              </div>
             </div>
 
             <div>
@@ -126,15 +148,6 @@ export default function RegisterPage() {
             </button>
           </form>
 
-          {/* Login link */}
-          <div className="mt-6 text-center">
-            <p className="text-sm text-gray-600">
-              Har du redan ett konto?{" "}
-              <Link href="/auth/login" className="text-blue-600 hover:text-blue-700 font-medium">
-                Logga in här
-              </Link>
-            </p>
-          </div>
         </div>
       </div>
     </div>

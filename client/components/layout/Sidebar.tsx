@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/lib/contexts/AuthContext";
 import { useTheme } from "@/lib/contexts/ThemeContext";
@@ -11,7 +12,7 @@ const navigation = [
   { name: "Verifikat", href: "/vouchers", icon: "📝" },
   { name: "Konton", href: "/accounts", icon: "💰" },
   { name: "Rapporter", href: "/reports", icon: "📈" },
-  { name: "Assistent", href: "/agent", icon: "🤖" },
+  { name: "Ester AI", href: "/agent", icon: "ester" },
 ];
 
 const adminNavigation = [
@@ -29,12 +30,12 @@ export default function Sidebar() {
   return (
     <>
       {/* Mobile menu button */}
-      <div className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-gray-900 border-b border-gray-800">
+      <div className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-[#0B1514] border-b border-[rgba(255,255,255,0.06)]">
         <div className="flex items-center justify-between px-4 py-3">
-          <h1 className="text-lg font-bold text-white">📚 Eskio</h1>
+          <img src="/eskio-logo.png" alt="Eskio" className="h-8" />
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="text-white p-2 hover:bg-gray-800 rounded-md"
+            className="text-white p-3 hover:bg-[#142421] rounded-md text-2xl outline-none focus:outline-none"
           >
             {mobileMenuOpen ? "✕" : "☰"}
           </button>
@@ -52,14 +53,14 @@ export default function Sidebar() {
       {/* Sidebar */}
       <div className={`
         fixed lg:static inset-y-0 left-0 z-40
-        flex h-full w-64 flex-col bg-gray-900
+        flex h-full w-64 flex-col bg-[#0B1514]
         transform transition-transform duration-200 ease-in-out
         ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
         lg:pt-0 pt-16
       `}>
       {/* Logo - hidden on mobile (shown in top bar instead) */}
-      <div className="hidden lg:flex h-16 items-center px-6 bg-gray-800">
-        <h1 className="text-xl font-bold text-white">📚 Eskio</h1>
+      <div className="hidden lg:flex h-16 items-center px-6 bg-[#0F1D1A]">
+        <img src="/eskio-logo.png" alt="Eskio" className="h-10" />
       </div>
 
       {/* Navigation */}
@@ -71,11 +72,15 @@ export default function Sidebar() {
             onClick={() => setMobileMenuOpen(false)}
             className={`flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors ${
               isActive(item.href)
-                ? "bg-gray-800 text-white"
-                : "text-gray-300 hover:bg-gray-800 hover:text-white"
+                ? "bg-[var(--brand-light)] text-[var(--brand)]"
+                : "text-gray-300 hover:bg-[#142421] hover:text-white"
             }`}
           >
-            <span className="mr-3 text-lg">{item.icon}</span>
+            {item.icon === "ester" ? (
+              <Image src="/ester-banner.png" alt="Ester AI" width={24} height={24} className="mr-3 rounded-full" />
+            ) : (
+              <span className="mr-3 text-lg">{item.icon}</span>
+            )}
             {item.name}
           </Link>
         ))}
@@ -95,8 +100,8 @@ export default function Sidebar() {
                 onClick={() => setMobileMenuOpen(false)}
                 className={`flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors ${
                   isActive(item.href)
-                    ? "bg-gray-800 text-white"
-                    : "text-gray-300 hover:bg-gray-800 hover:text-white"
+                    ? "bg-[var(--brand-light)] text-[var(--brand)]"
+                    : "text-gray-300 hover:bg-[#142421] hover:text-white"
                 }`}
               >
                 <span className="mr-3 text-lg">{item.icon}</span>
@@ -111,7 +116,7 @@ export default function Sidebar() {
       <div className="px-3 pb-2">
         <button
           onClick={toggleTheme}
-          className="flex items-center w-full px-3 py-2 text-sm font-medium rounded-md text-gray-300 hover:bg-gray-800 hover:text-white transition-colors"
+          className="flex items-center w-full px-3 py-2 text-sm font-medium rounded-md text-gray-300 hover:bg-[#142421] hover:text-white transition-colors"
         >
           <span className="mr-3 text-lg">{theme === "dark" ? "☀️" : "🌙"}</span>
           {theme === "dark" ? "Ljust läge" : "Mörkt läge"}
@@ -119,7 +124,7 @@ export default function Sidebar() {
       </div>
 
       {/* User section */}
-      <div className="border-t border-gray-800 p-4">
+      <div className="border-t border-[rgba(255,255,255,0.06)] p-4">
         <div className="flex items-center">
           <div className="flex-shrink-0">
             <div className="h-10 w-10 rounded-full bg-gray-700 flex items-center justify-center">

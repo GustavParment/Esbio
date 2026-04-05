@@ -6,6 +6,7 @@ import (
 	"cmd/api/internal/dto"
 	"cmd/api/internal/service"
 	"net/http"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"golang.org/x/crypto/bcrypt"
@@ -34,8 +35,18 @@ func (h *AuthHandler) Register(c *gin.Context) {
 		return
 	}
 
+	// Support both old (name) and new (first_name + last_name) format
+	firstName := req.FirstName
+	lastName := req.LastName
+	if firstName == "" && lastName == "" && req.Name != "" {
+		parts := splitName(req.Name)
+		firstName = parts[0]
+		lastName = parts[1]
+	}
+
 	user := &domain.User{
-		Name:         req.Name,
+		FirstName:    firstName,
+		LastName:     lastName,
 		Email:        req.Email,
 		PasswordHash: req.Password,
 		Role:         "Bookkeeper",
@@ -183,4 +194,12 @@ func (h *AuthHandler) GetCurrentUser(c *gin.Context) {
 	user.PasswordHash = ""
 
 	c.JSON(http.StatusOK, user)
+}
+
+func splitName(name string) [2]string {
+	parts := strings.SplitN(strings.TrimSpace(name), " ", 2)
+	if len(parts) == 2 {
+		return [2]string{parts[0], parts[1]}
+	}
+	return [2]string{parts[0], ""}
 }

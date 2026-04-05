@@ -13,7 +13,7 @@ type VoucherRepository interface {
 	GetAllVouchers() ([]*domain.Voucher, error)
 	GetVouchersByPeriod(period string) ([]*domain.Voucher, error)
 	GetVouchersByCreatedBy(userID int) ([]*domain.Voucher, error)
-	GetAllPeriods() ([]string, error)
+	GetAllPeriods(userID int) ([]string, error)
 	UpdateVoucher(voucher *domain.Voucher) error
 	DeleteVoucher(voucherID int) error
 	MarkVoucherAsCorrected(voucherID int, correctedByID int) error
@@ -28,33 +28,55 @@ func NewVoucherRepository(db *sql.DB) VoucherRepository {
 }
 
 func (r *voucherRepository) CreateVoucher(voucher *domain.Voucher) error {
+	// Calculate per-user voucher number
+	var nextNumber int
+	err := r.db.QueryRow(
+		"SELECT COALESCE(MAX(voucher_number), 0) + 1 FROM vouchers WHERE created_by = $1",
+		voucher.CreatedBy,
+	).Scan(&nextNumber)
+	if err != nil {
+		return fmt.Errorf("failed to get next voucher number: %w", err)
+	}
+
 	query := `
-		INSERT INTO vouchers (date, description, reference, total_amount, period, created_by)
-		VALUES ($1, $2, $3, $4, $5, $6)
-		RETURNING voucher_id, voucher_number
+		INSERT INTO vouchers (date, description, reference, total_amount, period, created_by, voucher_number)
+		VALUES ($1, $2, $3, $4, $5, $6, $7)
+		RETURNING voucher_id
 	`
-	err := r.db.QueryRow(query,
+	err = r.db.QueryRow(query,
 		voucher.Date.Time,
 		voucher.Description,
 		voucher.Reference,
 		voucher.TotalAmount,
 		voucher.Period,
 		voucher.CreatedBy,
-	).Scan(&voucher.VoucherID, &voucher.VoucherNumber)
+		nextNumber,
+	).Scan(&voucher.VoucherID)
 	if err != nil {
 		return fmt.Errorf("failed to create voucher: %w", err)
 	}
+	voucher.VoucherNumber = nextNumber
 
 	return nil
 }
 
 func (r *voucherRepository) CreateCorrectionVoucher(voucher *domain.Voucher, originalVoucherID int) error {
+	// Calculate per-user voucher number
+	var nextNumber int
+	err := r.db.QueryRow(
+		"SELECT COALESCE(MAX(voucher_number), 0) + 1 FROM vouchers WHERE created_by = $1",
+		voucher.CreatedBy,
+	).Scan(&nextNumber)
+	if err != nil {
+		return fmt.Errorf("failed to get next voucher number: %w", err)
+	}
+
 	query := `
-		INSERT INTO vouchers (date, description, reference, total_amount, period, created_by, corrects_voucher_id)
-		VALUES ($1, $2, $3, $4, $5, $6, $7)
-		RETURNING voucher_id, voucher_number
+		INSERT INTO vouchers (date, description, reference, total_amount, period, created_by, corrects_voucher_id, voucher_number)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+		RETURNING voucher_id
 	`
-	err := r.db.QueryRow(query,
+	err = r.db.QueryRow(query,
 		voucher.Date.Time,
 		voucher.Description,
 		voucher.Reference,
@@ -62,10 +84,12 @@ func (r *voucherRepository) CreateCorrectionVoucher(voucher *domain.Voucher, ori
 		voucher.Period,
 		voucher.CreatedBy,
 		originalVoucherID,
-	).Scan(&voucher.VoucherID, &voucher.VoucherNumber)
+		nextNumber,
+	).Scan(&voucher.VoucherID)
 	if err != nil {
 		return fmt.Errorf("failed to create correction voucher: %w", err)
 	}
+	voucher.VoucherNumber = nextNumber
 	voucher.CorrectsVoucherID = &originalVoucherID
 
 	return nil
@@ -223,14 +247,14 @@ func (r *voucherRepository) GetVouchersByCreatedBy(userID int) ([]*domain.Vouche
 	return vouchers, nil
 }
 
-func (r *voucherRepository) GetAllPeriods() ([]string, error) {
+func (r *voucherRepository) GetAllPeriods(userID int) ([]string, error) {
 	query := `
 		SELECT DISTINCT period
 		FROM vouchers
-		WHERE period IS NOT NULL AND period != ''
+		WHERE period IS NOT NULL AND period != '' AND created_by = $1
 		ORDER BY period DESC
 	`
-	rows, err := r.db.Query(query)
+	rows, err := r.db.Query(query, userID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get periods: %w", err)
 	}

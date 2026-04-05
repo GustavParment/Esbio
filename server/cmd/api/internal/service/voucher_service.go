@@ -119,9 +119,9 @@ func (s *VoucherService) GetVouchersByCreatedBy(userID int) ([]*domain.Voucher, 
 	return vouchers, nil
 }
 
-// GetAllPeriods retrieves all unique periods from vouchers
-func (s *VoucherService) GetAllPeriods() ([]string, error) {
-	periods, err := s.repository.GetAllPeriods()
+// GetAllPeriods retrieves all unique periods from vouchers for a specific user
+func (s *VoucherService) GetAllPeriods(userID int) ([]string, error) {
+	periods, err := s.repository.GetAllPeriods(userID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get periods: %w", err)
 	}

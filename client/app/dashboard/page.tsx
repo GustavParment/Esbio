@@ -151,29 +151,32 @@ export default function DashboardPage() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <Link
           href="/vouchers/new"
-          className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-lg p-6 text-white hover:shadow-xl transition-shadow"
+          className="rounded-xl shadow-lg p-6 text-white hover:shadow-xl transition-shadow"
+          style={{ background: "linear-gradient(135deg, #2D9F83, #238B72)" }}
         >
           <div className="text-3xl mb-3">📝</div>
           <h3 className="text-lg font-semibold mb-2">Nytt verifikat</h3>
-          <p className="text-blue-100 text-sm">Skapa ett nytt bokföringsverifikat</p>
+          <p className="text-sm opacity-80">Skapa ett nytt bokföringsverifikat</p>
         </Link>
 
         <Link
           href="/accounts"
-          className="bg-gradient-to-br from-green-500 to-green-600 rounded-xl shadow-lg p-6 text-white hover:shadow-xl transition-shadow"
+          className="rounded-xl shadow-lg p-6 text-white hover:shadow-xl transition-shadow"
+          style={{ background: "linear-gradient(135deg, #1A6B5A, #145248)" }}
         >
           <div className="text-3xl mb-3">💰</div>
           <h3 className="text-lg font-semibold mb-2">Kontoplanen</h3>
-          <p className="text-green-100 text-sm">Visa och hantera kontoplanen</p>
+          <p className="text-sm opacity-80">Visa och hantera kontoplanen</p>
         </Link>
 
         <Link
           href="/reports"
-          className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl shadow-lg p-6 text-white hover:shadow-xl transition-shadow"
+          className="rounded-xl shadow-lg p-6 text-white hover:shadow-xl transition-shadow"
+          style={{ background: "linear-gradient(135deg, #0F4D40, #0B3B31)" }}
         >
           <div className="text-3xl mb-3">📈</div>
           <h3 className="text-lg font-semibold mb-2">Rapporter</h3>
-          <p className="text-purple-100 text-sm">Visa finansiella rapporter</p>
+          <p className="text-sm opacity-80">Visa finansiella rapporter</p>
         </Link>
       </div>
     </DashboardLayout>

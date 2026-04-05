@@ -4,7 +4,8 @@
 -- Migration 001: Create users table
 CREATE TABLE IF NOT EXISTS users (
     user_id SERIAL PRIMARY KEY,
-    name VARCHAR(100) NOT NULL,
+    first_name VARCHAR(50) NOT NULL,
+    last_name VARCHAR(50) NOT NULL,
     email VARCHAR(255) UNIQUE NOT NULL,
     password_hash VARCHAR(255) NOT NULL,
     role VARCHAR(50) NOT NULL DEFAULT 'Bookkeeper',
@@ -30,11 +31,9 @@ CREATE INDEX idx_accounts_group ON accounts(account_group);
 CREATE INDEX idx_accounts_type ON accounts(type);
 
 -- Migration 003: Create vouchers table
-CREATE SEQUENCE IF NOT EXISTS vouchers_number_seq START 1;
-
 CREATE TABLE IF NOT EXISTS vouchers (
     voucher_id SERIAL PRIMARY KEY,
-    voucher_number INTEGER NOT NULL UNIQUE DEFAULT nextval('vouchers_number_seq'),
+    voucher_number INTEGER NOT NULL,
     date DATE NOT NULL,
     description TEXT NOT NULL,
     reference VARCHAR(255),
@@ -54,6 +53,7 @@ CREATE INDEX idx_vouchers_period ON vouchers(period);
 CREATE INDEX idx_vouchers_created_by ON vouchers(created_by);
 CREATE INDEX idx_vouchers_date ON vouchers(date);
 CREATE INDEX idx_vouchers_number ON vouchers(voucher_number);
+ALTER TABLE vouchers ADD CONSTRAINT vouchers_user_number_unique UNIQUE (created_by, voucher_number);
 
 -- Migration 004: Create line_items table
 CREATE TABLE IF NOT EXISTS line_items (
@@ -80,9 +80,9 @@ CREATE INDEX idx_line_items_account ON line_items(account_no);
 
 -- Insert default users
 -- Password for both users is: Password123
-INSERT INTO users (name, email, password_hash, role) VALUES
-('Admin', 'admin@eskio.se', '$2a$10$Cs8h5LLIFMsFN3rWiR0zp.CCFrkzc1.3Kn6IY5QLNVqjx6sx6Srn6', 'Admin'),
-('Test User', 'test@gmail.com', '$2a$10$Cs8h5LLIFMsFN3rWiR0zp.CCFrkzc1.3Kn6IY5QLNVqjx6sx6Srn6', 'Bookkeeper');
+INSERT INTO users (first_name, last_name, email, password_hash, role) VALUES
+('Admin', 'Eskio', 'admin@eskio.se', '$2a$10$Cs8h5LLIFMsFN3rWiR0zp.CCFrkzc1.3Kn6IY5QLNVqjx6sx6Srn6', 'Admin'),
+('Test', 'User', 'test@gmail.com', '$2a$10$Cs8h5LLIFMsFN3rWiR0zp.CCFrkzc1.3Kn6IY5QLNVqjx6sx6Srn6', 'Bookkeeper');
 
 -- Insert standard Swedish BAS accounts
 INSERT INTO accounts (account_no, account_name, account_group, tax_standard, type, standard_side) VALUES

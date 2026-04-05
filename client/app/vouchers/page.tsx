@@ -12,10 +12,7 @@ export default function VouchersPage() {
   const [vouchers, setVouchers] = useState<Voucher[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
-  const [currentPeriod, setCurrentPeriod] = useState(() => {
-    const now = new Date();
-    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
-  });
+  const [currentPeriod, setCurrentPeriod] = useState("");
   const [availablePeriods, setAvailablePeriods] = useState<string[]>([]);
 
   // Fetch available periods on mount
@@ -128,6 +125,7 @@ export default function VouchersPage() {
               onChange={(e) => setCurrentPeriod(e.target.value)}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
             >
+              <option value="">Alla perioder</option>
               {availablePeriods.map((period) => (
                 <option key={period} value={period}>
                   {new Date(period + "-01").toLocaleDateString("sv-SE", {
