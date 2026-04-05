@@ -10,6 +10,7 @@ type VoucherRepository interface {
 	CreateVoucher(voucher *domain.Voucher) error
 	CreateCorrectionVoucher(voucher *domain.Voucher, originalVoucherID int) error
 	GetVoucherByID(voucherID int) (*domain.Voucher, error)
+	GetVoucherByNumber(userID int, voucherNumber int) (*domain.Voucher, error)
 	GetAllVouchers() ([]*domain.Voucher, error)
 	GetVouchersByPeriod(period string) ([]*domain.Voucher, error)
 	GetVouchersByCreatedBy(userID int) ([]*domain.Voucher, error)
@@ -130,6 +131,34 @@ func (r *voucherRepository) GetVoucherByID(voucherID int) (*domain.Voucher, erro
 		return nil, fmt.Errorf("failed to get voucher: %w", err)
 	}
 
+	return voucher, nil
+}
+
+func (r *voucherRepository) GetVoucherByNumber(userID int, voucherNumber int) (*domain.Voucher, error) {
+	query := `
+		SELECT voucher_id, voucher_number, date, description, reference, total_amount, period, created_by, corrects_voucher_id, corrected_by_voucher_id
+		FROM vouchers
+		WHERE created_by = $1 AND voucher_number = $2
+	`
+	voucher := &domain.Voucher{}
+	err := r.db.QueryRow(query, userID, voucherNumber).Scan(
+		&voucher.VoucherID,
+		&voucher.VoucherNumber,
+		&voucher.Date.Time,
+		&voucher.Description,
+		&voucher.Reference,
+		&voucher.TotalAmount,
+		&voucher.Period,
+		&voucher.CreatedBy,
+		&voucher.CorrectsVoucherID,
+		&voucher.CorrectedByVoucherID,
+	)
+	if err == sql.ErrNoRows {
+		return nil, fmt.Errorf("voucher not found")
+	}
+	if err != nil {
+		return nil, fmt.Errorf("failed to get voucher: %w", err)
+	}
 	return voucher, nil
 }
 

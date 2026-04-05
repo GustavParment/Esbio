@@ -134,16 +134,16 @@ func (s *AgentService) getToolDeclarations() []geminiToolDecl {
 			FunctionDeclarations: []geminiFunction{
 				{
 					Name:        "get_voucher",
-					Description: "Hämta ett verifikat med dess konteringsrader baserat på verifikat-ID",
+					Description: "Hämta ett verifikat med dess konteringsrader baserat på verifikatnummer (#1, #2, etc.). Använd detta när användaren refererar till ett verifikat med nummer.",
 					Parameters: map[string]interface{}{
 						"type": "object",
 						"properties": map[string]interface{}{
-							"voucher_id": map[string]interface{}{
+							"voucher_number": map[string]interface{}{
 								"type":        "integer",
-								"description": "Verifikatets ID",
+								"description": "Verifikatnummer (t.ex. 1 för verifikat #1)",
 							},
 						},
-						"required": []string{"voucher_id"},
+						"required": []string{"voucher_number"},
 					},
 				},
 				{
@@ -367,24 +367,12 @@ func (s *AgentService) executeTool(name string, args map[string]interface{}, aut
 		}
 	}
 
-	// Convert args to JSON for consistent parsing
-	input, _ := json.Marshal(args)
-
 	switch name {
 	case "get_voucher":
-		var params struct {
-			VoucherID int `json:"voucher_id"`
-		}
-		json.Unmarshal(input, &params)
-		// Handle float -> int from Gemini
-		if params.VoucherID == 0 {
-			if v, ok := args["voucher_id"].(float64); ok {
-				params.VoucherID = int(v)
-			}
-		}
-		voucher, err := s.voucherService.GetVoucherByID(params.VoucherID)
+		voucherNumber := intFromArg(args["voucher_number"])
+		voucher, err := s.voucherService.GetVoucherByNumber(authenticatedUserID, voucherNumber)
 		if err != nil {
-			return fmt.Sprintf("Fel: %s", err.Error()), nil
+			return fmt.Sprintf("Fel: Verifikat #%d hittades inte", voucherNumber), nil
 		}
 		data, _ := json.Marshal(voucher)
 		return string(data), nil
@@ -490,7 +478,7 @@ func (s *AgentService) executeTool(name string, args map[string]interface{}, aut
 	case "get_income_statement":
 		fromDate, _ := args["from_date"].(string)
 		toDate, _ := args["to_date"].(string)
-		statement, err := s.reportService.GetIncomeStatement(fromDate, toDate)
+		statement, err := s.reportService.GetIncomeStatement(fromDate, toDate, authenticatedUserID)
 		if err != nil {
 			return fmt.Sprintf("Fel: %s", err.Error()), nil
 		}
@@ -499,7 +487,7 @@ func (s *AgentService) executeTool(name string, args map[string]interface{}, aut
 
 	case "get_balance_sheet":
 		asOfDate, _ := args["as_of_date"].(string)
-		sheet, err := s.reportService.GetBalanceSheet(asOfDate)
+		sheet, err := s.reportService.GetBalanceSheet(asOfDate, authenticatedUserID)
 		if err != nil {
 			return fmt.Sprintf("Fel: %s", err.Error()), nil
 		}
@@ -547,7 +535,7 @@ func (s *AgentService) executeTool(name string, args map[string]interface{}, aut
 	}
 }
 
-func (s *AgentService) Chat(userID int, conversationID string, userMessage string) (string, error) {
+func (s *AgentService) Chat(userID int, conversationID string, userMessage string, history []domain.AgentMessage) (string, error) {
 	if s.apiKey == "" {
 		return "", fmt.Errorf("GEMINI_API_KEY is not configured")
 	}
@@ -557,12 +545,23 @@ func (s *AgentService) Chat(userID int, conversationID string, userMessage strin
 	periodStr := fmt.Sprintf("%d-%02d", now.Year(), now.Month())
 	systemPrompt := fmt.Sprintf(systemPromptTemplate, todayStr, periodStr, userID)
 
-	contents := []geminiContent{
-		{
-			Role:  "user",
-			Parts: []geminiPart{{Text: userMessage}},
-		},
+	// Build contents with conversation history
+	var contents []geminiContent
+	for _, msg := range history {
+		role := "user"
+		if msg.Role == "assistant" {
+			role = "model"
+		}
+		contents = append(contents, geminiContent{
+			Role:  role,
+			Parts: []geminiPart{{Text: msg.Content}},
+		})
 	}
+	// Add current message
+	contents = append(contents, geminiContent{
+		Role:  "user",
+		Parts: []geminiPart{{Text: userMessage}},
+	})
 
 	// Tool use loop
 	for i := 0; i < 10; i++ {

@@ -7,9 +7,9 @@ import (
 )
 
 type ReportRepository interface {
-	GetIncomeStatement(fromDate, toDate string) (*domain.IncomeStatement, error)
-	GetBalanceSheet(asOfDate string) (*domain.BalanceSheet, error)
-	GetVATReport(fromDate, toDate string) (*domain.VATReport, error)
+	GetIncomeStatement(fromDate, toDate string, userID int) (*domain.IncomeStatement, error)
+	GetBalanceSheet(asOfDate string, userID int) (*domain.BalanceSheet, error)
+	GetVATReport(fromDate, toDate string, userID int) (*domain.VATReport, error)
 }
 
 type reportRepository struct {
@@ -20,7 +20,7 @@ func NewReportRepository(db *sql.DB) ReportRepository {
 	return &reportRepository{db: db}
 }
 
-func (r *reportRepository) GetIncomeStatement(fromDate, toDate string) (*domain.IncomeStatement, error) {
+func (r *reportRepository) GetIncomeStatement(fromDate, toDate string, userID int) (*domain.IncomeStatement, error) {
 	query := `
 		SELECT
 			a.account_no,
@@ -33,13 +33,14 @@ func (r *reportRepository) GetIncomeStatement(fromDate, toDate string) (*domain.
 		WHERE v.date >= $1
 		  AND v.date <= $2
 		  AND v.corrected_by_voucher_id IS NULL
+		  AND v.created_by = $3
 		  AND a.type = 'P&L'
 		GROUP BY a.account_no, a.account_name, a.type
 		HAVING SUM(l.debit_amount - l.credit_amount) != 0
 		ORDER BY a.account_no
 	`
 
-	rows, err := r.db.Query(query, fromDate, toDate)
+	rows, err := r.db.Query(query, fromDate, toDate, userID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query income statement: %w", err)
 	}
@@ -90,7 +91,7 @@ func (r *reportRepository) GetIncomeStatement(fromDate, toDate string) (*domain.
 	return statement, nil
 }
 
-func (r *reportRepository) GetBalanceSheet(asOfDate string) (*domain.BalanceSheet, error) {
+func (r *reportRepository) GetBalanceSheet(asOfDate string, userID int) (*domain.BalanceSheet, error) {
 	// Get BS account balances (all transactions up to asOfDate)
 	bsQuery := `
 		SELECT
@@ -103,13 +104,14 @@ func (r *reportRepository) GetBalanceSheet(asOfDate string) (*domain.BalanceShee
 		INNER JOIN accounts a ON l.account_no = a.account_no
 		WHERE v.date <= $1
 		  AND v.corrected_by_voucher_id IS NULL
+		  AND v.created_by = $2
 		  AND a.type = 'BS'
 		GROUP BY a.account_no, a.account_name, a.account_group
 		HAVING SUM(l.debit_amount - l.credit_amount) != 0
 		ORDER BY a.account_no
 	`
 
-	rows, err := r.db.Query(bsQuery, asOfDate)
+	rows, err := r.db.Query(bsQuery, asOfDate, userID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query balance sheet: %w", err)
 	}
@@ -159,11 +161,12 @@ func (r *reportRepository) GetBalanceSheet(asOfDate string) (*domain.BalanceShee
 		INNER JOIN accounts a ON l.account_no = a.account_no
 		WHERE v.date <= $1
 		  AND v.corrected_by_voucher_id IS NULL
+		  AND v.created_by = $2
 		  AND a.type = 'P&L'
 	`
 
 	var netResult float64
-	if err := r.db.QueryRow(plQuery, asOfDate).Scan(&netResult); err != nil {
+	if err := r.db.QueryRow(plQuery, asOfDate, userID).Scan(&netResult); err != nil {
 		return nil, fmt.Errorf("failed to query P&L net result: %w", err)
 	}
 
@@ -174,7 +177,7 @@ func (r *reportRepository) GetBalanceSheet(asOfDate string) (*domain.BalanceShee
 	return sheet, nil
 }
 
-func (r *reportRepository) GetVATReport(fromDate, toDate string) (*domain.VATReport, error) {
+func (r *reportRepository) GetVATReport(fromDate, toDate string, userID int) (*domain.VATReport, error) {
 	query := `
 		SELECT
 			l.tax_code,
@@ -185,13 +188,14 @@ func (r *reportRepository) GetVATReport(fromDate, toDate string) (*domain.VATRep
 		WHERE v.date >= $1
 		  AND v.date <= $2
 		  AND v.corrected_by_voucher_id IS NULL
+		  AND v.created_by = $3
 		  AND a.account_no >= 3000 AND a.account_no < 4000
 		  AND l.tax_code IS NOT NULL
 		GROUP BY l.tax_code
 		ORDER BY l.tax_code DESC
 	`
 
-	rows, err := r.db.Query(query, fromDate, toDate)
+	rows, err := r.db.Query(query, fromDate, toDate, userID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query VAT report: %w", err)
 	}

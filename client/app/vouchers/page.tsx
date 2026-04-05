@@ -41,18 +41,11 @@ export default function VouchersPage() {
     try {
       let data: Voucher[];
 
-      // Admin can see all vouchers, others only their own
-      if (user.role === "Admin") {
-        data = currentPeriod
-          ? await vouchersApi.getByPeriod(currentPeriod)
-          : await vouchersApi.getAll();
-      } else {
-        // For non-admin users, get their vouchers and filter by period
-        const allUserVouchers = await vouchersApi.getByUser(user.user_id);
-        data = currentPeriod
-          ? allUserVouchers.filter(v => v.period === currentPeriod)
-          : allUserVouchers;
-      }
+      // Always show only the user's own vouchers
+      const allUserVouchers = await vouchersApi.getByUser(user.user_id);
+      data = currentPeriod
+        ? allUserVouchers.filter(v => v.period === currentPeriod)
+        : allUserVouchers;
 
       setVouchers(Array.isArray(data) ? data : []);
     } catch (error) {

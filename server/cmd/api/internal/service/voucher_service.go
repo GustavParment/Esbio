@@ -81,6 +81,25 @@ func (s *VoucherService) GetVoucherByID(voucherID int) (*domain.Voucher, error) 
 	return voucher, nil
 }
 
+func (s *VoucherService) GetVoucherByNumber(userID int, voucherNumber int) (*domain.Voucher, error) {
+	voucher, err := s.repository.GetVoucherByNumber(userID, voucherNumber)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get voucher: %w", err)
+	}
+
+	lineItems, err := s.lineItemRepository.GetLineItemsByVoucherID(voucher.VoucherID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get line items: %w", err)
+	}
+
+	voucher.Lines = make([]domain.LineItem, len(lineItems))
+	for i, item := range lineItems {
+		voucher.Lines[i] = *item
+	}
+
+	return voucher, nil
+}
+
 // GetAllVouchers retrieves all vouchers
 func (s *VoucherService) GetAllVouchers() ([]*domain.Voucher, error) {
 	vouchers, err := s.repository.GetAllVouchers()

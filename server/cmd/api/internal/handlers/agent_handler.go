@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/gin-gonic/gin"
 )
@@ -50,7 +51,14 @@ func (h *AgentHandler) Chat(c *gin.Context) {
 
 	// Generate conversation ID if not provided
 	if req.ConversationID == "" {
-		req.ConversationID = fmt.Sprintf("conv-%d-%d", uid, len(req.Message))
+		req.ConversationID = fmt.Sprintf("conv-%d-%d", uid, time.Now().UnixNano())
+	}
+
+	// Load conversation history
+	history, _ := h.messageRepo.GetMessagesByConversation(req.ConversationID)
+	var historyMessages []domain.AgentMessage
+	for _, msg := range history {
+		historyMessages = append(historyMessages, *msg)
 	}
 
 	// Save user message
@@ -62,8 +70,8 @@ func (h *AgentHandler) Chat(c *gin.Context) {
 	}
 	h.messageRepo.SaveMessage(userMsg)
 
-	// Get agent response
-	response, err := h.agentService.Chat(uid, req.ConversationID, req.Message)
+	// Get agent response with conversation history
+	response, err := h.agentService.Chat(uid, req.ConversationID, req.Message, historyMessages)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

@@ -17,8 +17,22 @@ func NewReportHandler(reportService *service.ReportService) *ReportHandler {
 	}
 }
 
+func getUserID(c *gin.Context) (int, bool) {
+	userID, exists := c.Get("userID")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "user not authenticated"})
+		return 0, false
+	}
+	return userID.(int), true
+}
+
 // GetIncomeStatement handles GET /reports/income-statement
 func (h *ReportHandler) GetIncomeStatement(c *gin.Context) {
+	uid, ok := getUserID(c)
+	if !ok {
+		return
+	}
+
 	fromDate := c.Query("from_date")
 	toDate := c.Query("to_date")
 
@@ -27,7 +41,7 @@ func (h *ReportHandler) GetIncomeStatement(c *gin.Context) {
 		return
 	}
 
-	statement, err := h.reportService.GetIncomeStatement(fromDate, toDate)
+	statement, err := h.reportService.GetIncomeStatement(fromDate, toDate, uid)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
@@ -38,6 +52,11 @@ func (h *ReportHandler) GetIncomeStatement(c *gin.Context) {
 
 // GetBalanceSheet handles GET /reports/balance-sheet
 func (h *ReportHandler) GetBalanceSheet(c *gin.Context) {
+	uid, ok := getUserID(c)
+	if !ok {
+		return
+	}
+
 	asOfDate := c.Query("as_of_date")
 
 	if asOfDate == "" {
@@ -45,7 +64,7 @@ func (h *ReportHandler) GetBalanceSheet(c *gin.Context) {
 		return
 	}
 
-	sheet, err := h.reportService.GetBalanceSheet(asOfDate)
+	sheet, err := h.reportService.GetBalanceSheet(asOfDate, uid)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
@@ -56,6 +75,11 @@ func (h *ReportHandler) GetBalanceSheet(c *gin.Context) {
 
 // GetVATReport handles GET /reports/vat
 func (h *ReportHandler) GetVATReport(c *gin.Context) {
+	uid, ok := getUserID(c)
+	if !ok {
+		return
+	}
+
 	fromDate := c.Query("from_date")
 	toDate := c.Query("to_date")
 
@@ -64,7 +88,7 @@ func (h *ReportHandler) GetVATReport(c *gin.Context) {
 		return
 	}
 
-	report, err := h.reportService.GetVATReport(fromDate, toDate)
+	report, err := h.reportService.GetVATReport(fromDate, toDate, uid)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
