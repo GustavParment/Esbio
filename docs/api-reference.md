@@ -307,6 +307,7 @@ The agent has access to the following tools:
 - `get_company_vouchers` — list vouchers for the selected company
 - `create_voucher` — create a voucher with line items
 - `correct_voucher` — create a reversal + new correct voucher
+- `search_vouchers` — search vouchers by description, reference, or amount
 - `get_account_ledger` — account transaction history with running balance
 - `search_accounts` — search the BAS chart of accounts
 - `get_income_statement` — income statement for a date range

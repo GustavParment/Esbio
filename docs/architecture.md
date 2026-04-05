@@ -147,7 +147,7 @@ User message → Agent Handler → Gemini API (with tool definitions)
 
 **Key components:**
 - **AgentService** — orchestrates Gemini API calls with a tool-use loop (max 10 iterations)
-- **11 tools** — wrapping existing services (voucher CRUD incl. corrections, reports, account ledger, scheduled tasks)
+- **12 tools** — wrapping existing services (voucher CRUD incl. corrections and search, reports, account ledger, scheduled tasks)
 - **SchedulerService** — background goroutine checking for due tasks every 60 seconds
 - **ScheduledTaskService** — CRUD for recurring monthly tasks with next-run calculation
 - **System prompt** — Swedish-language, BAS-aware, with security rules against prompt injection

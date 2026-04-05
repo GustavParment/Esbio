@@ -14,7 +14,7 @@ POST /api/v1/agent/chat
 AgentService builds request with:
   - System prompt (identity, rules, security, user context)
   - User message
-  - 11 tool definitions
+  - 12 tool definitions
   - Company context (company_id from cookie)
         │
         ▼
@@ -53,6 +53,7 @@ The tool-use loop runs up to 10 iterations, allowing Ester to chain multiple act
 | `search_accounts` | BAS chart of accounts | No |
 | `get_income_statement` | P&L report for date range | No |
 | `get_balance_sheet` | Balance sheet as of date | No |
+| `search_vouchers` | Search vouchers by description/reference/amount | No |
 | `create_scheduled_task` | Creates recurring task | Yes |
 | `list_scheduled_tasks` | Company's scheduled tasks | No |
 
