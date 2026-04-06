@@ -26,8 +26,16 @@ func LoadConfig() *Config {
 		log.Println("No .env file found, using environment variables or defaults")
 	}
 
+	jwtSecret := getEnv("JWT_SECRET", "")
+	if jwtSecret == "" || jwtSecret == "your-secret-key-change-this-in-production" {
+		log.Println("WARNING: JWT_SECRET is not set or using default. Set a strong secret in production!")
+	}
+	if jwtSecret == "" {
+		jwtSecret = "dev-only-secret-not-for-production"
+	}
+
 	return &Config{
-		JWTSecret:       getEnv("JWT_SECRET", "your-secret-key-change-this-in-production"),
+		JWTSecret:       jwtSecret,
 		JWTExpiration:   time.Hour * 24 * 7,
 		ServerPort:      getEnv("SERVER_PORT", ":8080"),
 		DatabaseURL:     getEnv("DATABASE_URL", "postgres://postgres:postgres@localhost:5432/bookkeeping?sslmode=disable"),

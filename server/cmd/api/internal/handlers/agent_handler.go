@@ -84,7 +84,7 @@ func (h *AgentHandler) Chat(c *gin.Context) {
 	// Get agent response with conversation history
 	response, err := h.agentService.Chat(uid, cid, req.ConversationID, req.Message, historyMessages)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 
@@ -109,7 +109,7 @@ func (h *AgentHandler) GetMessages(c *gin.Context) {
 	conversationID := c.Param("conversationId")
 	messages, err := h.messageRepo.GetMessagesByConversation(conversationID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 	if messages == nil {
@@ -128,7 +128,7 @@ func (h *AgentHandler) GetScheduledTasks(c *gin.Context) {
 
 	tasks, err := h.taskService.GetTasksByCompanyID(companyID.(int))
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 	if tasks == nil {
@@ -146,7 +146,7 @@ func (h *AgentHandler) ToggleScheduledTask(c *gin.Context) {
 	}
 
 	if err := h.taskService.ToggleTask(taskID); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 
@@ -163,7 +163,7 @@ func (h *AgentHandler) DeleteScheduledTask(c *gin.Context) {
 	}
 
 	if err := h.taskService.DeleteTask(taskID); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 
@@ -180,7 +180,7 @@ func (h *AgentHandler) GetUsage(c *gin.Context) {
 
 	summary, err := h.usageRepo.GetUsageSummary(companyID.(int))
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 

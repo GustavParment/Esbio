@@ -69,6 +69,9 @@ func main() {
 
 	router := gin.Default()
 
+	// Add security headers
+	router.Use(middleware.SecurityHeadersMiddleware())
+
 	// Add CORS middleware
 	router.Use(middleware.CORSMiddleware())
 

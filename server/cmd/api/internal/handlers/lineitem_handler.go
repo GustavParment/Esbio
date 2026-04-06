@@ -29,7 +29,7 @@ func (h *LineItemHandler) CreateLineItem(c *gin.Context) {
 	}
 
 	if err := h.lineItemService.CreateLineItem(&lineItem); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 
@@ -47,7 +47,7 @@ func (h *LineItemHandler) GetLineItemByID(c *gin.Context) {
 
 	lineItem, err := h.lineItemService.GetLineItemByID(lineID)
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+		notFoundError(c, err)
 		return
 	}
 
@@ -65,7 +65,7 @@ func (h *LineItemHandler) GetLineItemsByVoucherID(c *gin.Context) {
 
 	lineItems, err := h.lineItemService.GetLineItemsByVoucherID(voucherID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 
@@ -83,7 +83,7 @@ func (h *LineItemHandler) GetLineItemsByAccountNo(c *gin.Context) {
 
 	lineItems, err := h.lineItemService.GetLineItemsByAccountNo(accountNo)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 
@@ -108,7 +108,7 @@ func (h *LineItemHandler) UpdateLineItem(c *gin.Context) {
 	lineItem.LineID = lineID
 
 	if err := h.lineItemService.UpdateLineItem(&lineItem); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 
@@ -128,7 +128,7 @@ func (h *LineItemHandler) DeleteLineItem(c *gin.Context) {
 	}
 
 	if err := h.lineItemService.DeleteLineItem(lineID); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 

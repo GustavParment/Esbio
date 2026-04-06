@@ -27,7 +27,7 @@ func (h *CompanyHandler) ListCompanies(c *gin.Context) {
 
 	companies, err := h.companyService.GetCompaniesByUserID(userID.(int))
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 	if companies == nil {
@@ -61,7 +61,7 @@ func (h *CompanyHandler) CreateCompany(c *gin.Context) {
 	}
 
 	if err := h.companyService.CreateCompany(company); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 
@@ -137,7 +137,7 @@ func (h *CompanyHandler) UpdateCompany(c *gin.Context) {
 	}
 
 	if err := h.companyService.UpdateCompany(company); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 
@@ -165,7 +165,7 @@ func (h *CompanyHandler) DeleteCompany(c *gin.Context) {
 	}
 
 	if err := h.companyService.DeleteCompany(companyID); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 

@@ -35,7 +35,7 @@ func (h *PDFHandler) GenerateVoucherPDF(c *gin.Context) {
 	// Get voucher with line items
 	voucher, err := h.voucherService.GetVoucherByID(voucherID)
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+		notFoundError(c, err)
 		return
 	}
 

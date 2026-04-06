@@ -41,7 +41,7 @@ func (h *VoucherHandler) CreateVoucher(c *gin.Context) {
 	}
 
 	if err := h.voucherService.CreateVoucher(&voucher); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 
@@ -59,7 +59,7 @@ func (h *VoucherHandler) GetVoucherByID(c *gin.Context) {
 
 	voucher, err := h.voucherService.GetVoucherByID(voucherID)
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+		notFoundError(c, err)
 		return
 	}
 
@@ -70,7 +70,7 @@ func (h *VoucherHandler) GetVoucherByID(c *gin.Context) {
 func (h *VoucherHandler) GetAllVouchers(c *gin.Context) {
 	vouchers, err := h.voucherService.GetAllVouchers()
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 
@@ -106,7 +106,7 @@ func (h *VoucherHandler) GetVouchersByCompanyID(c *gin.Context) {
 
 	vouchers, err := h.voucherService.GetVouchersByCompanyID(companyID.(int))
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 
@@ -123,7 +123,7 @@ func (h *VoucherHandler) GetAllPeriods(c *gin.Context) {
 
 	periods, err := h.voucherService.GetAllPeriods(companyID.(int))
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 
@@ -148,7 +148,7 @@ func (h *VoucherHandler) UpdateVoucher(c *gin.Context) {
 	voucher.VoucherID = voucherID
 
 	if err := h.voucherService.UpdateVoucher(&voucher); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 
@@ -168,7 +168,7 @@ func (h *VoucherHandler) DeleteVoucher(c *gin.Context) {
 	}
 
 	if err := h.voucherService.DeleteVoucher(voucherID); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 
@@ -186,7 +186,7 @@ func (h *VoucherHandler) ValidateVoucherBalance(c *gin.Context) {
 
 	balanced, err := h.voucherService.ValidateVoucherBalance(voucherID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 

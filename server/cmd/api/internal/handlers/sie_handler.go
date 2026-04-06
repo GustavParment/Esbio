@@ -35,7 +35,7 @@ func (h *SIEHandler) ExportSIE(c *gin.Context) {
 
 	sieBytes, err := h.sieGenerator.GenerateSIE4(fromDate, toDate, companyID.(int))
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 
