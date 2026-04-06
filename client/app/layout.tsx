@@ -16,6 +16,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://esbio.se"),
   title: "Esbio - Svenskt bokföringssystem",
   description: "Professionellt bokföringsprogram enligt BAS-kontoplanen",
   icons: {
