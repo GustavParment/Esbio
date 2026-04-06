@@ -1,14 +1,14 @@
 package main
 
 import (
-	"cmd/api/internal/auth"
-	"cmd/api/internal/config"
-	"cmd/api/internal/database"
-	"cmd/api/internal/handlers"
-	"cmd/api/internal/middleware"
-	"cmd/api/internal/repository"
-	"cmd/api/internal/routes"
-	"cmd/api/internal/service"
+	"esbio/api/internal/auth"
+	"esbio/api/internal/config"
+	"esbio/api/internal/database"
+	"esbio/api/internal/handlers"
+	"esbio/api/internal/middleware"
+	"esbio/api/internal/repository"
+	"esbio/api/internal/routes"
+	"esbio/api/internal/service"
 	"log"
 
 	"github.com/gin-gonic/gin"

@@ -2,8 +2,8 @@ package service
 
 import (
 	"bytes"
-	"cmd/api/internal/domain"
-	"cmd/api/internal/repository"
+	"esbio/api/internal/domain"
+	"esbio/api/internal/repository"
 	"encoding/json"
 	"fmt"
 	"io"

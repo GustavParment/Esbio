@@ -1,8 +1,8 @@
 package routes
 
 import (
-	"cmd/api/internal/handlers"
-	"cmd/api/internal/middleware"
+	"esbio/api/internal/handlers"
+	"esbio/api/internal/middleware"
 
 	"github.com/gin-gonic/gin"
 )

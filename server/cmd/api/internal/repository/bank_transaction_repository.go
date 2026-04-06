@@ -1,7 +1,7 @@
 package repository
 
 import (
-	"cmd/api/internal/domain"
+	"esbio/api/internal/domain"
 	"database/sql"
 	"fmt"
 	"strings"

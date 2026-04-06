@@ -1,8 +1,8 @@
 package handlers
 
 import (
-	"cmd/api/internal/domain"
-	"cmd/api/internal/service"
+	"esbio/api/internal/domain"
+	"esbio/api/internal/service"
 	"net/http"
 	"strconv"
 

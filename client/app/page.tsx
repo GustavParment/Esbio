@@ -89,6 +89,7 @@ export default function LandingPage() {
           padding: 0.6rem 1.5rem; border-radius: 100px;
           font-size: 0.875rem; font-weight: 500;
           text-decoration: none; transition: opacity 0.2s;
+          white-space: nowrap;
         }
         .nav-cta:hover { opacity: 0.85; }
 
@@ -439,7 +440,7 @@ export default function LandingPage() {
         <section className="hero">
           <div className="hero-glow"></div>
           <div className="hero-badge">AI-driven bokföring för svenska företag</div>
-          <h1 className="landing-h1">Bokföring som <em>tänker</em><br />åt dig</h1>
+          <h1 className="landing-h1">Bokföring som <em>tänker</em> åt dig</h1>
           <p className="hero-sub">Esbio hanterar din bokföring automatiskt med AI. Ladda upp kvitton, koppla ditt bankkonto och låt Esbio sköta resten.</p>
           <div className="hero-actions">
             <Link href="/auth/register" className="btn-primary">Testa gratis i 30 dagar</Link>

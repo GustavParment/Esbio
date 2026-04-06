@@ -7,8 +7,8 @@ package service
 
 
 import (
-	"cmd/api/internal/domain"
-	"cmd/api/internal/repository"
+	"esbio/api/internal/domain"
+	"esbio/api/internal/repository"
 	"errors"
 	"fmt"
 

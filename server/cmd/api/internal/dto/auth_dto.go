@@ -1,6 +1,6 @@
 package dto
 
-import "cmd/api/internal/domain"
+import "esbio/api/internal/domain"
 
 type RegisterRequest struct {
 	Name      string `json:"name"`

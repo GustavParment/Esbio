@@ -1,7 +1,7 @@
 package handlers
 
 import (
-	"cmd/api/internal/service"
+	"esbio/api/internal/service"
 	"net/http"
 
 	"github.com/gin-gonic/gin"

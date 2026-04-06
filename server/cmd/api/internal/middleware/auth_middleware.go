@@ -1,8 +1,8 @@
 package middleware
 
 import (
-	"cmd/api/internal/auth"
-	"cmd/api/internal/repository"
+	"esbio/api/internal/auth"
+	"esbio/api/internal/repository"
 	"net/http"
 	"strconv"
 

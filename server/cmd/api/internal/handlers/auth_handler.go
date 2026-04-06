@@ -1,10 +1,10 @@
 package handlers
 
 import (
-	"cmd/api/internal/auth"
-	"cmd/api/internal/domain"
-	"cmd/api/internal/dto"
-	"cmd/api/internal/service"
+	"esbio/api/internal/auth"
+	"esbio/api/internal/domain"
+	"esbio/api/internal/dto"
+	"esbio/api/internal/service"
 	"net/http"
 	"strings"
 

@@ -4,13 +4,21 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { accountsApi } from "@/lib/api/accounts";
+import { TaxStandard, AccountType, StandardSide } from "@/types";
 
 export default function NewAccountPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<{
+    account_no: string;
+    account_name: string;
+    account_group: number;
+    tax_standard: TaxStandard;
+    type: AccountType;
+    standard_side: StandardSide;
+  }>({
     account_no: "",
     account_name: "",
     account_group: 1,
@@ -127,7 +135,7 @@ export default function NewAccountPage() {
                 id="tax_standard"
                 required
                 value={formData.tax_standard}
-                onChange={(e) => setFormData({ ...formData, tax_standard: e.target.value })}
+                onChange={(e) => setFormData({ ...formData, tax_standard: e.target.value as TaxStandard })}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-black"
               >
                 <option value="0%">0% - Momsfri</option>
@@ -146,7 +154,7 @@ export default function NewAccountPage() {
                 id="type"
                 required
                 value={formData.type}
-                onChange={(e) => setFormData({ ...formData, type: e.target.value })}
+                onChange={(e) => setFormData({ ...formData, type: e.target.value as AccountType })}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-black"
               >
                 <option value="BS">BS - Balansräkning</option>
@@ -163,7 +171,7 @@ export default function NewAccountPage() {
                 id="standard_side"
                 required
                 value={formData.standard_side}
-                onChange={(e) => setFormData({ ...formData, standard_side: e.target.value })}
+                onChange={(e) => setFormData({ ...formData, standard_side: e.target.value as StandardSide })}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-black"
               >
                 <option value="Debit">Debet</option>
