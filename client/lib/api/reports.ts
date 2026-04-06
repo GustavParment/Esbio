@@ -64,7 +64,7 @@ export const reportsApi = {
   },
 
   downloadSIE: async (fromDate: string, toDate: string): Promise<void> => {
-    const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/api/v1";
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL || "https://api.esbio.se/api/v1";
     const response = await fetch(`${baseUrl}/reports/sie?from_date=${fromDate}&to_date=${toDate}`, {
       credentials: "include",
     });

@@ -162,19 +162,8 @@ export default function Sidebar() {
         </button>
       </div>
 
-      {/* User section */}
-      <div className="border-t border-[rgba(255,255,255,0.06)] p-4 space-y-3">
-        <div className="flex items-center">
-          <div className="flex-shrink-0">
-            <div className="h-10 w-10 rounded-full bg-gray-700 flex items-center justify-center">
-              <span className="text-lg">👤</span>
-            </div>
-          </div>
-          <div className="ml-3 flex-1">
-            <p className="text-sm font-medium text-white">{user?.name}</p>
-            <p className="text-xs text-gray-400">{user?.role}</p>
-          </div>
-        </div>
+      {/* Logout */}
+      <div className="border-t border-[rgba(255,255,255,0.06)] px-3 py-4">
         <button
           onClick={() => { logout(); setMobileMenuOpen(false); }}
           className="flex items-center w-full px-3 py-2 text-sm font-medium rounded-md text-gray-300 hover:bg-red-900/30 hover:text-red-400 transition-colors"
