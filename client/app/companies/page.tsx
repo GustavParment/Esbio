@@ -38,14 +38,14 @@ export default function CompanySelectorPage() {
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
       <div className="max-w-3xl mx-auto px-4 py-12">
         {/* Header */}
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">Mina Företag</h1>
-            <p className="text-gray-600 mt-1">Välj ett företag att arbeta med, eller skapa ett nytt</p>
+        <div className="mb-8">
+          <div className="flex items-center justify-between">
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Mina Företag</h1>
           </div>
+          <p className="text-gray-600 dark:text-gray-400 mt-1">Välj ett företag att arbeta med, eller skapa ett nytt</p>
           <Link
             href="/companies/new"
-            className="px-5 py-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors font-medium text-sm"
+            className="mt-4 block w-full text-center bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-4 rounded-lg transition-colors"
           >
             + Nytt företag
           </Link>
@@ -70,13 +70,13 @@ export default function CompanySelectorPage() {
               <button
                 key={company.company_id}
                 onClick={() => handleSelect(company.company_id)}
-                className="w-full bg-white rounded-xl shadow-sm border border-gray-200 p-5 hover:border-blue-300 hover:shadow-md transition-all text-left flex items-center justify-between group"
+                className="w-full bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-5 hover:border-blue-300 dark:hover:border-blue-600 hover:shadow-md transition-all text-left flex items-center justify-between group"
               >
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-900 group-hover:text-blue-600 transition-colors">
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white group-hover:text-blue-600 transition-colors">
                     {company.company_name}
                   </h3>
-                  <div className="flex gap-4 mt-1 text-sm text-gray-500">
+                  <div className="flex gap-4 mt-1 text-sm text-gray-500 dark:text-gray-400">
                     {company.org_number && <span>Org.nr: {company.org_number}</span>}
                     <span className="capitalize">{company.plan}</span>
                   </div>
