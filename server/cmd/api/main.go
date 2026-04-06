@@ -72,6 +72,9 @@ func main() {
 	// Add CORS middleware
 	router.Use(middleware.CORSMiddleware())
 
+	// Add rate limiting (100 req/min per IP)
+	router.Use(middleware.RateLimitMiddleware())
+
 	routes.SetupRoutes(router, userHandler, accountHandler, lineItemHandler, voucherHandler, authHandler, pdfHandler, reportHandler, sieHandler, agentHandler, companyHandler, authMiddleware, companyMiddleware)
 
 	// Start the scheduler for recurring tasks
