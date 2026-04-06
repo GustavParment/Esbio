@@ -12,6 +12,18 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+func setCookie(c *gin.Context, name, value string, maxAge int) {
+	http.SetCookie(c.Writer, &http.Cookie{
+		Name:     name,
+		Value:    value,
+		MaxAge:   maxAge,
+		Path:     "/",
+		Secure:   true,
+		HttpOnly: true,
+		SameSite: http.SameSiteNoneMode,
+	})
+}
+
 type AuthHandler struct {
 	userService *service.UserService
 	jwtManager  *auth.JWTManager
@@ -64,15 +76,7 @@ func (h *AuthHandler) Register(c *gin.Context) {
 	}
 
 	// Set JWT as httpOnly cookie
-	c.SetCookie(
-		"token",           // name
-		token,             // value
-		604800,            // maxAge (7 days in seconds)
-		"/",               // path
-		"",                // domain (empty for current domain)
-		false,             // secure (set true in production with HTTPS!)
-		true,              // httpOnly
-	)
+	setCookie(c, "token", token, 604800)
 
 	user.PasswordHash = ""
 
@@ -110,15 +114,7 @@ func (h *AuthHandler) Login(c *gin.Context) {
 	}
 
 	// Set JWT as httpOnly cookie
-	c.SetCookie(
-		"token",           // name
-		token,             // value
-		604800,            // maxAge (7 days in seconds)
-		"/",               // path
-		"",                // domain (empty for current domain)
-		false,             // secure (set true in production with HTTPS!)
-		true,              // httpOnly
-	)
+	setCookie(c, "token", token, 604800)
 
 	user.PasswordHash = ""
 
@@ -144,15 +140,7 @@ func (h *AuthHandler) RefreshToken(c *gin.Context) {
 	}
 
 	// Set new token as httpOnly cookie
-	c.SetCookie(
-		"token",
-		newToken,
-		604800,
-		"/",
-		"",
-		false,
-		true,
-	)
+	setCookie(c, "token", newToken, 604800)
 
 	c.JSON(http.StatusOK, gin.H{
 		"message": "token refreshed successfully",
@@ -162,15 +150,7 @@ func (h *AuthHandler) RefreshToken(c *gin.Context) {
 // Logout handles POST /auth/logout
 func (h *AuthHandler) Logout(c *gin.Context) {
 	// Clear the cookie by setting maxAge to -1
-	c.SetCookie(
-		"token",
-		"",
-		-1,
-		"/",
-		"",
-		false,
-		true,
-	)
+	setCookie(c, "token", "", -1)
 
 	c.JSON(http.StatusOK, gin.H{
 		"message": "logged out successfully",
