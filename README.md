@@ -1,15 +1,24 @@
-# Esbio - Bookkeeping Application
+# Esbio - Svenskt Bokföringssystem
 
-A modern, secure bookkeeping application using the Swedish BAS account system.
+Modernt, säkert bokföringsprogram enligt svenska BAS-kontoplanen.
+
+**Live:** [https://esbio.se](https://esbio.se)
 
 ## Tech Stack
 
 - **Frontend**: Next.js 16, React 19, TypeScript, Tailwind CSS
 - **Backend**: Go with Gin framework
-- **Database**: PostgreSQL 15
-- **Authentication**: JWT with httpOnly cookies
+- **Database**: PostgreSQL 15 (Cloud SQL)
+- **Hosting**: Google Cloud Run (europe-north1)
+- **DNS**: Cloudflare
+- **Authentication**: JWT with httpOnly cookies (SameSite=None, Secure)
 
-## Quick Start
+## Branches
+
+- **`main`** — Produktion. API pekar mot `https://api.esbio.se`
+- **`dev`** — Lokal utveckling. API pekar mot `http://localhost:8080`
+
+## Local Development
 
 ### Start Everything
 
@@ -28,74 +37,101 @@ This will:
 ./stop.sh
 ```
 
-This will stop both the backend and frontend. You'll be prompted whether to stop the PostgreSQL container.
-
-## Manual Setup
-
-If you prefer to start services manually:
-
-### 1. Start PostgreSQL
+### Manual Setup
 
 ```bash
-cd server
-docker-compose up -d
+# 1. Database
+cd server && docker-compose up -d
+
+# 2. Backend
+cd server/cmd && go run api/main.go
+
+# 3. Frontend
+cd client && npm run dev
 ```
 
-### 2. Start Backend
-
-```bash
-cd server/cmd
-go run api/main.go
-```
-
-### 3. Start Frontend
-
-```bash
-cd client
-npm run dev
-```
-
-## Access URLs
+### Local URLs
 
 - **Frontend**: http://localhost:3000
 - **Backend API**: http://localhost:8080/api/v1
 - **Database**: postgres://localhost:5433
 
-## Default Credentials
+## Production
 
-After registration, all users default to the "Bookkeeper" role. Admins can change user roles later.
+- **Frontend**: https://esbio.se (Cloud Run: esbio-frontend)
+- **Backend API**: https://api.esbio.se (Cloud Run: esbio-backend)
+- **Database**: Cloud SQL (esbio-db, europe-north1)
+
+### Deploy
+
+```bash
+# Frontend
+cd client && gcloud run deploy esbio-frontend --source . --region europe-north1 --port 3000 --allow-unauthenticated
+
+# Backend
+cd server && gcloud run deploy esbio-backend --source . --region europe-north1 --allow-unauthenticated
+```
+
+### Environment Variables (Cloud Run Backend)
+
+| Variable | Description |
+|----------|-------------|
+| `JWT_SECRET` | JWT signing secret (required) |
+| `DATABASE_URL` | Cloud SQL connection string |
+| `SERVER_PORT` | Server port (default: `:8080`) |
+| `GEMINI_API_KEY` | Google Gemini API key (for Ester AI) |
+| `COOKIE_SAMESITE` | Cookie SameSite policy (`none` or `lax`) |
+| `COOKIE_SECURE` | Cookie Secure flag (`true` or `false`) |
 
 ## Project Structure
 
 ```
 Esbio/
-├── client/              # Next.js frontend
-│   ├── app/            # Next.js App Router pages
-│   ├── components/     # React components
-│   ├── lib/            # API client & utilities
-│   └── types/          # TypeScript definitions
-├── server/             # Go backend
-│   ├── cmd/api/        # Main application
-│   │   └── internal/   # Handlers, middleware, services
+├── client/                  # Next.js frontend
+│   ├── app/                # App Router pages
+│   ├── components/         # React components
+│   ├── lib/                # API client, contexts & utilities
+│   └── types/              # TypeScript definitions
+├── server/                  # Go backend
+│   ├── cmd/api/            # Main application
+│   │   └── internal/
+│   │       ├── handlers/   # HTTP handlers
+│   │       ├── middleware/  # Auth, CORS, rate limiting, security headers
+│   │       ├── service/    # Business logic
+│   │       ├── repository/ # Database queries
+│   │       ├── config/     # Configuration
+│   │       └── routes/     # Route definitions
 │   ├── docker-compose.yml
-│   └── init.sql        # Database migrations
-├── start.sh            # Start all services
-└── stop.sh             # Stop all services
+│   └── init.sql            # Database migrations
+├── start.sh
+└── stop.sh
 ```
 
 ## Features
 
-- ✅ Secure httpOnly cookie authentication
-- ✅ Mobile-responsive design
-- ✅ Swedish BAS account system
-- ✅ Double-entry bookkeeping
-- ✅ Voucher management
-- ✅ Account management
-- ✅ User management with roles
+- Secure httpOnly cookie authentication
+- Mobile-responsive design
+- Swedish BAS account system
+- Double-entry bookkeeping
+- Voucher management with PDF export
+- Account management & ledger
+- Financial reports (income statement, balance sheet, VAT)
+- SIE file export
+- Ester AI assistant (Gemini-powered)
+- Multi-company support
+- Dark mode
 
 ## Security
 
-- JWT tokens stored in httpOnly cookies (protected from XSS attacks)
-- No localStorage usage for sensitive data
-- CORS configured for localhost development
-- Password hashing with bcrypt
+- JWT tokens in httpOnly cookies (XSS protected)
+- Rate limiting: 100 req/min global, 10 req/min on auth endpoints
+- Security headers: HSTS, X-Frame-Options, X-Content-Type-Options
+- Error sanitization: internal errors logged server-side only
+- bcrypt password hashing
+- CORS whitelist
+- Parameterized SQL queries (injection protected)
+- Company data isolation via middleware
+
+## Default Credentials
+
+After registration, all users default to the "Bookkeeper" role. Admins can change user roles later.
