@@ -43,7 +43,7 @@ export const vouchersApi = {
   },
 
   getPdf: async (id: number): Promise<Blob> => {
-    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "https://esbio-backend-587000007432.europe-north1.run.app/api/v1"}/vouchers/${id}/pdf`, {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "https://api.esbio.se/api/v1"}/vouchers/${id}/pdf`, {
       credentials: "include",
     });
     if (!response.ok) {

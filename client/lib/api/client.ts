@@ -1,6 +1,6 @@
 import { ApiError } from "@/types";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "https://esbio-backend-587000007432.europe-north1.run.app/api/v1";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "https://api.esbio.se/api/v1";
 
 export class ApiClient {
   private baseUrl: string;
