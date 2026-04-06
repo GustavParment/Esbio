@@ -6,9 +6,11 @@ import (
 
 func CORSMiddleware() gin.HandlerFunc {
 	allowedOrigins := map[string]bool{
-		"http://localhost:3000":         true,
-		"http://192.168.0.38:3000":     true,
-		"http://192.168.68.110:3000":   true,
+		"http://localhost:3000":                                              true,
+		"http://192.168.0.38:3000":                                          true,
+		"http://192.168.68.110:3000":                                        true,
+		"https://esbio-frontend-587000007432.europe-north1.run.app":         true,
+		"https://esbio.se":                                                  true,
 	}
 
 	return func(c *gin.Context) {

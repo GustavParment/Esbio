@@ -92,15 +92,7 @@ func (h *CompanyHandler) SelectCompany(c *gin.Context) {
 	}
 
 	// Set company_id cookie
-	c.SetCookie(
-		"company_id",
-		strconv.Itoa(req.CompanyID),
-		604800, // 7 days
-		"/",
-		"",
-		false,
-		true, // httpOnly
-	)
+	setCookie(c, "company_id", strconv.Itoa(req.CompanyID), 604800)
 
 	company, _ := h.companyService.GetCompanyByID(req.CompanyID)
 	c.JSON(http.StatusOK, gin.H{"message": "company selected", "company": company})
