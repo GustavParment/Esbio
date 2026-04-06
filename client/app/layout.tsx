@@ -4,6 +4,7 @@ import "./globals.css";
 import { AuthProvider } from "@/lib/contexts/AuthContext";
 import { CompanyProvider } from "@/lib/contexts/CompanyContext";
 import { ThemeProvider } from "@/lib/contexts/ThemeContext";
+import CookieConsent from "@/components/CookieConsent";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -59,7 +60,10 @@ export default function RootLayout({
       >
         <ThemeProvider>
           <AuthProvider>
-            <CompanyProvider>{children}</CompanyProvider>
+            <CompanyProvider>
+              {children}
+              <CookieConsent />
+            </CompanyProvider>
           </AuthProvider>
         </ThemeProvider>
       </body>
