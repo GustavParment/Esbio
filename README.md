@@ -1,4 +1,4 @@
-# Eskio - Bookkeeping Application
+# Esbio - Bookkeeping Application
 
 A modern, secure bookkeeping application using the Swedish BAS account system.
 
@@ -68,7 +68,7 @@ After registration, all users default to the "Bookkeeper" role. Admins can chang
 ## Project Structure
 
 ```
-Eskio/
+Esbio/
 ├── client/              # Next.js frontend
 │   ├── app/            # Next.js App Router pages
 │   ├── components/     # React components

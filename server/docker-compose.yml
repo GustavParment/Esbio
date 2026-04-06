@@ -1,7 +1,7 @@
 services:
   postgres:
     image: postgres:15-alpine
-    container_name: eskio-postgres
+    container_name: esbio-postgres
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres

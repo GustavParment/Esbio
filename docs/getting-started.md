@@ -95,12 +95,12 @@ The frontend starts on `http://localhost:3000`.
 
 ## Network Access
 
-To access Eskio from other devices on your local network, see [network-access-setup.md](./network-access-setup.md).
+To access Esbio from other devices on your local network, see [network-access-setup.md](./network-access-setup.md).
 
 ## Project Structure
 
 ```
-Eskio/
+Esbio/
 ├── client/                  Next.js frontend
 │   ├── app/                 Pages (App Router)
 │   ├── components/          React components

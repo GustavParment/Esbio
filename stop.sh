@@ -1,9 +1,9 @@
 #!/bin/bash
 
-# Eskio Stop Script
+# Esbio Stop Script
 # Stops the backend server and frontend client
 
-echo "🛑 Stopping Eskio..."
+echo "🛑 Stopping Esbio..."
 echo ""
 
 # Get the script directory
@@ -62,4 +62,4 @@ else
 fi
 echo ""
 
-echo "✨ Eskio has been stopped!"
+echo "✨ Esbio has been stopped!"

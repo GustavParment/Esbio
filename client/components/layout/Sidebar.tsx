@@ -46,7 +46,7 @@ export default function Sidebar() {
       {/* Mobile menu button */}
       <div className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-[#0B1514] border-b border-[rgba(255,255,255,0.06)]">
         <div className="flex items-center justify-between px-4 py-3">
-          <img src="/eskio-logo.png" alt="Eskio" className="h-8" />
+          <img src="/esbio-logo.png" alt="Esbio" className="h-8" />
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             className="text-white p-3 hover:bg-[#142421] rounded-md text-2xl outline-none focus:outline-none"
@@ -74,7 +74,7 @@ export default function Sidebar() {
       `}>
       {/* Logo - hidden on mobile (shown in top bar instead) */}
       <div className="hidden lg:flex h-16 items-center px-6 bg-[#0F1D1A]">
-        <img src="/eskio-logo.png" alt="Eskio" className="h-10" />
+        <img src="/esbio-logo.png" alt="Esbio" className="h-10" />
       </div>
 
       {/* Company switcher */}

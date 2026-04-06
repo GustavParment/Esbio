@@ -51,7 +51,7 @@ export default function RegisterPage() {
 
           {/* Logo */}
           <div className="text-center mb-8">
-            <img src="/eskio-logo.png" alt="Eskio" className="h-16 mx-auto mb-2" />
+            <img src="/esbio-logo.png" alt="Esbio" className="h-16 mx-auto mb-2" />
             <p className="text-gray-600">Skapa ett nytt konto</p>
           </div>
 

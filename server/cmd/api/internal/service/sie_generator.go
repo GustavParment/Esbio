@@ -91,7 +91,7 @@ func (g *SIEGenerator) GenerateSIE4(fromDate, toDate string, companyID int) ([]b
 	w("#FLAGGA 0")
 	w("#FORMAT PC8")
 	w("#SIETYP 4")
-	w("#PROGRAM \"Eskio\" \"1.0\"")
+	w("#PROGRAM \"Esbio\" \"1.0\"")
 	w("#GEN %s", now.Format("20060102"))
 	w("#FNAMN \"%s\"", companyName)
 	if company.OrgNumber != "" {

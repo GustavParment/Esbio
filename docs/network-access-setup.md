@@ -1,6 +1,6 @@
 # Network Access Setup
 
-How to access Eskio from other devices on the same local network.
+How to access Esbio from other devices on the same local network.
 
 ## What was changed
 

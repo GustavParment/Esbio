@@ -1,6 +1,6 @@
 # Architecture Overview
 
-Eskio is a full-stack Swedish bookkeeping application built around double-entry accounting principles using the BAS (Bas Kontoplan) chart of accounts.
+Esbio is a full-stack Swedish bookkeeping application built around double-entry accounting principles using the BAS (Bas Kontoplan) chart of accounts.
 
 ## Tech Stack
 
@@ -132,7 +132,7 @@ Users can have multiple companies. All data (vouchers, reports, AI conversations
 
 ## Ester AI (Bookkeeping Assistant)
 
-Eskio includes **Ester AI**, an intelligent bookkeeping assistant powered by Gemini 2.5 Flash (Google).
+Esbio includes **Ester AI**, an intelligent bookkeeping assistant powered by Gemini 2.5 Flash (Google).
 
 ```
 User message → Agent Handler → Gemini API (with tool definitions)

@@ -1,6 +1,6 @@
 # Ester AI — Bokföringsassistent
 
-Ester AI is Eskio's built-in AI bookkeeping assistant. She helps users create vouchers, view reports, check account balances, and schedule recurring bookkeeping tasks — all through natural language in Swedish.
+Ester AI is Esbio's built-in AI bookkeeping assistant. She helps users create vouchers, view reports, check account balances, and schedule recurring bookkeeping tasks — all through natural language in Swedish.
 
 ## How It Works
 

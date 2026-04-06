@@ -417,7 +417,7 @@ export default function LandingPage() {
       <div className="landing-page">
         {/* NAV */}
         <nav className="landing-nav">
-          <img src="/eskio-logo.png" alt="Eskio" className="h-9" />
+          <img src="/esbio-logo.png" alt="Esbio" className="h-9" />
           <ul className="nav-links">
             <li><a href="#features">Funktioner</a></li>
             <li><a href="#how">Hur det fungerar</a></li>
@@ -440,7 +440,7 @@ export default function LandingPage() {
           <div className="hero-glow"></div>
           <div className="hero-badge">AI-driven bokföring för svenska företag</div>
           <h1 className="landing-h1">Bokföring som <em>tänker</em><br />åt dig</h1>
-          <p className="hero-sub">Eskio hanterar din bokföring automatiskt med AI. Ladda upp kvitton, koppla ditt bankkonto och låt Eskio sköta resten.</p>
+          <p className="hero-sub">Esbio hanterar din bokföring automatiskt med AI. Ladda upp kvitton, koppla ditt bankkonto och låt Esbio sköta resten.</p>
           <div className="hero-actions">
             <Link href="/auth/register" className="btn-primary">Testa gratis i 30 dagar</Link>
             <a href="#how" className="btn-ghost">Se hur det fungerar</a>
@@ -455,30 +455,29 @@ export default function LandingPage() {
               </div>
               <div className="dash-inner">
                 <div className="dash-sidebar">
-                  <div className="sidebar-label">Navigering</div>
-                  <div className="sidebar-item active">&#9632; Översikt</div>
-                  <div className="sidebar-item">&#9632; Transaktioner</div>
-                  <div className="sidebar-item">&#9632; Fakturor</div>
+                  <div className="sidebar-item active">&#9632; Dashboard</div>
+                  <div className="sidebar-item">&#9632; Verifikat</div>
+                  <div className="sidebar-item">&#9632; Konton</div>
                   <div className="sidebar-item">&#9632; Rapporter</div>
-                  <div className="sidebar-item">&#9632; Moms</div>
+                  <div className="sidebar-item">&#9632; Ester AI</div>
                   <div className="sidebar-item">&#9632; Inställningar</div>
                 </div>
                 <div className="dash-main">
                   <div className="dash-stats">
                     <div className="stat-card">
-                      <div className="stat-label">Intäkter, mars</div>
-                      <div className="stat-value teal">184 500 kr</div>
-                      <div className="stat-change">↑ 12% mot förra mån</div>
+                      <div className="stat-label">Verifikat denna månad</div>
+                      <div className="stat-value teal">12</div>
+                      <div className="stat-change">↑ 3 mot förra mån</div>
                     </div>
                     <div className="stat-card">
-                      <div className="stat-label">Kostnader</div>
-                      <div className="stat-value">62 300 kr</div>
-                      <div className="stat-change" style={{ color: "var(--text-dim)" }}>↓ 4% mot förra mån</div>
+                      <div className="stat-label">Totalt konton</div>
+                      <div className="stat-value">84</div>
+                      <div className="stat-change" style={{ color: "var(--text-dim)" }}>BAS-kontoplan</div>
                     </div>
                     <div className="stat-card">
-                      <div className="stat-label">Resultat</div>
-                      <div className="stat-value">122 200 kr</div>
-                      <div className="stat-change">Mycket starkt</div>
+                      <div className="stat-label">Aktuell period</div>
+                      <div className="stat-value">2026-04</div>
+                      <div className="stat-change">Aktiv</div>
                     </div>
                   </div>
                   <div className="ai-suggestion">
@@ -497,7 +496,7 @@ export default function LandingPage() {
         <section id="features" className="landing-section">
           <div className="section-label">Funktioner</div>
           <h2 className="section-title">Allt du behöver, ingenting du inte behöver</h2>
-          <p className="section-sub">Eskio är byggt för svenska enskilda firmor och aktiebolag som vill slippa bokföringsträsket.</p>
+          <p className="section-sub">Esbio är byggt för svenska enskilda firmor och aktiebolag som vill slippa bokföringsträsket.</p>
 
           <div className="features-grid">
             <div className="feature-card">
@@ -505,7 +504,7 @@ export default function LandingPage() {
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{color: "var(--teal)"}}><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
               </div>
               <h3>Kvittoläsning med AI</h3>
-              <p>Ta en bild på kvittot. Eskio läser av belopp, datum och leverantör och skapar verifikaten åt dig automatiskt.</p>
+              <p>Ta en bild på kvittot. Esbio läser av belopp, datum och leverantör och skapar verifikaten åt dig automatiskt.</p>
             </div>
             <div className="feature-card">
               <div className="feature-icon">
@@ -519,14 +518,14 @@ export default function LandingPage() {
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{color: "var(--teal)"}}><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
               </div>
               <h3>Momsrapporter på ett klick</h3>
-              <p>Korrekt momsredovisning varje kvartal. Eskio sammanställer rapporten och du godkänner med BankID.</p>
+              <p>Korrekt momsredovisning varje kvartal. Esbio sammanställer rapporten och du godkänner med BankID.</p>
             </div>
             <div className="feature-card">
               <div className="feature-icon">
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{color: "var(--teal)"}}><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
               </div>
               <h3>Fakturering inbyggt</h3>
-              <p>Skapa och skicka fakturor direkt i Eskio. Betalningar bokförs automatiskt när kunden betalar.</p>
+              <p>Skapa och skicka fakturor direkt i Esbio. Betalningar bokförs automatiskt när kunden betalar.</p>
             </div>
             <div className="feature-card">
               <div className="feature-icon">
@@ -540,7 +539,7 @@ export default function LandingPage() {
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{color: "var(--teal)"}}><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
               </div>
               <h3>Årsredovisning med AI</h3>
-              <p>Eskio hjälper dig att sammanställa och lämna in din årsredovisning till Bolagsverket utan revisorskostnader.</p>
+              <p>Esbio hjälper dig att sammanställa och lämna in din årsredovisning till Bolagsverket utan revisorskostnader.</p>
             </div>
           </div>
         </section>
@@ -551,7 +550,7 @@ export default function LandingPage() {
           <h2 className="section-title">Din personliga bokföringsassistent</h2>
           <p className="section-sub">Berätta vad du vill göra — Ester sköter resten. Skapa verifikat, schemalägga bokföringar och få svar på dina frågor.</p>
 
-          <div style={{ maxWidth: "900px", margin: "0 auto" }}>
+          <div style={{ maxWidth: "900px", margin: "0 auto", display: "flex", flexDirection: "column", gap: "2rem" }}>
             <div style={{ position: "relative" }}>
               <div style={{
                 position: "absolute", inset: "-1px", borderRadius: "20px",
@@ -561,6 +560,22 @@ export default function LandingPage() {
               <img
                 src="/ester-demo.png"
                 alt="Ester AI demo"
+                style={{
+                  width: "100%", borderRadius: "20px",
+                  border: "1px solid var(--l-border)",
+                  position: "relative", zIndex: 1
+                }}
+              />
+            </div>
+            <div style={{ position: "relative" }}>
+              <div style={{
+                position: "absolute", inset: "-1px", borderRadius: "20px",
+                background: "linear-gradient(135deg, var(--border-teal), transparent 60%)",
+                zIndex: 0
+              }} />
+              <img
+                src="/ester-tasks-demo.png"
+                alt="Ester AI schemalagda uppgifter"
                 style={{
                   width: "100%", borderRadius: "20px",
                   border: "1px solid var(--l-border)",
@@ -582,21 +597,21 @@ export default function LandingPage() {
               <div className="step-num">01</div>
               <div className="step-content">
                 <h3>Koppla ditt bankkonto</h3>
-                <p>Eskio ansluter till din bank via Open Banking och importerar transaktioner automatiskt. Inga manuella CSV-filer.</p>
+                <p>Esbio ansluter till din bank via Open Banking och importerar transaktioner automatiskt. Inga manuella CSV-filer.</p>
               </div>
             </div>
             <div className="step">
               <div className="step-num">02</div>
               <div className="step-content">
                 <h3>AI:n konterar och kategoriserar</h3>
-                <p>Eskio analyserar varje transaktion och föreslår rätt konto baserat på ditt företag, din bransch och historiska mönster.</p>
+                <p>Esbio analyserar varje transaktion och föreslår rätt konto baserat på ditt företag, din bransch och historiska mönster.</p>
               </div>
             </div>
             <div className="step">
               <div className="step-num">03</div>
               <div className="step-content">
                 <h3>Du granskar och godkänner</h3>
-                <p>Du behåller kontrollen. Granska AI:ns förslag, gör justeringar om det behövs och godkänn. Eskio sköter resten.</p>
+                <p>Du behåller kontrollen. Granska AI:ns förslag, gör justeringar om det behövs och godkänn. Esbio sköter resten.</p>
               </div>
             </div>
           </div>
@@ -659,11 +674,11 @@ export default function LandingPage() {
         {/* TESTIMONIALS */}
         <section className="landing-section" style={{ textAlign: "center" }}>
           <div className="section-label">Vad kunderna säger</div>
-          <h2 className="section-title" style={{ marginBottom: "3rem" }}>Tusentals svenska företag sparar tid med Eskio</h2>
+          <h2 className="section-title" style={{ marginBottom: "3rem" }}>Tusentals svenska företag sparar tid med Esbio</h2>
 
           <div className="testimonials">
             <div className="testimonial">
-              <p className="testimonial-text">&quot;Jag brukade lägga tre timmar i månaden på bokföring. Nu tar det tjugo minuter. Eskio är det bästa jag gjort för mitt företag.&quot;</p>
+              <p className="testimonial-text">&quot;Jag brukade lägga tre timmar i månaden på bokföring. Nu tar det tjugo minuter. Esbio är det bästa jag gjort för mitt företag.&quot;</p>
               <div className="testimonial-author">
                 <div className="avatar-circle">AS</div>
                 <div>
@@ -683,7 +698,7 @@ export default function LandingPage() {
               </div>
             </div>
             <div className="testimonial">
-              <p className="testimonial-text">&quot;Som frilansare ville jag inte betala en revisor 5000 kr för enkla saker. Eskio gör jobbet för en bråkdel av kostnaden.&quot;</p>
+              <p className="testimonial-text">&quot;Som frilansare ville jag inte betala en revisor 5000 kr för enkla saker. Esbio gör jobbet för en bråkdel av kostnaden.&quot;</p>
               <div className="testimonial-author">
                 <div className="avatar-circle">LJ</div>
                 <div>
@@ -699,13 +714,13 @@ export default function LandingPage() {
         <section className="cta-section">
           <div className="cta-glow"></div>
           <h2>Sluta ägna tid<br /><em style={{ fontStyle: "italic", color: "var(--teal)" }}>åt bokföring</em></h2>
-          <p>Testa Eskio gratis i 30 dagar. Inget kreditkort krävs.</p>
+          <p>Testa Esbio gratis i 30 dagar. Inget kreditkort krävs.</p>
           <Link href="/auth/register" className="btn-primary" style={{ fontSize: "1rem", padding: "1rem 2.5rem" }}>Kom igång gratis</Link>
         </section>
 
         {/* FOOTER */}
         <footer className="landing-footer">
-          <img src="/eskio-logo.png" alt="Eskio" className="h-8" />
+          <img src="/esbio-logo.png" alt="Esbio" className="h-8" />
           <div>© 2025 Parment Software Solutions AB</div>
           <div>Integritetspolicy · Villkor · Support</div>
         </footer>

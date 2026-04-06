@@ -46,7 +46,7 @@ export default function CreateCompanyPage() {
           </Link>
 
           <div className="text-center mb-8">
-            <img src="/eskio-logo.png" alt="Eskio" className="h-12 mx-auto mb-4" />
+            <img src="/esbio-logo.png" alt="Esbio" className="h-12 mx-auto mb-4" />
             <h1 className="text-2xl font-bold text-gray-900">Skapa nytt företag</h1>
           </div>
 

@@ -16,7 +16,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Eskio - Swedish Accounting System",
+  title: "Esbio - Swedish Accounting System",
   description: "Professional bookkeeping application following the BAS account system",
 };
 

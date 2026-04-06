@@ -1,4 +1,4 @@
-# 🎉 Eskio Frontend - Setup Complete!
+# 🎉 Esbio Frontend - Setup Complete!
 
 ## ✅ What's Been Built
 
@@ -20,7 +20,7 @@ Your modern, secure, **fully mobile-responsive** bookkeeping application is read
 ### 🎨 Pages Implemented
 
 1. **Authentication**
-   - ✅ Login page (Eskio branded)
+   - ✅ Login page (Esbio branded)
    - ✅ Registration page with role selection
    - ✅ Auto-redirect from home to login
 
@@ -345,4 +345,4 @@ Check the documentation:
 
 ---
 
-**Built with ❤️ for Eskio**
+**Built with ❤️ for Esbio**

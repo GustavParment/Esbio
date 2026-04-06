@@ -9,12 +9,16 @@ import (
 )
 
 type Config struct {
-	JWTSecret      string
-	JWTExpiration  time.Duration
-	ServerPort     string
-	DatabaseURL    string
-	AnthropicAPIKey string
-	GeminiAPIKey    string
+	JWTSecret        string
+	JWTExpiration    time.Duration
+	ServerPort       string
+	DatabaseURL      string
+	AnthropicAPIKey  string
+	GeminiAPIKey     string
+	TinkClientID     string
+	TinkClientSecret string
+	TinkCallbackURL  string
+	TinkEncryptionKey string
 }
 
 func LoadConfig() *Config {
@@ -27,8 +31,12 @@ func LoadConfig() *Config {
 		JWTExpiration:   time.Hour * 24 * 7,
 		ServerPort:      getEnv("SERVER_PORT", ":8080"),
 		DatabaseURL:     getEnv("DATABASE_URL", "postgres://postgres:postgres@localhost:5432/bookkeeping?sslmode=disable"),
-		AnthropicAPIKey: getEnv("ANTHROPIC_API_KEY", ""),
-		GeminiAPIKey:    getEnv("GEMINI_API_KEY", ""),
+		AnthropicAPIKey:   getEnv("ANTHROPIC_API_KEY", ""),
+		GeminiAPIKey:      getEnv("GEMINI_API_KEY", ""),
+		TinkClientID:      getEnv("TINK_CLIENT_ID", ""),
+		TinkClientSecret:  getEnv("TINK_CLIENT_SECRET", ""),
+		TinkCallbackURL:   getEnv("TINK_CALLBACK_URL", "http://localhost:3000/bank/callback"),
+		TinkEncryptionKey: getEnv("TINK_ENCRYPTION_KEY", ""),
 	}
 }
 

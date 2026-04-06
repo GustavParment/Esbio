@@ -1,8 +1,8 @@
 #!/bin/bash
-# Eskio Startup Script
+# Esbio Startup Script
 # Starts the database, backend server, and frontend client
 
-echo "🚀 Starting Eskio..."
+echo "🚀 Starting Esbio..."
 echo ""
 
 # Get the script directory
@@ -37,14 +37,14 @@ fi
 
 # Check if PostgreSQL container is running
 echo "📦 Checking PostgreSQL container..."
-if docker ps | grep -q eskio-postgres; then
+if docker ps | grep -q esbio-postgres; then
     echo "✅ PostgreSQL container is already running"
 else
     echo "🔄 Starting PostgreSQL container..."
     cd "$SCRIPT_DIR/server" && docker compose up -d
     echo "⏳ Waiting for PostgreSQL to be ready..."
     # Wait for healthcheck to pass
-    until docker exec eskio-postgres pg_isready -U postgres > /dev/null 2>&1; do
+    until docker exec esbio-postgres pg_isready -U postgres > /dev/null 2>&1; do
         sleep 2
     done
     echo "✅ PostgreSQL is ready"
@@ -80,7 +80,7 @@ echo "$BACKEND_PID" > "$SCRIPT_DIR/.backend.pid"
 echo "$FRONTEND_PID" > "$SCRIPT_DIR/.frontend.pid"
 
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "✨ Eskio is now running!"
+echo "✨ Esbio is now running!"
 echo ""
 echo "📱 Frontend:  http://localhost:3000"
 echo "🔌 Backend:   http://localhost:8080"

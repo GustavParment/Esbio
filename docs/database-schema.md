@@ -1,6 +1,6 @@
 # Database Schema
 
-Eskio uses PostgreSQL 15. The schema is defined in `server/init.sql` and initialized automatically when the Docker container starts.
+Esbio uses PostgreSQL 15. The schema is defined in `server/init.sql` and initialized automatically when the Docker container starts.
 
 ## Entity Relationship
 

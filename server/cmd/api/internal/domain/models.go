@@ -209,3 +209,72 @@ type AgentMessage struct {
     Content        string `json:"content"`
     CreatedAt      string `json:"created_at"`
 }
+
+// Bank / Tink Open Banking models
+
+type BankConnection struct {
+    ConnectionID        int     `json:"connection_id"`
+    CompanyID           int     `json:"company_id"`
+    CreatedBy           int     `json:"created_by"`
+    TinkUserID          string  `json:"tink_user_id"`
+    TinkCredentialsID   *string `json:"tink_credentials_id"`
+    BankName            string  `json:"bank_name"`
+    Status              string  `json:"status"`
+    AccessTokenEncrypted *string `json:"-"`
+    ConsentExpiresAt    string  `json:"consent_expires_at"`
+    LastSyncedAt        *string `json:"last_synced_at"`
+    CreatedAt           string  `json:"created_at"`
+    UpdatedAt           string  `json:"updated_at"`
+}
+
+type BankAccount struct {
+    BankAccountID    int      `json:"bank_account_id"`
+    ConnectionID     int      `json:"connection_id"`
+    CompanyID        int      `json:"company_id"`
+    TinkAccountID    string   `json:"tink_account_id"`
+    AccountName      string   `json:"account_name"`
+    IBAN             *string  `json:"iban"`
+    AccountNumber    *string  `json:"account_number"`
+    Currency         string   `json:"currency"`
+    BalanceAmount    *float64 `json:"balance_amount"`
+    BalanceUpdatedAt *string  `json:"balance_updated_at"`
+    MappedAccountNo  *int     `json:"mapped_account_no"`
+    CreatedAt        string   `json:"created_at"`
+    UpdatedAt        string   `json:"updated_at"`
+}
+
+type BankTransaction struct {
+    BankTransactionID    int      `json:"bank_transaction_id"`
+    BankAccountID        int      `json:"bank_account_id"`
+    CompanyID            int      `json:"company_id"`
+    TinkTransactionID    string   `json:"tink_transaction_id"`
+    BookedDate           string   `json:"booked_date"`
+    Amount               float64  `json:"amount"`
+    Currency             string   `json:"currency"`
+    DescriptionOriginal  string   `json:"description_original"`
+    DescriptionDisplay   *string  `json:"description_display"`
+    MerchantName         *string  `json:"merchant_name"`
+    MerchantCategoryCode *string  `json:"merchant_category_code"`
+    TinkCategoryID       *string  `json:"tink_category_id"`
+    Status               string   `json:"status"`
+    ImportStatus         string   `json:"import_status"`
+    SuggestedAccountNo   *int     `json:"suggested_account_no"`
+    SuggestedDescription *string  `json:"suggested_description"`
+    VoucherID            *int     `json:"voucher_id"`
+    CreatedAt            string   `json:"created_at"`
+    UpdatedAt            string   `json:"updated_at"`
+}
+
+type CategorizationRule struct {
+    RuleID              int     `json:"rule_id"`
+    CompanyID           int     `json:"company_id"`
+    MatchPattern        string  `json:"match_pattern"`
+    MatchType           string  `json:"match_type"`
+    AccountNo           int     `json:"account_no"`
+    DescriptionTemplate *string `json:"description_template"`
+    TaxCode             *int    `json:"tax_code"`
+    Confidence          float64 `json:"confidence"`
+    UseCount            int     `json:"use_count"`
+    CreatedAt           string  `json:"created_at"`
+    UpdatedAt           string  `json:"updated_at"`
+}

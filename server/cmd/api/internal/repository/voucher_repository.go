@@ -170,7 +170,7 @@ func (r *voucherRepository) GetAllVouchers() ([]*domain.Voucher, error) {
 	query := `
 		SELECT voucher_id, voucher_number, date, description, reference, total_amount, period, created_by, company_id, corrects_voucher_id, corrected_by_voucher_id
 		FROM vouchers
-		ORDER BY voucher_number DESC
+		ORDER BY date DESC, voucher_number DESC
 	`
 	rows, err := r.db.Query(query)
 	if err != nil {
@@ -208,7 +208,7 @@ func (r *voucherRepository) GetVouchersByPeriod(companyID int, period string) ([
 		SELECT voucher_id, voucher_number, date, description, reference, total_amount, period, created_by, company_id, corrects_voucher_id, corrected_by_voucher_id
 		FROM vouchers
 		WHERE company_id = $1 AND period = $2
-		ORDER BY voucher_number DESC
+		ORDER BY date DESC, voucher_number DESC
 	`
 	rows, err := r.db.Query(query, companyID, period)
 	if err != nil {
@@ -246,7 +246,7 @@ func (r *voucherRepository) GetVouchersByCompanyID(companyID int) ([]*domain.Vou
 		SELECT voucher_id, voucher_number, date, description, reference, total_amount, period, created_by, company_id, corrects_voucher_id, corrected_by_voucher_id
 		FROM vouchers
 		WHERE company_id = $1
-		ORDER BY voucher_number DESC
+		ORDER BY date DESC, voucher_number DESC
 	`
 	rows, err := r.db.Query(query, companyID)
 	if err != nil {

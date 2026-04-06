@@ -158,7 +158,7 @@ func (h *PDFHandler) GenerateVoucherPDF(c *gin.Context) {
 	pdf.Ln(20)
 	pdf.SetFont("Arial", "I", 8)
 	pdf.SetTextColor(128, 128, 128)
-	pdf.Cell(0, 5, tr("Genererad av Eskio Bokföringssystem"))
+	pdf.Cell(0, 5, tr("Genererad av Esbio Bokföringssystem"))
 
 	// Output PDF to buffer
 	var buf bytes.Buffer

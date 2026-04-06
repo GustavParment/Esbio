@@ -1,6 +1,6 @@
 # Bookkeeping Concepts
 
-This document explains the accounting concepts implemented in Eskio for developers who may not be familiar with Swedish bookkeeping.
+This document explains the accounting concepts implemented in Esbio for developers who may not be familiar with Swedish bookkeeping.
 
 ## Double-Entry Bookkeeping
 
@@ -15,7 +15,7 @@ Example — recording a sale of 10,000 kr:
 
 ## BAS Chart of Accounts (Kontoplan)
 
-Eskio uses the Swedish **BAS** standard for organizing accounts into 8 groups:
+Esbio uses the Swedish **BAS** standard for organizing accounts into 8 groups:
 
 | Group | Name (Swedish)              | Name (English)           | Type | Normal Side |
 |-------|-----------------------------|--------------------------|------|-------------|
@@ -60,7 +60,7 @@ Each voucher gets an auto-incrementing **voucher number** (#1, #2, #3...).
 
 ### Voucher Corrections
 
-Instead of editing or deleting vouchers (which would break the audit trail), Eskio supports **corrections**:
+Instead of editing or deleting vouchers (which would break the audit trail), Esbio supports **corrections**:
 
 1. **Simple reversal** — creates a new voucher with debits and credits swapped, effectively zeroing out the original
 2. **Correction with changes** — creates a new voucher with the corrected values
