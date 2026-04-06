@@ -24,10 +24,11 @@ func SetupRoutes(
 
 	v1 := router.Group("/api/v1")
 	{
+		authRateLimit := middleware.AuthRateLimitMiddleware()
 		auth := v1.Group("/auth")
 		{
-			auth.POST("/register", authHandler.Register)
-			auth.POST("/login", authHandler.Login)
+			auth.POST("/register", authRateLimit, authHandler.Register)
+			auth.POST("/login", authRateLimit, authHandler.Login)
 			auth.POST("/logout", authHandler.Logout)
 			auth.POST("/refresh", authHandler.RefreshToken)
 			auth.GET("/me", authMiddleware, authHandler.GetCurrentUser)
