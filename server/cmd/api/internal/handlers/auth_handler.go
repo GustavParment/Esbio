@@ -6,6 +6,7 @@ import (
 	"esbio/api/internal/dto"
 	"esbio/api/internal/service"
 	"net/http"
+	"os"
 	"strings"
 
 	"github.com/gin-gonic/gin"
@@ -13,14 +14,24 @@ import (
 )
 
 func setCookie(c *gin.Context, name, value string, maxAge int) {
+	sameSite := http.SameSiteNoneMode
+	secure := true
+
+	if os.Getenv("COOKIE_SAMESITE") == "lax" {
+		sameSite = http.SameSiteLaxMode
+	}
+	if os.Getenv("COOKIE_SECURE") == "false" {
+		secure = false
+	}
+
 	http.SetCookie(c.Writer, &http.Cookie{
 		Name:     name,
 		Value:    value,
 		MaxAge:   maxAge,
 		Path:     "/",
-		Secure:   true,
+		Secure:   secure,
 		HttpOnly: true,
-		SameSite: http.SameSiteNoneMode,
+		SameSite: sameSite,
 	})
 }
 

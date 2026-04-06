@@ -29,7 +29,7 @@ func (h *AccountHandler) CreateAccount(c *gin.Context) {
 	}
 	
 	if err := h.accountService.CreateAccount(&account); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 
@@ -50,7 +50,7 @@ func (h *AccountHandler) GetAccountByNo(c *gin.Context) {
 
 	account, err := h.accountService.GetAccountByNo(accountNo)
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+		notFoundError(c, err)
 		return
 	}
 
@@ -61,7 +61,7 @@ func (h *AccountHandler) GetAccountByNo(c *gin.Context) {
 func (h *AccountHandler) GetAllAccounts(c *gin.Context) {
 	accounts, err := h.accountService.GetAllAccounts()
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 
@@ -108,7 +108,7 @@ func (h *AccountHandler) UpdateAccount(c *gin.Context) {
 	account.AccountNo = accountNo
 
 	if err := h.accountService.UpdateAccount(&account); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 
@@ -128,7 +128,7 @@ func (h *AccountHandler) DeleteAccount(c *gin.Context) {
 	}
 
 	if err := h.accountService.DeleteAccount(accountNo); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 
@@ -149,7 +149,7 @@ func (h *AccountHandler) GetAccountLedger(c *gin.Context) {
 
 	entries, err := h.accountService.GetLedger(accountNo, period)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		internalError(c, err)
 		return
 	}
 
