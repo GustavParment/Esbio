@@ -265,6 +265,27 @@ type BankTransaction struct {
     UpdatedAt            string   `json:"updated_at"`
 }
 
+// Receipt scanning types
+type ReceiptScanResult struct {
+	Date           string             `json:"date"`
+	Vendor         string             `json:"vendor"`
+	Description    string             `json:"description"`
+	TotalAmount    float64            `json:"total_amount"`
+	VATRate        int                `json:"vat_rate"`
+	VATAmount      float64            `json:"vat_amount"`
+	AmountExclVAT  float64            `json:"amount_excl_vat"`
+	Currency       string             `json:"currency"`
+	SuggestedLines []ReceiptLineItem  `json:"suggested_lines"`
+}
+
+type ReceiptLineItem struct {
+	AccountNo    int     `json:"account_no"`
+	AccountName  string  `json:"account_name"`
+	DebitAmount  float64 `json:"debit_amount"`
+	CreditAmount float64 `json:"credit_amount"`
+	TaxCode      int     `json:"tax_code"`
+}
+
 type CategorizationRule struct {
     RuleID              int     `json:"rule_id"`
     CompanyID           int     `json:"company_id"`

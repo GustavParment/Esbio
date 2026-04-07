@@ -167,6 +167,27 @@ export interface RegisterResponse {
   user: User;
 }
 
+// Receipt scanning types
+export interface ReceiptLineItem {
+  account_no: number;
+  account_name: string;
+  debit_amount: number;
+  credit_amount: number;
+  tax_code: number;
+}
+
+export interface ReceiptScanResult {
+  date: string;
+  vendor: string;
+  description: string;
+  total_amount: number;
+  vat_rate: number;
+  vat_amount: number;
+  amount_excl_vat: number;
+  currency: string;
+  suggested_lines: ReceiptLineItem[];
+}
+
 // API Response types
 export interface ApiError {
   error: string;

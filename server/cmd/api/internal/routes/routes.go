@@ -19,6 +19,7 @@ func SetupRoutes(
 	sieHandler *handlers.SIEHandler,
 	agentHandler *handlers.AgentHandler,
 	companyHandler *handlers.CompanyHandler,
+	receiptHandler *handlers.ReceiptHandler,
 	authMiddleware gin.HandlerFunc,
 	companyMiddleware gin.HandlerFunc) {
 
@@ -96,6 +97,11 @@ func SetupRoutes(
 			reports.GET("/balance-sheet", reportHandler.GetBalanceSheet)
 			reports.GET("/vat", reportHandler.GetVATReport)
 			reports.GET("/sie", sieHandler.ExportSIE)
+		}
+
+		receipts := v1.Group("/receipts", authMiddleware, companyMiddleware)
+		{
+			receipts.POST("/scan", middleware.RequireRole("Admin", "Bookkeeper"), receiptHandler.Scan)
 		}
 
 		agent := v1.Group("/agent", authMiddleware, companyMiddleware)
