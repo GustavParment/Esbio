@@ -131,7 +131,22 @@ Esbio/
 - CORS whitelist
 - Parameterized SQL queries (injection protected)
 - Company data isolation via middleware
+- Role-based access control (RBAC) on all write operations
 
-## Default Credentials
+## Roles & Permissions
 
-After registration, all users default to the "Bookkeeper" role. Admins can change user roles later.
+Three roles: **Admin**, **Bookkeeper**, **Manager**. New users default to Bookkeeper.
+
+| Operation | Admin | Bookkeeper | Manager |
+|-----------|:-----:|:----------:|:-------:|
+| View data (accounts, vouchers, reports) | Yes | Yes | Yes |
+| Create/edit accounts | Yes | Yes | No |
+| Create/edit vouchers & line items | Yes | Yes | No |
+| Delete accounts & line items | Yes | No | No |
+| Update/delete vouchers | Yes | No | No |
+| Create correction vouchers | Yes | No | No |
+| Create/delete users | Yes | No | No |
+| Change user roles | Yes | No | No |
+| Read/update own profile | Yes | Yes | Yes |
+| Company CRUD (own companies) | Yes | Yes | Yes |
+| Export reports (SIE, PDF) | Yes | Yes | Yes |
