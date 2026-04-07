@@ -48,6 +48,14 @@ func (h *UserHandler) GetUserByID(c *gin.Context) {
 		return
 	}
 
+	// Only allow users to read their own profile, or Admin to read any
+	requestingUserID, _ := c.Get("userID")
+	role, _ := c.Get("role")
+	if requestingUserID.(int) != userID && role.(string) != "Admin" {
+		c.JSON(http.StatusForbidden, gin.H{"error": "access denied"})
+		return
+	}
+
 	user, err := h.userService.GetUserByID(userID)
 	if err != nil {
 		notFoundError(c, err)
@@ -57,9 +65,17 @@ func (h *UserHandler) GetUserByID(c *gin.Context) {
 	c.JSON(http.StatusOK, user)
 }
 
-// GetUserByEmail handles GET /users/email/:email
+// GetUserByEmail handles GET /users/email/:email — Admin only
 func (h *UserHandler) GetUserByEmail(c *gin.Context) {
+	role, _ := c.Get("role")
+	requestingEmail, _ := c.Get("email")
 	email := c.Param("email")
+
+	// Only allow users to look up their own email, or Admin to look up any
+	if requestingEmail.(string) != email && role.(string) != "Admin" {
+		c.JSON(http.StatusForbidden, gin.H{"error": "access denied"})
+		return
+	}
 
 	user, err := h.userService.GetUserByEmail(email)
 	if err != nil {
@@ -76,6 +92,15 @@ func (h *UserHandler) UpdateUser(c *gin.Context) {
 	userID, err := strconv.Atoi(idParam)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid user ID"})
+		return
+	}
+
+	// Only allow users to update their own profile, or Admin to update any
+	requestingUserID, _ := c.Get("userID")
+	role, _ := c.Get("role")
+	isAdmin := role.(string) == "Admin"
+	if requestingUserID.(int) != userID && !isAdmin {
+		c.JSON(http.StatusForbidden, gin.H{"error": "access denied"})
 		return
 	}
 
@@ -112,7 +137,12 @@ func (h *UserHandler) UpdateUser(c *gin.Context) {
 	if v, ok := req["password"].(string); ok && v != "" {
 		existingUser.PasswordHash = v
 	}
+	// Only Admin can change roles
 	if v, ok := req["role"].(string); ok && v != "" {
+		if !isAdmin {
+			c.JSON(http.StatusForbidden, gin.H{"error": "only admins can change user roles"})
+			return
+		}
 		existingUser.Role = v
 	}
 
@@ -127,12 +157,19 @@ func (h *UserHandler) UpdateUser(c *gin.Context) {
 	})
 }
 
-// DeleteUser handles DELETE /users/:id
+// DeleteUser handles DELETE /users/:id — Admin only
 func (h *UserHandler) DeleteUser(c *gin.Context) {
 	idParam := c.Param("id")
 	userID, err := strconv.Atoi(idParam)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid user ID"})
+		return
+	}
+
+	// Only Admin can delete users
+	role, _ := c.Get("role")
+	if role.(string) != "Admin" {
+		c.JSON(http.StatusForbidden, gin.H{"error": "only admins can delete users"})
 		return
 	}
 

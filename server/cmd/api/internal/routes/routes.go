@@ -45,32 +45,32 @@ func SetupRoutes(
 
 		users := v1.Group("/users", authMiddleware)
 		{
-			users.POST("", userHandler.CreateUser)
+			users.POST("", middleware.RequireRole("Admin"), userHandler.CreateUser)
 			users.GET("/:id", userHandler.GetUserByID)
 			users.GET("/email/:email", userHandler.GetUserByEmail)
 			users.PUT("/:id", userHandler.UpdateUser)
-			users.DELETE("/:id", userHandler.DeleteUser)
+			users.DELETE("/:id", middleware.RequireRole("Admin"), userHandler.DeleteUser)
 		}
 
 		accounts := v1.Group("/accounts", authMiddleware, companyMiddleware)
 		{
-			accounts.POST("", accountHandler.CreateAccount)
+			accounts.POST("", middleware.RequireRole("Admin", "Bookkeeper"), accountHandler.CreateAccount)
 			accounts.GET("", accountHandler.GetAllAccounts)
 			accounts.GET("/:accountNo", accountHandler.GetAccountByNo)
 			accounts.GET("/:accountNo/ledger", accountHandler.GetAccountLedger)
 			accounts.GET("/group/:group", accountHandler.GetAccountsByGroup)
-			accounts.PUT("/:accountNo", accountHandler.UpdateAccount)
-			accounts.DELETE("/:accountNo", accountHandler.DeleteAccount)
+			accounts.PUT("/:accountNo", middleware.RequireRole("Admin", "Bookkeeper"), accountHandler.UpdateAccount)
+			accounts.DELETE("/:accountNo", middleware.RequireRole("Admin"), accountHandler.DeleteAccount)
 		}
 
 		lineItems := v1.Group("/lineitems", authMiddleware, companyMiddleware)
 		{
-			lineItems.POST("", lineItemHandler.CreateLineItem)
+			lineItems.POST("", middleware.RequireRole("Admin", "Bookkeeper"), lineItemHandler.CreateLineItem)
 			lineItems.GET("/:id", lineItemHandler.GetLineItemByID)
 			lineItems.GET("/voucher/:voucherId", lineItemHandler.GetLineItemsByVoucherID)
 			lineItems.GET("/account/:accountNo", lineItemHandler.GetLineItemsByAccountNo)
-			lineItems.PUT("/:id", lineItemHandler.UpdateLineItem)
-			lineItems.DELETE("/:id", lineItemHandler.DeleteLineItem)
+			lineItems.PUT("/:id", middleware.RequireRole("Admin", "Bookkeeper"), lineItemHandler.UpdateLineItem)
+			lineItems.DELETE("/:id", middleware.RequireRole("Admin"), lineItemHandler.DeleteLineItem)
 		}
 
 		vouchers := v1.Group("/vouchers", authMiddleware, companyMiddleware)
@@ -82,8 +82,8 @@ func SetupRoutes(
 			vouchers.GET("/period/:period", voucherHandler.GetVouchersByPeriod)
 			vouchers.GET("/company", voucherHandler.GetVouchersByCompanyID)
 			vouchers.GET("/:id/validate", voucherHandler.ValidateVoucherBalance)
-			vouchers.POST("/:id/correct", voucherHandler.CreateCorrectionVoucher)
-			vouchers.POST("/:id/correct-with-changes", voucherHandler.CreateCorrectionWithChanges)
+			vouchers.POST("/:id/correct", middleware.RequireRole("Admin"), voucherHandler.CreateCorrectionVoucher)
+			vouchers.POST("/:id/correct-with-changes", middleware.RequireRole("Admin"), voucherHandler.CreateCorrectionWithChanges)
 			vouchers.GET("/:id/pdf", pdfHandler.GenerateVoucherPDF)
 			// Only Admin can update or delete vouchers
 			vouchers.PUT("/:id", middleware.RequireRole("Admin"), voucherHandler.UpdateVoucher)
