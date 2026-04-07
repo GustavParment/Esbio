@@ -39,6 +39,7 @@ export interface Company {
   created_by: number;
   created_at: string;
   updated_at: string;
+  trial_days_left?: number;
 }
 
 export interface CreateCompanyRequest {

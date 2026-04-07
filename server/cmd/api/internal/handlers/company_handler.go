@@ -5,6 +5,7 @@ import (
 	"esbio/api/internal/service"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/gin-gonic/gin"
 )
@@ -33,7 +34,26 @@ func (h *CompanyHandler) ListCompanies(c *gin.Context) {
 	if companies == nil {
 		companies = []*domain.Company{}
 	}
-	c.JSON(http.StatusOK, companies)
+
+	// Add trial_days_left for free plan companies
+	type companyWithTrial struct {
+		*domain.Company
+		TrialDaysLeft *int `json:"trial_days_left,omitempty"`
+	}
+	result := make([]companyWithTrial, len(companies))
+	for i, comp := range companies {
+		result[i] = companyWithTrial{Company: comp}
+		if comp.Plan == "free" {
+			if createdAt, err := time.Parse(time.RFC3339, comp.CreatedAt); err == nil {
+				daysLeft := 30 - int(time.Since(createdAt).Hours()/24)
+				if daysLeft < 0 {
+					daysLeft = 0
+				}
+				result[i].TrialDaysLeft = &daysLeft
+			}
+		}
+	}
+	c.JSON(http.StatusOK, result)
 }
 
 // CreateCompany handles POST /companies

@@ -33,9 +33,18 @@ export class ApiClient {
       });
 
       if (!response.ok) {
-        const errorData: ApiError = await response.json().catch(() => ({
+        const errorData = await response.json().catch(() => ({
           error: "An error occurred",
         }));
+
+        // Redirect to upgrade page on trial expiration
+        if (response.status === 402 && errorData.code === "TRIAL_EXPIRED") {
+          if (typeof window !== "undefined") {
+            window.location.href = "/upgrade";
+          }
+          throw new Error("TRIAL_EXPIRED");
+        }
+
         throw new Error(errorData.error || errorData.message || "Request failed");
       }
 

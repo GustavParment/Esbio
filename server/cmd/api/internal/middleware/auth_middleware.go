@@ -5,6 +5,7 @@ import (
 	"esbio/api/internal/repository"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/gin-gonic/gin"
 )
@@ -113,6 +114,23 @@ func CompanyMiddleware(companyRepo repository.CompanyRepository) gin.HandlerFunc
 			c.JSON(http.StatusForbidden, gin.H{"error": "access denied to this company"})
 			c.Abort()
 			return
+		}
+
+		// Check trial expiration for free plan
+		company, err := companyRepo.GetCompanyByID(companyID)
+		if err == nil && company.Plan == "free" {
+			createdAt, parseErr := time.Parse(time.RFC3339, company.CreatedAt)
+			if parseErr == nil {
+				if time.Since(createdAt) > 30*24*time.Hour {
+					c.JSON(http.StatusPaymentRequired, gin.H{
+						"error": "trial expired",
+						"code":  "TRIAL_EXPIRED",
+						"plan":  company.Plan,
+					})
+					c.Abort()
+					return
+				}
+			}
 		}
 
 		c.Set("companyID", companyID)

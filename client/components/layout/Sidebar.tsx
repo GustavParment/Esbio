@@ -145,6 +145,27 @@ export default function Sidebar() {
         )}
       </nav>
 
+      {/* Trial warning */}
+      {selectedCompany?.plan === "free" && selectedCompany.trial_days_left !== undefined && (
+        <div className="mx-3 mb-2">
+          <Link
+            href="/upgrade"
+            className={`block px-3 py-3 rounded-lg text-sm transition-colors ${
+              selectedCompany.trial_days_left <= 5
+                ? "bg-red-900/30 border border-red-700/50 text-red-300 hover:bg-red-900/50"
+                : "bg-orange-900/30 border border-orange-700/50 text-orange-300 hover:bg-orange-900/50"
+            }`}
+          >
+            <p className="font-medium">
+              {selectedCompany.trial_days_left === 0
+                ? "Provperioden har gått ut"
+                : `${selectedCompany.trial_days_left} dagar kvar`}
+            </p>
+            <p className="text-xs mt-0.5 opacity-75">Uppgradera din plan →</p>
+          </Link>
+        </div>
+      )}
+
       {/* Dark mode toggle */}
       <div className="px-3 pb-2">
         <button
