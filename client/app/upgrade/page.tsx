@@ -48,6 +48,7 @@ export default function UpgradePage() {
   const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
   const [processing, setProcessing] = useState(false);
   const [error, setError] = useState("");
+  const currentPlan = selectedCompany?.plan || "free";
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -82,16 +83,32 @@ export default function UpgradePage() {
       <div className="max-w-4xl mx-auto px-4 py-12">
         {/* Header */}
         <div className="text-center mb-12">
-          <div className="inline-block px-4 py-1.5 bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400 rounded-full text-sm font-medium mb-4">
-            Din provperiod har gått ut
-          </div>
-          <h1 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-3">
-            Uppgradera för att fortsätta
-          </h1>
-          <p className="text-gray-600 dark:text-gray-400 text-lg max-w-xl mx-auto">
-            Din 30-dagars provperiod{selectedCompany ? ` för ${selectedCompany.company_name}` : ""} har löpt ut.
-            Välj en plan för att fortsätta använda Esbio.
-          </p>
+          {currentPlan === "free" ? (
+            <>
+              <div className="inline-block px-4 py-1.5 bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400 rounded-full text-sm font-medium mb-4">
+                Din provperiod har gått ut
+              </div>
+              <h1 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-3">
+                Uppgradera för att fortsätta
+              </h1>
+              <p className="text-gray-600 dark:text-gray-400 text-lg max-w-xl mx-auto">
+                Din 30-dagars provperiod{selectedCompany ? ` för ${selectedCompany.company_name}` : ""} har löpt ut.
+                Välj en plan för att fortsätta använda Esbio.
+              </p>
+            </>
+          ) : (
+            <>
+              <div className="inline-block px-4 py-1.5 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 rounded-full text-sm font-medium mb-4">
+                {currentPlan === "starter" ? "Starter" : "Tillväxt"} — aktiv
+              </div>
+              <h1 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-3">
+                Uppgradera din plan
+              </h1>
+              <p className="text-gray-600 dark:text-gray-400 text-lg max-w-xl mx-auto">
+                Byt till en större plan för fler funktioner.
+              </p>
+            </>
+          )}
         </div>
 
         {/* Error */}
@@ -102,8 +119,23 @@ export default function UpgradePage() {
         )}
 
         {/* Plans */}
-        <div className="grid md:grid-cols-2 gap-6 mb-12">
-          {plans.map((plan) => (
+        {currentPlan === "growth" && (
+          <div className="text-center mb-12 p-8 bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700">
+            <p className="text-lg text-gray-600 dark:text-gray-400">
+              Du har redan den högsta planen.
+            </p>
+            <button
+              onClick={() => router.push("/settings")}
+              className="mt-4 px-6 py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-sm font-medium"
+            >
+              Tillbaka till inställningar
+            </button>
+          </div>
+        )}
+        <div className={`grid gap-6 mb-12 ${plans.filter(p => p.id !== currentPlan).length === 1 ? "max-w-md mx-auto" : "md:grid-cols-2"}`}>
+          {plans.filter((plan) => plan.id !== currentPlan).map((plan) => {
+            const isDowngrade = currentPlan === "growth" && plan.id === "starter";
+            return (
             <div
               key={plan.id}
               className={`relative bg-white dark:bg-gray-800 rounded-2xl shadow-sm border-2 p-8 transition-all ${
@@ -112,7 +144,7 @@ export default function UpgradePage() {
                   : "border-gray-200 dark:border-gray-700"
               }`}
             >
-              {plan.featured && (
+              {plan.featured && currentPlan === "free" && (
                 <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 bg-blue-600 text-white text-xs font-semibold rounded-full">
                   Mest populär
                 </div>
@@ -140,17 +172,22 @@ export default function UpgradePage() {
 
               <button
                 onClick={() => handleSelectPlan(plan.id, plan.priceId)}
-                disabled={processing}
+                disabled={processing || isDowngrade}
                 className={`w-full py-3 px-6 rounded-xl font-medium transition-colors ${
-                  plan.featured
+                  plan.featured || currentPlan !== "free"
                     ? "bg-blue-600 text-white hover:bg-blue-700"
                     : "bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 hover:bg-gray-800 dark:hover:bg-gray-200"
                 } disabled:opacity-50`}
               >
-                {processing && selectedPlan === plan.id ? "Bearbetar..." : `Välj ${plan.name}`}
+                {processing && selectedPlan === plan.id
+                  ? "Bearbetar..."
+                  : currentPlan === "free"
+                  ? `Välj ${plan.name}`
+                  : `Uppgradera till ${plan.name}`}
               </button>
             </div>
-          ))}
+          );
+          })}
         </div>
 
         {/* Contact */}

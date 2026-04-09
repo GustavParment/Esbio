@@ -6,8 +6,10 @@ import { useAuth } from "@/lib/contexts/AuthContext";
 import { useCompany } from "@/lib/contexts/CompanyContext";
 import { companiesApi } from "@/lib/api/companies";
 import { authApi } from "@/lib/api/auth";
+import { stripeApi } from "@/lib/api/stripe";
 import { agentApi, AgentUsageSummary } from "@/lib/api/agent";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 export default function SettingsPage() {
   const { user, logout } = useAuth();
@@ -124,6 +126,76 @@ export default function SettingsPage() {
           {loading ? "Sparar..." : "Spara"}
         </button>
       </div>
+
+      {/* Subscription */}
+      {selectedCompany && (
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
+          <h2 className="text-lg font-semibold text-gray-900 mb-4">Prenumeration</h2>
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="flex items-center gap-3">
+                <span className="text-2xl font-bold text-gray-900">
+                  {selectedCompany.plan === "free" && "Gratis (provperiod)"}
+                  {selectedCompany.plan === "starter" && "Starter"}
+                  {selectedCompany.plan === "growth" && "Tillväxt"}
+                </span>
+                {selectedCompany.plan !== "free" && (
+                  <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                    selectedCompany.plan_status === "active"
+                      ? "bg-green-100 text-green-700"
+                      : selectedCompany.plan_status === "past_due"
+                      ? "bg-red-100 text-red-700"
+                      : "bg-gray-100 text-gray-700"
+                  }`}>
+                    {selectedCompany.plan_status === "active" && "Aktiv"}
+                    {selectedCompany.plan_status === "past_due" && "Betalning förfallen"}
+                    {selectedCompany.plan_status === "canceled" && "Avslutad"}
+                    {selectedCompany.plan_status === "trialing" && "Provperiod"}
+                  </span>
+                )}
+              </div>
+              <p className="text-sm text-gray-500 mt-1">
+                {selectedCompany.plan === "free" && "Uppgradera för att låsa upp alla funktioner"}
+                {selectedCompany.plan === "starter" && "199 kr/mån"}
+                {selectedCompany.plan === "growth" && "399 kr/mån"}
+              </p>
+            </div>
+            <div className="flex gap-3">
+              {selectedCompany.plan === "free" && (
+                <Link
+                  href="/upgrade"
+                  className="px-5 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium text-sm"
+                >
+                  Uppgradera
+                </Link>
+              )}
+              {selectedCompany.plan === "starter" && (
+                <Link
+                  href="/upgrade"
+                  className="px-5 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium text-sm"
+                >
+                  Uppgradera till Tillväxt
+                </Link>
+              )}
+              {selectedCompany.plan !== "free" && (
+                <button
+                  onClick={async () => {
+                    try {
+                      const { url } = await stripeApi.createPortalSession();
+                      window.location.href = url;
+                    } catch (err) {
+                      setError(err instanceof Error ? err.message : "Kunde inte öppna kundportalen");
+                    }
+                  }}
+                  className="px-5 py-2.5 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium text-sm"
+                >
+                  Hantera prenumeration
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* AI Usage */}
       {usage && (
