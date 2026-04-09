@@ -156,8 +156,8 @@ export default function VATReportPage() {
             )}
           </div>
 
-          {/* Totals */}
-          <div className="px-6 py-6 bg-red-50 border-t-4 border-red-500">
+          {/* Output VAT Totals */}
+          <div className="px-6 py-4 bg-gray-50 border-t-2 border-gray-200">
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <p className="text-sm text-gray-600">Total försäljning</p>
@@ -166,9 +166,74 @@ export default function VATReportPage() {
                 </p>
               </div>
               <div className="text-right">
-                <p className="text-sm text-gray-600">Total utgående moms</p>
-                <p className="text-2xl font-bold text-red-600">
+                <p className="text-sm text-gray-600">Utgående moms</p>
+                <p className="text-xl font-bold text-red-600">
                   {formatCurrency(report.total_vat)} kr
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Input VAT Section */}
+          <div className="px-6 py-4">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4 mt-2">INGÅENDE MOMS</h3>
+            {report.input_entries && report.input_entries.length > 0 ? (
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b-2 border-gray-200">
+                    <th className="py-3 text-left text-sm font-semibold text-gray-700">Konto</th>
+                    <th className="py-3 text-left text-sm font-semibold text-gray-700">Kontonamn</th>
+                    <th className="py-3 text-right text-sm font-semibold text-gray-700">Belopp</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {report.input_entries.map((entry) => (
+                    <tr key={entry.account_no} className="border-b border-gray-100">
+                      <td className="py-3 text-sm text-gray-900 font-medium">{entry.account_no}</td>
+                      <td className="py-3 text-sm text-gray-900">{entry.account_name}</td>
+                      <td className="py-3 text-sm text-gray-900 text-right">
+                        {formatCurrency(entry.amount)} kr
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+                <tfoot>
+                  <tr className="border-t-2 border-gray-300">
+                    <td colSpan={2} className="py-3 text-sm font-bold text-gray-900">
+                      Total ingående moms
+                    </td>
+                    <td className="py-3 text-sm font-bold text-green-600 text-right">
+                      {formatCurrency(report.total_input_vat)} kr
+                    </td>
+                  </tr>
+                </tfoot>
+              </table>
+            ) : (
+              <p className="text-gray-500 italic">Ingen ingående moms för denna period</p>
+            )}
+          </div>
+
+          {/* Net VAT */}
+          <div className={`px-6 py-6 border-t-4 ${report.net_vat >= 0 ? "bg-red-50 border-red-500" : "bg-green-50 border-green-500"}`}>
+            <div className="grid grid-cols-3 gap-4">
+              <div>
+                <p className="text-sm text-gray-600">Utgående moms</p>
+                <p className="text-lg font-bold text-red-600">
+                  {formatCurrency(report.total_vat)} kr
+                </p>
+              </div>
+              <div className="text-center">
+                <p className="text-sm text-gray-600">Ingående moms</p>
+                <p className="text-lg font-bold text-green-600">
+                  -{formatCurrency(report.total_input_vat)} kr
+                </p>
+              </div>
+              <div className="text-right">
+                <p className="text-sm text-gray-600">
+                  {report.net_vat >= 0 ? "Moms att betala" : "Moms att få tillbaka"}
+                </p>
+                <p className={`text-2xl font-bold ${report.net_vat >= 0 ? "text-red-600" : "text-green-600"}`}>
+                  {formatCurrency(Math.abs(report.net_vat))} kr
                 </p>
               </div>
             </div>

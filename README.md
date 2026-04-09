@@ -115,7 +115,7 @@ Esbio/
 - Double-entry bookkeeping
 - Voucher management with PDF export
 - Account management & ledger
-- Financial reports (income statement, balance sheet, VAT)
+- Financial reports (income statement, balance sheet, VAT with input/output moms & net calculation)
 - SIE file export
 - Ester AI assistant (Gemini-powered)
 - Multi-company support

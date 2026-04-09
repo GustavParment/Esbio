@@ -116,21 +116,37 @@ func CompanyMiddleware(companyRepo repository.CompanyRepository) gin.HandlerFunc
 			return
 		}
 
-		// Check trial expiration for free plan
+		// Check trial expiration and plan status
 		company, err := companyRepo.GetCompanyByID(companyID)
-		if err == nil && company.Plan == "free" {
-			createdAt, parseErr := time.Parse(time.RFC3339, company.CreatedAt)
-			if parseErr == nil {
-				if time.Since(createdAt) > 30*24*time.Hour {
-					c.JSON(http.StatusPaymentRequired, gin.H{
-						"error": "trial expired",
-						"code":  "TRIAL_EXPIRED",
-						"plan":  company.Plan,
-					})
-					c.Abort()
-					return
+		if err == nil {
+			// Block past_due subscriptions
+			if company.PlanStatus == "past_due" {
+				c.JSON(http.StatusPaymentRequired, gin.H{
+					"error": "payment past due",
+					"code":  "PAYMENT_PAST_DUE",
+					"plan":  company.Plan,
+				})
+				c.Abort()
+				return
+			}
+
+			// Check trial expiration for free plan
+			if company.Plan == "free" {
+				createdAt, parseErr := time.Parse(time.RFC3339, company.CreatedAt)
+				if parseErr == nil {
+					if time.Since(createdAt) > 30*24*time.Hour {
+						c.JSON(http.StatusPaymentRequired, gin.H{
+							"error": "trial expired",
+							"code":  "TRIAL_EXPIRED",
+							"plan":  company.Plan,
+						})
+						c.Abort()
+						return
+					}
 				}
 			}
+
+			c.Set("companyName", company.CompanyName)
 		}
 
 		c.Set("companyID", companyID)

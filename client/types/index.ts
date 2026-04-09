@@ -36,10 +36,13 @@ export interface Company {
   company_name: string;
   org_number?: string;
   plan: string;
+  plan_status: string;
   created_by: number;
   created_at: string;
   updated_at: string;
   trial_days_left?: number;
+  stripe_customer_id?: string;
+  stripe_subscription_id?: string;
 }
 
 export interface CreateCompanyRequest {

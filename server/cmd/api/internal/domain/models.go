@@ -50,13 +50,16 @@ type User struct {
 }
 
 type Company struct {
-    CompanyID   int    `json:"company_id"`
-    CompanyName string `json:"company_name"`
-    OrgNumber   string `json:"org_number"`
-    Plan        string `json:"plan"`
-    CreatedBy   int    `json:"created_by"`
-    CreatedAt   string `json:"created_at"`
-    UpdatedAt   string `json:"updated_at"`
+    CompanyID            int     `json:"company_id"`
+    CompanyName          string  `json:"company_name"`
+    OrgNumber            string  `json:"org_number"`
+    Plan                 string  `json:"plan"`
+    CreatedBy            int     `json:"created_by"`
+    CreatedAt            string  `json:"created_at"`
+    UpdatedAt            string  `json:"updated_at"`
+    StripeCustomerID     *string `json:"stripe_customer_id,omitempty"`
+    StripeSubscriptionID *string `json:"stripe_subscription_id,omitempty"`
+    PlanStatus           string  `json:"plan_status"`
 }
 
 type AccountBalance struct {
@@ -175,14 +178,23 @@ type VATReportEntry struct {
     TotalVAT     float64 `json:"total_vat"`      // Calculated VAT amount
 }
 
+type VATInputEntry struct {
+    AccountNo   int     `json:"account_no"`     // 2641, 2642, 2643, etc.
+    AccountName string  `json:"account_name"`
+    Amount      float64 `json:"amount"`         // Input VAT amount (debit balance)
+}
+
 type VATReport struct {
     Period struct {
         FromDate string `json:"from_date"`
         ToDate   string `json:"to_date"`
     } `json:"period"`
-    Entries       []VATReportEntry `json:"entries"`
-    TotalSales    float64          `json:"total_sales"`
-    TotalVAT      float64          `json:"total_vat"`
+    Entries        []VATReportEntry `json:"entries"`
+    TotalSales     float64          `json:"total_sales"`
+    TotalVAT       float64          `json:"total_vat"`
+    InputEntries   []VATInputEntry  `json:"input_entries"`
+    TotalInputVAT  float64          `json:"total_input_vat"`
+    NetVAT         float64          `json:"net_vat"`
 }
 
 type ScheduledTask struct {

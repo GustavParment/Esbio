@@ -4,6 +4,7 @@ import { useAuth } from "@/lib/contexts/AuthContext";
 import { useCompany } from "@/lib/contexts/CompanyContext";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { stripeApi } from "@/lib/api/stripe";
 
 const plans = [
   {
@@ -19,6 +20,7 @@ const plans = [
       "5 fakturor/mån",
     ],
     featured: false,
+    priceId: "price_1TKFEmF27XxV0OojLLuaOAfg",
   },
   {
     id: "growth",
@@ -35,6 +37,7 @@ const plans = [
       "Prioriterad support",
     ],
     featured: true,
+    priceId: "price_1TKFFGF27XxV0Ooj3uaT41ho",
   },
 ];
 
@@ -44,6 +47,7 @@ export default function UpgradePage() {
   const router = useRouter();
   const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
   const [processing, setProcessing] = useState(false);
+  const [error, setError] = useState("");
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -51,15 +55,18 @@ export default function UpgradePage() {
     }
   }, [user, authLoading, router]);
 
-  const handleSelectPlan = async (planId: string) => {
+  const handleSelectPlan = async (planId: string, priceId: string) => {
     setSelectedPlan(planId);
     setProcessing(true);
+    setError("");
 
-    // TODO: Integrate with Stripe/payment provider
-    // For now, show confirmation
-    setTimeout(() => {
+    try {
+      const { url } = await stripeApi.createCheckoutSession(priceId);
+      window.location.href = url;
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Kunde inte starta betalning");
       setProcessing(false);
-    }, 1000);
+    }
   };
 
   if (authLoading) {
@@ -86,6 +93,13 @@ export default function UpgradePage() {
             Välj en plan för att fortsätta använda Esbio.
           </p>
         </div>
+
+        {/* Error */}
+        {error && (
+          <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg text-center">
+            <p className="text-red-700 dark:text-red-400">{error}</p>
+          </div>
+        )}
 
         {/* Plans */}
         <div className="grid md:grid-cols-2 gap-6 mb-12">
@@ -125,7 +139,7 @@ export default function UpgradePage() {
               </ul>
 
               <button
-                onClick={() => handleSelectPlan(plan.id)}
+                onClick={() => handleSelectPlan(plan.id, plan.priceId)}
                 disabled={processing}
                 className={`w-full py-3 px-6 rounded-xl font-medium transition-colors ${
                   plan.featured

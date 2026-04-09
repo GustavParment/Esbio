@@ -664,3 +664,8 @@ CREATE TABLE IF NOT EXISTS tink_oauth_state (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     expires_at TIMESTAMP NOT NULL
 );
+
+-- Migration: Add Stripe columns to companies
+ALTER TABLE companies ADD COLUMN IF NOT EXISTS stripe_customer_id VARCHAR(255);
+ALTER TABLE companies ADD COLUMN IF NOT EXISTS stripe_subscription_id VARCHAR(255);
+ALTER TABLE companies ADD COLUMN IF NOT EXISTS plan_status VARCHAR(20) DEFAULT 'trialing';

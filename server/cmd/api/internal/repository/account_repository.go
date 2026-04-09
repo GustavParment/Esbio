@@ -138,7 +138,7 @@ func (r *accountRepository) UpdateAccount(account *domain.Account) error {
 	query := `
 		UPDATE accounts
 		SET account_name = $1, account_group = $2, tax_standard = $3, type = $4, standard_side = $5
-		WHERE account_no = $1
+		WHERE account_no = $6
 	`
 	_, err := r.db.Exec(query,
 		account.AccountName,
@@ -166,6 +166,22 @@ func (r *accountRepository) DeleteAccount(accountNo int) error {
 }
 
 func (r *accountRepository) GetLedger(accountNo int, period string) ([]*domain.LedgerEntry, error) {
+	// Calculate opening balance from prior periods when filtering
+	var runningBalance float64 = 0
+	if period != "" {
+		obQuery := `
+			SELECT COALESCE(SUM(l.debit_amount - l.credit_amount), 0)
+			FROM line_items l
+			INNER JOIN vouchers v ON l.voucher_id = v.voucher_id
+			WHERE l.account_no = $1
+			  AND v.period < $2
+			  AND v.corrected_by_voucher_id IS NULL
+		`
+		if err := r.db.QueryRow(obQuery, accountNo, period).Scan(&runningBalance); err != nil {
+			return nil, fmt.Errorf("failed to get opening balance: %w", err)
+		}
+	}
+
 	query := `
 		SELECT
 			v.date,
@@ -190,7 +206,6 @@ func (r *accountRepository) GetLedger(accountNo int, period string) ([]*domain.L
 	defer rows.Close()
 
 	entries := make([]*domain.LedgerEntry, 0)
-	var runningBalance float64 = 0
 
 	for rows.Next() {
 		entry := &domain.LedgerEntry{}

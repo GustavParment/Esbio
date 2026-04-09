@@ -20,6 +20,7 @@ func SetupRoutes(
 	agentHandler *handlers.AgentHandler,
 	companyHandler *handlers.CompanyHandler,
 	receiptHandler *handlers.ReceiptHandler,
+	stripeHandler *handlers.StripeHandler,
 	authMiddleware gin.HandlerFunc,
 	companyMiddleware gin.HandlerFunc) {
 
@@ -112,6 +113,15 @@ func SetupRoutes(
 			agent.PUT("/tasks/:id/toggle", agentHandler.ToggleScheduledTask)
 			agent.DELETE("/tasks/:id", agentHandler.DeleteScheduledTask)
 			agent.GET("/usage", agentHandler.GetUsage)
+		}
+
+		stripeGroup := v1.Group("/stripe")
+		{
+			// Checkout and portal require auth + company
+			stripeGroup.POST("/checkout", authMiddleware, companyMiddleware, stripeHandler.CreateCheckoutSession)
+			stripeGroup.POST("/portal", authMiddleware, companyMiddleware, stripeHandler.CreatePortalSession)
+			// Webhook is called by Stripe — no auth
+			stripeGroup.POST("/webhook", stripeHandler.HandleWebhook)
 		}
 	}
 }

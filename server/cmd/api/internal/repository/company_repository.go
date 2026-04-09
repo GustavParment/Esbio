@@ -13,6 +13,8 @@ type CompanyRepository interface {
 	UpdateCompany(company *domain.Company) error
 	DeleteCompany(companyID int) error
 	UserOwnsCompany(userID, companyID int) (bool, error)
+	UpdateStripeCustomerID(companyID int, customerID string) error
+	UpdateSubscription(companyID int, subscriptionID string, plan string, planStatus string) error
 }
 
 type companyRepository struct {
@@ -25,8 +27,8 @@ func NewCompanyRepository(db *sql.DB) CompanyRepository {
 
 func (r *companyRepository) CreateCompany(company *domain.Company) error {
 	query := `
-		INSERT INTO companies (company_name, org_number, plan, created_by)
-		VALUES ($1, $2, $3, $4)
+		INSERT INTO companies (company_name, org_number, plan, created_by, plan_status)
+		VALUES ($1, $2, $3, $4, 'trialing')
 		RETURNING company_id, created_at, updated_at
 	`
 	return r.db.QueryRow(query, company.CompanyName, company.OrgNumber, company.Plan, company.CreatedBy).
@@ -35,13 +37,15 @@ func (r *companyRepository) CreateCompany(company *domain.Company) error {
 
 func (r *companyRepository) GetCompanyByID(companyID int) (*domain.Company, error) {
 	query := `
-		SELECT company_id, company_name, org_number, plan, created_by, created_at, updated_at
+		SELECT company_id, company_name, org_number, plan, created_by, created_at, updated_at,
+		       stripe_customer_id, stripe_subscription_id, COALESCE(plan_status, 'trialing')
 		FROM companies WHERE company_id = $1
 	`
 	c := &domain.Company{}
-	var orgNumber sql.NullString
+	var orgNumber, stripeCustomerID, stripeSubscriptionID sql.NullString
 	err := r.db.QueryRow(query, companyID).Scan(
 		&c.CompanyID, &c.CompanyName, &orgNumber, &c.Plan, &c.CreatedBy, &c.CreatedAt, &c.UpdatedAt,
+		&stripeCustomerID, &stripeSubscriptionID, &c.PlanStatus,
 	)
 	if err == sql.ErrNoRows {
 		return nil, fmt.Errorf("company not found")
@@ -50,12 +54,19 @@ func (r *companyRepository) GetCompanyByID(companyID int) (*domain.Company, erro
 		return nil, fmt.Errorf("failed to get company: %w", err)
 	}
 	c.OrgNumber = orgNumber.String
+	if stripeCustomerID.Valid {
+		c.StripeCustomerID = &stripeCustomerID.String
+	}
+	if stripeSubscriptionID.Valid {
+		c.StripeSubscriptionID = &stripeSubscriptionID.String
+	}
 	return c, nil
 }
 
 func (r *companyRepository) GetCompaniesByUserID(userID int) ([]*domain.Company, error) {
 	query := `
-		SELECT company_id, company_name, org_number, plan, created_by, created_at, updated_at
+		SELECT company_id, company_name, org_number, plan, created_by, created_at, updated_at,
+		       stripe_customer_id, stripe_subscription_id, COALESCE(plan_status, 'trialing')
 		FROM companies WHERE created_by = $1 ORDER BY created_at
 	`
 	rows, err := r.db.Query(query, userID)
@@ -67,11 +78,18 @@ func (r *companyRepository) GetCompaniesByUserID(userID int) ([]*domain.Company,
 	var companies []*domain.Company
 	for rows.Next() {
 		c := &domain.Company{}
-		var orgNumber sql.NullString
-		if err := rows.Scan(&c.CompanyID, &c.CompanyName, &orgNumber, &c.Plan, &c.CreatedBy, &c.CreatedAt, &c.UpdatedAt); err != nil {
+		var orgNumber, stripeCustomerID, stripeSubscriptionID sql.NullString
+		if err := rows.Scan(&c.CompanyID, &c.CompanyName, &orgNumber, &c.Plan, &c.CreatedBy, &c.CreatedAt, &c.UpdatedAt,
+			&stripeCustomerID, &stripeSubscriptionID, &c.PlanStatus); err != nil {
 			return nil, fmt.Errorf("failed to scan company: %w", err)
 		}
 		c.OrgNumber = orgNumber.String
+		if stripeCustomerID.Valid {
+			c.StripeCustomerID = &stripeCustomerID.String
+		}
+		if stripeSubscriptionID.Valid {
+			c.StripeSubscriptionID = &stripeSubscriptionID.String
+		}
 		companies = append(companies, c)
 	}
 	return companies, nil
@@ -95,4 +113,20 @@ func (r *companyRepository) UserOwnsCompany(userID, companyID int) (bool, error)
 	var exists bool
 	err := r.db.QueryRow("SELECT EXISTS(SELECT 1 FROM companies WHERE company_id = $1 AND created_by = $2)", companyID, userID).Scan(&exists)
 	return exists, err
+}
+
+func (r *companyRepository) UpdateStripeCustomerID(companyID int, customerID string) error {
+	_, err := r.db.Exec(
+		"UPDATE companies SET stripe_customer_id = $1, updated_at = NOW() WHERE company_id = $2",
+		customerID, companyID,
+	)
+	return err
+}
+
+func (r *companyRepository) UpdateSubscription(companyID int, subscriptionID string, plan string, planStatus string) error {
+	_, err := r.db.Exec(
+		"UPDATE companies SET stripe_subscription_id = $1, plan = $2, plan_status = $3, updated_at = NOW() WHERE company_id = $4",
+		subscriptionID, plan, planStatus, companyID,
+	)
+	return err
 }

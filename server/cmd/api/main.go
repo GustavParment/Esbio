@@ -43,6 +43,7 @@ func main() {
 	reportService := service.NewReportService(reportRepo)
 	scheduledTaskService := service.NewScheduledTaskService(scheduledTaskRepo)
 	receiptService := service.NewReceiptService(cfg.GeminiAPIKey)
+	stripeService := service.NewStripeService(cfg.StripeSecretKey, cfg.StripeWebhookSecret, cfg.FrontendURL, companyRepo)
 	agentService := service.NewAgentService(
 		cfg.GeminiAPIKey,
 		voucherService,
@@ -64,6 +65,7 @@ func main() {
 	sieGenerator := service.NewSIEGenerator(reportRepo, companyService)
 	sieHandler := handlers.NewSIEHandler(sieGenerator)
 	receiptHandler := handlers.NewReceiptHandler(receiptService)
+	stripeHandler := handlers.NewStripeHandler(stripeService)
 	agentHandler := handlers.NewAgentHandler(agentService, scheduledTaskService, agentMessageRepo, agentUsageRepo)
 
 	authMiddleware := middleware.AuthMiddleware(jwtManager)
@@ -80,7 +82,7 @@ func main() {
 	// Add rate limiting (100 req/min per IP)
 	router.Use(middleware.RateLimitMiddleware())
 
-	routes.SetupRoutes(router, userHandler, accountHandler, lineItemHandler, voucherHandler, authHandler, pdfHandler, reportHandler, sieHandler, agentHandler, companyHandler, receiptHandler, authMiddleware, companyMiddleware)
+	routes.SetupRoutes(router, userHandler, accountHandler, lineItemHandler, voucherHandler, authHandler, pdfHandler, reportHandler, sieHandler, agentHandler, companyHandler, receiptHandler, stripeHandler, authMiddleware, companyMiddleware)
 
 	// Start the scheduler for recurring tasks
 	schedulerService := service.NewSchedulerService(scheduledTaskService, agentService)

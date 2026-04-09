@@ -40,6 +40,12 @@ export interface VATReportEntry {
   total_vat: number;
 }
 
+export interface VATInputEntry {
+  account_no: number;
+  account_name: string;
+  amount: number;
+}
+
 export interface VATReport {
   period: {
     from_date: string;
@@ -48,6 +54,9 @@ export interface VATReport {
   entries: VATReportEntry[];
   total_sales: number;
   total_vat: number;
+  input_entries: VATInputEntry[];
+  total_input_vat: number;
+  net_vat: number;
 }
 
 export const reportsApi = {
