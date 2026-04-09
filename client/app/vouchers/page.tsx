@@ -78,24 +78,26 @@ export default function VouchersPage() {
   return (
     <DashboardLayout>
       {/* Header */}
-      <div className="mb-8 flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Verifikat</h1>
-          <p className="text-gray-600 mt-2">Hantera bokföringsverifikat</p>
-        </div>
-        <div className="flex gap-3">
-          <Link
-            href="/vouchers/scan"
-            className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium"
-          >
-            📸 Skanna kvitto
-          </Link>
-          <Link
-            href="/vouchers/new"
-            className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
-          >
-            + Nytt verifikat
-          </Link>
+      <div className="mb-8">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">Verifikat</h1>
+            <p className="text-gray-600 mt-2">Hantera bokföringsverifikat</p>
+          </div>
+          <div className="flex gap-3">
+            <Link
+              href="/vouchers/scan"
+              className="px-4 py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium text-sm text-center"
+            >
+              Skanna kvitto
+            </Link>
+            <Link
+              href="/vouchers/new"
+              className="px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium text-sm text-center"
+            >
+              + Nytt verifikat
+            </Link>
+          </div>
         </div>
       </div>
 
