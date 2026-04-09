@@ -79,7 +79,10 @@ cd server && gcloud run deploy esbio-backend --source . --region europe-north1 -
 | `JWT_SECRET` | JWT signing secret (required) |
 | `DATABASE_URL` | Cloud SQL connection string |
 | `SERVER_PORT` | Server port (default: `:8080`) |
-| `GEMINI_API_KEY` | Google Gemini API key (for Ester AI) |
+| `GEMINI_API_KEY` | Google Gemini API key (for Ester AI & receipt scanning) |
+| `STRIPE_SECRET_KEY` | Stripe secret key for subscription billing |
+| `STRIPE_WEBHOOK_SECRET` | Stripe webhook signing secret |
+| `FRONTEND_URL` | Frontend URL for Stripe redirects (default: `http://localhost:3000`) |
 | `COOKIE_SAMESITE` | Cookie SameSite policy (`none` or `lax`) |
 | `COOKIE_SECURE` | Cookie Secure flag (`true` or `false`) |
 
@@ -114,10 +117,13 @@ Esbio/
 - Swedish BAS account system
 - Double-entry bookkeeping
 - Voucher management with PDF export
+- AI receipt scanning (Gemini Vision — photo to voucher)
 - Account management & ledger
 - Financial reports (income statement, balance sheet, VAT with input/output moms & net calculation)
 - SIE file export
 - Ester AI assistant (Gemini-powered)
+- Stripe subscription billing (Starter 199kr/mån, Tillväxt 399kr/mån)
+- Self-service account deletion
 - Multi-company support
 - Dark mode
 
