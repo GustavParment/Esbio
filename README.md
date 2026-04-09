@@ -127,6 +127,42 @@ Esbio/
 - Multi-company support
 - Dark mode
 
+## Stripe Billing
+
+Subscription billing via Stripe Checkout (hosted payment page — no card data on our servers).
+
+**Plans:**
+| Plan | Price | Features |
+|------|-------|----------|
+| Free (trial) | 0 kr / 30 dagar | Full access during trial |
+| Starter | 199 kr/mån | 100 transactions/mån, AI, receipt scanning, VAT reports |
+| Tillväxt | 399 kr/mån | Unlimited transactions, annual reports, priority support |
+
+**How it works:**
+1. User clicks upgrade → Stripe Checkout session created with `company_id` in metadata
+2. User pays on Stripe's hosted page → redirected to `/upgrade/success`
+3. Stripe sends `checkout.session.completed` webhook → backend fetches subscription → updates `plan`, `plan_status` in DB
+4. Subscription lifecycle events (`updated`, `deleted`) also handled via webhook
+5. `past_due` subscriptions blocked with HTTP 402 in middleware
+
+**Endpoints:**
+- `POST /stripe/checkout` — Create Checkout session (auth required)
+- `POST /stripe/portal` — Open Stripe Customer Portal for plan management/cancellation (auth required)
+- `POST /stripe/webhook` — Stripe webhook receiver (no auth)
+
+**Local development:**
+```bash
+stripe login
+stripe listen --forward-to localhost:8080/api/v1/stripe/webhook
+```
+The webhook listener starts automatically with `./start.sh` if the Stripe CLI is installed.
+
+**Production setup:**
+1. Create products/prices in Stripe Dashboard
+2. Set `STRIPE_SECRET_KEY` and `STRIPE_WEBHOOK_SECRET` in Cloud Run env vars
+3. Register webhook endpoint: `https://api.esbio.se/api/v1/stripe/webhook`
+4. Configure Customer Portal in Stripe Dashboard (allow cancel + plan switching)
+
 ## Security
 
 - JWT tokens in httpOnly cookies (XSS protected)
