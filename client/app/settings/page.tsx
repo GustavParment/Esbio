@@ -5,17 +5,23 @@ import DashboardLayout from "@/components/layout/DashboardLayout";
 import { useAuth } from "@/lib/contexts/AuthContext";
 import { useCompany } from "@/lib/contexts/CompanyContext";
 import { companiesApi } from "@/lib/api/companies";
+import { authApi } from "@/lib/api/auth";
 import { agentApi, AgentUsageSummary } from "@/lib/api/agent";
+import { useRouter } from "next/navigation";
 
 export default function SettingsPage() {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const { selectedCompany, refreshCompanies } = useCompany();
+  const router = useRouter();
   const [companyName, setCompanyName] = useState("");
   const [orgNumber, setOrgNumber] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [usage, setUsage] = useState<AgentUsageSummary | null>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState("");
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState("");
 
   useEffect(() => {
     if (selectedCompany) {
@@ -154,7 +160,7 @@ export default function SettingsPage() {
       )}
 
       {/* User Info */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
         <h2 className="text-lg font-semibold text-gray-900 mb-4">Kontoinformation</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
           <div>
@@ -169,6 +175,60 @@ export default function SettingsPage() {
             <p className="text-gray-500">Roll</p>
             <p className="font-medium text-gray-900">{user?.role}</p>
           </div>
+        </div>
+      </div>
+
+      {/* Delete Account */}
+      <div className="bg-white rounded-xl shadow-sm border-2 border-red-200 p-6">
+        <h2 className="text-lg font-semibold text-red-600 mb-2">Radera konto</h2>
+        <p className="text-sm text-gray-600 mb-4">
+          Detta raderar ditt konto och all data permanent — alla företag, verifikat, transaktioner och rapporter.
+          Denna åtgärd kan inte ångras.
+        </p>
+
+        {deleteError && (
+          <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+            <p className="text-red-700 text-sm">{deleteError}</p>
+          </div>
+        )}
+
+        <div className="flex items-end gap-4">
+          <div className="flex-1 max-w-xs">
+            <label htmlFor="delete_confirm" className="block text-sm font-medium text-gray-700 mb-2">
+              Skriv <span className="font-mono font-bold">RADERA</span> för att bekräfta
+            </label>
+            <input
+              id="delete_confirm"
+              type="text"
+              value={deleteConfirm}
+              onChange={(e) => setDeleteConfirm(e.target.value)}
+              placeholder="RADERA"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent text-gray-900 placeholder:text-gray-400"
+            />
+          </div>
+          <button
+            onClick={async () => {
+              if (deleteConfirm !== "RADERA") {
+                setDeleteError("Du måste skriva RADERA för att bekräfta.");
+                return;
+              }
+              setDeleting(true);
+              setDeleteError("");
+              try {
+                await authApi.deleteAccount();
+                await logout();
+                router.push("/auth/login");
+              } catch (err) {
+                setDeleteError(err instanceof Error ? err.message : "Kunde inte radera kontot");
+              } finally {
+                setDeleting(false);
+              }
+            }}
+            disabled={deleting || deleteConfirm !== "RADERA"}
+            className="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {deleting ? "Raderar..." : "Radera mitt konto"}
+          </button>
         </div>
       </div>
     </DashboardLayout>

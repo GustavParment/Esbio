@@ -34,6 +34,7 @@ func SetupRoutes(
 			auth.POST("/logout", authHandler.Logout)
 			auth.POST("/refresh", authHandler.RefreshToken)
 			auth.GET("/me", authMiddleware, authHandler.GetCurrentUser)
+			auth.DELETE("/account", authMiddleware, authHandler.DeleteAccount)
 		}
 
 		companies := v1.Group("/companies", authMiddleware)

@@ -142,3 +142,12 @@ func (s *UserService) DeleteUser(userID int) error {
 
 	return nil
 }
+
+// DeleteUserAndData deletes a user and all their associated data
+func (s *UserService) DeleteUserAndData(userID int) error {
+	if userID <= 0 {
+		return errors.New("invalid user ID")
+	}
+
+	return s.repository.DeleteUserAndData(userID)
+}

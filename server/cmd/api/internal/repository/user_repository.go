@@ -12,6 +12,7 @@ type UserRepository interface {
 	GetUserByEmail(email string) (*domain.User, error)
 	UpdateUser(user *domain.User) error
 	DeleteUser(userID int) error
+	DeleteUserAndData(userID int) error
 }
 
 type userRepository struct {
@@ -111,4 +112,111 @@ func (r *userRepository) DeleteUser(userID int) error {
 		return fmt.Errorf("failed to delete user: %w", err)
 	}
 	return nil
+}
+
+// DeleteUserAndData deletes a user and all their associated data in a transaction
+func (r *userRepository) DeleteUserAndData(userID int) error {
+	tx, err := r.db.Begin()
+	if err != nil {
+		return fmt.Errorf("failed to begin transaction: %w", err)
+	}
+	defer tx.Rollback()
+
+	// Delete in dependency order for all companies owned by this user
+	// 1. Line items (depend on vouchers)
+	_, err = tx.Exec(`
+		DELETE FROM line_items WHERE voucher_id IN (
+			SELECT voucher_id FROM vouchers WHERE company_id IN (
+				SELECT company_id FROM companies WHERE created_by = $1
+			)
+		)
+	`, userID)
+	if err != nil {
+		return fmt.Errorf("failed to delete line items: %w", err)
+	}
+
+	// 2. Vouchers (depend on companies)
+	_, err = tx.Exec(`
+		DELETE FROM vouchers WHERE company_id IN (
+			SELECT company_id FROM companies WHERE created_by = $1
+		)
+	`, userID)
+	if err != nil {
+		return fmt.Errorf("failed to delete vouchers: %w", err)
+	}
+
+	// 3. Bank transactions
+	_, err = tx.Exec(`
+		DELETE FROM bank_transactions WHERE company_id IN (
+			SELECT company_id FROM companies WHERE created_by = $1
+		)
+	`, userID)
+	if err != nil {
+		return fmt.Errorf("failed to delete bank transactions: %w", err)
+	}
+
+	// 4. Bank accounts
+	_, err = tx.Exec(`
+		DELETE FROM bank_accounts WHERE company_id IN (
+			SELECT company_id FROM companies WHERE created_by = $1
+		)
+	`, userID)
+	if err != nil {
+		return fmt.Errorf("failed to delete bank accounts: %w", err)
+	}
+
+	// 5. Bank connections
+	_, err = tx.Exec(`
+		DELETE FROM bank_connections WHERE company_id IN (
+			SELECT company_id FROM companies WHERE created_by = $1
+		)
+	`, userID)
+	if err != nil {
+		return fmt.Errorf("failed to delete bank connections: %w", err)
+	}
+
+	// 6. Categorization rules
+	_, err = tx.Exec(`
+		DELETE FROM categorization_rules WHERE company_id IN (
+			SELECT company_id FROM companies WHERE created_by = $1
+		)
+	`, userID)
+	if err != nil {
+		return fmt.Errorf("failed to delete categorization rules: %w", err)
+	}
+
+	// 7. Scheduled tasks
+	_, err = tx.Exec(`
+		DELETE FROM scheduled_tasks WHERE company_id IN (
+			SELECT company_id FROM companies WHERE created_by = $1
+		)
+	`, userID)
+	if err != nil {
+		return fmt.Errorf("failed to delete scheduled tasks: %w", err)
+	}
+
+	// 8. Agent messages and usage (cascade from user)
+	_, err = tx.Exec(`DELETE FROM agent_messages WHERE user_id = $1`, userID)
+	if err != nil {
+		return fmt.Errorf("failed to delete agent messages: %w", err)
+	}
+
+	_, err = tx.Exec(`DELETE FROM agent_usage WHERE user_id = $1`, userID)
+	if err != nil {
+		return fmt.Errorf("failed to delete agent usage: %w", err)
+	}
+
+	// 9. Companies
+	_, err = tx.Exec(`DELETE FROM companies WHERE created_by = $1`, userID)
+	if err != nil {
+		return fmt.Errorf("failed to delete companies: %w", err)
+	}
+
+	// 10. User
+	_, err = tx.Exec(`DELETE FROM users WHERE user_id = $1`, userID)
+	if err != nil {
+		return fmt.Errorf("failed to delete user: %w", err)
+	}
+
+	return tx.Commit()
 }

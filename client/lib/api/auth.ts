@@ -24,4 +24,11 @@ export const authApi = {
     // Token will be refreshed as httpOnly cookie by the server
     return apiClient.post<{ token: string }>("/auth/refresh", {});
   },
+
+  deleteAccount: async (): Promise<void> => {
+    return apiClient.request<void>("/auth/account", {
+      method: "DELETE",
+      body: JSON.stringify({ confirm: "DELETE" }),
+    });
+  },
 };

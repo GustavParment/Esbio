@@ -187,6 +187,35 @@ func (h *AuthHandler) GetCurrentUser(c *gin.Context) {
 	c.JSON(http.StatusOK, user)
 }
 
+// DeleteAccount handles DELETE /auth/account — deletes the authenticated user and all their data
+func (h *AuthHandler) DeleteAccount(c *gin.Context) {
+	userID, exists := c.Get("userID")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "not authenticated"})
+		return
+	}
+
+	// Require confirmation in request body
+	var req struct {
+		Confirm string `json:"confirm"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil || req.Confirm != "DELETE" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "send {\"confirm\": \"DELETE\"} to confirm account deletion"})
+		return
+	}
+
+	if err := h.userService.DeleteUserAndData(userID.(int)); err != nil {
+		internalError(c, err)
+		return
+	}
+
+	// Clear auth cookies
+	setCookie(c, "token", "", -1)
+	setCookie(c, "company_id", "", -1)
+
+	c.JSON(http.StatusOK, gin.H{"message": "account deleted successfully"})
+}
+
 func splitName(name string) [2]string {
 	parts := strings.SplitN(strings.TrimSpace(name), " ", 2)
 	if len(parts) == 2 {
