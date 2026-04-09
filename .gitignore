@@ -8,6 +8,7 @@ server/cmd/.env
 # PID files
 .backend.pid
 .frontend.pid
+.stripe.pid
 
 # Node
 node_modules/
