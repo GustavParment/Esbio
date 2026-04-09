@@ -28,6 +28,19 @@ pkill -f "go run api/main.go" 2>/dev/null && echo "  ✓ Killed Go API processes
 echo "✅ Backend stopped"
 echo ""
 
+# Stop Stripe webhook listener
+if [ -f "$SCRIPT_DIR/.stripe.pid" ]; then
+    STRIPE_PID=$(cat "$SCRIPT_DIR/.stripe.pid")
+    if ps -p $STRIPE_PID > /dev/null 2>&1; then
+        echo "💳 Stopping Stripe webhook listener (PID: $STRIPE_PID)..."
+        kill $STRIPE_PID
+    fi
+    rm "$SCRIPT_DIR/.stripe.pid"
+fi
+pkill -f "stripe listen" 2>/dev/null && echo "  ✓ Killed Stripe listener"
+echo "✅ Stripe stopped"
+echo ""
+
 # Stop frontend
 if [ -f "$SCRIPT_DIR/.frontend.pid" ]; then
     FRONTEND_PID=$(cat "$SCRIPT_DIR/.frontend.pid")

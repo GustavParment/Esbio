@@ -67,6 +67,19 @@ echo ""
 # Wait a moment for backend to initialize
 sleep 2
 
+# Start Stripe webhook listener (if stripe CLI is installed)
+if command -v stripe > /dev/null 2>&1; then
+    echo "💳 Starting Stripe webhook listener..."
+    stripe listen --forward-to localhost:8080/api/v1/stripe/webhook &
+    STRIPE_PID=$!
+    echo "✅ Stripe webhook listener started (PID: $STRIPE_PID)"
+else
+    echo "⚠️  Stripe CLI not installed — webhook listener skipped"
+    echo "   Install with: brew install stripe/stripe-cli/stripe"
+    STRIPE_PID=""
+fi
+echo ""
+
 # Start the frontend client
 echo "⚛️  Starting Next.js frontend on :3000..."
 cd "$SCRIPT_DIR/client"
@@ -78,6 +91,7 @@ echo ""
 # Save PIDs for the stop script
 echo "$BACKEND_PID" > "$SCRIPT_DIR/.backend.pid"
 echo "$FRONTEND_PID" > "$SCRIPT_DIR/.frontend.pid"
+[ -n "$STRIPE_PID" ] && echo "$STRIPE_PID" > "$SCRIPT_DIR/.stripe.pid"
 
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo "✨ Esbio is now running!"
@@ -85,6 +99,7 @@ echo ""
 echo "📱 Frontend:  http://localhost:3000"
 echo "🔌 Backend:   http://localhost:8080"
 echo "🗄️  Database:  postgres://localhost:5432"
+[ -n "$STRIPE_PID" ] && echo "💳 Stripe:    webhook listener active"
 echo ""
 echo "To stop all services, run: ./stop.sh"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
