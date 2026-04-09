@@ -9,6 +9,7 @@ import (
 	billingSession "github.com/stripe/stripe-go/v82/billingportal/session"
 	checkoutSession "github.com/stripe/stripe-go/v82/checkout/session"
 	"github.com/stripe/stripe-go/v82/customer"
+	"github.com/stripe/stripe-go/v82/subscription"
 )
 
 type StripeService struct {
@@ -155,6 +156,31 @@ func (s *StripeService) HandleSubscriptionEvent(sub *stripe.Subscription) error 
 	log.Printf("Stripe webhook: company=%d plan=%s status=%s subscription=%s", companyID, plan, planStatus, sub.ID)
 
 	return s.companyRepo.UpdateSubscription(companyID, sub.ID, plan, planStatus)
+}
+
+// HandleCheckoutCompleted processes a completed checkout session
+func (s *StripeService) HandleCheckoutCompleted(session *stripe.CheckoutSession) error {
+	companyIDStr, ok := session.Metadata["company_id"]
+	if !ok {
+		return fmt.Errorf("no company_id in session metadata")
+	}
+
+	var companyID int
+	if _, err := fmt.Sscanf(companyIDStr, "%d", &companyID); err != nil {
+		return fmt.Errorf("invalid company_id: %s", companyIDStr)
+	}
+
+	if session.Subscription == nil {
+		return fmt.Errorf("no subscription in checkout session")
+	}
+
+	// Fetch the full subscription from Stripe API to get price/items
+	sub, err := subscription.Get(session.Subscription.ID, nil)
+	if err != nil {
+		return fmt.Errorf("failed to fetch subscription: %w", err)
+	}
+
+	return s.HandleSubscriptionEvent(sub)
 }
 
 // priceToPlan maps Stripe Price IDs to plan names.

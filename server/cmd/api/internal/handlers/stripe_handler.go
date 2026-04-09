@@ -97,6 +97,8 @@ func (h *StripeHandler) HandleWebhook(c *gin.Context) {
 		}
 	}
 
+	log.Printf("Stripe webhook received: %s", event.Type)
+
 	switch event.Type {
 	case "customer.subscription.created",
 		"customer.subscription.updated",
@@ -110,6 +112,19 @@ func (h *StripeHandler) HandleWebhook(c *gin.Context) {
 		}
 		if err := h.stripeService.HandleSubscriptionEvent(&sub); err != nil {
 			log.Printf("Failed to handle subscription event: %v", err)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to process event"})
+			return
+		}
+
+	case "checkout.session.completed":
+		var session stripe.CheckoutSession
+		if err := json.Unmarshal(event.Data.Raw, &session); err != nil {
+			log.Printf("Failed to parse checkout session: %v", err)
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid session data"})
+			return
+		}
+		if err := h.stripeService.HandleCheckoutCompleted(&session); err != nil {
+			log.Printf("Failed to handle checkout completed: %v", err)
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to process event"})
 			return
 		}
