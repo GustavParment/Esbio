@@ -70,7 +70,13 @@ sleep 2
 # Start Stripe webhook listener (if stripe CLI is installed)
 if command -v stripe > /dev/null 2>&1; then
     echo "💳 Starting Stripe webhook listener..."
-    stripe listen --forward-to localhost:8080/api/v1/stripe/webhook &
+    # Use --api-key to ensure CLI runs in sandbox/test mode
+    STRIPE_KEY=$(grep STRIPE_SECRET_KEY "$SCRIPT_DIR/server/cmd/.env" 2>/dev/null | cut -d= -f2)
+    if [ -n "$STRIPE_KEY" ]; then
+        stripe listen --forward-to localhost:8080/api/v1/stripe/webhook --api-key "$STRIPE_KEY" &
+    else
+        stripe listen --forward-to localhost:8080/api/v1/stripe/webhook &
+    fi
     STRIPE_PID=$!
     echo "✅ Stripe webhook listener started (PID: $STRIPE_PID)"
 else
