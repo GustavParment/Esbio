@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { stripeApi } from "@/lib/api/stripe";
 
-const isLive = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY?.startsWith("pk_live_");
+const isLive = typeof window !== "undefined" && window.location.hostname === "esbio.se";
 
 const plans = [
   {
