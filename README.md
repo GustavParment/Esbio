@@ -52,9 +52,11 @@ cd client && npm run dev
 
 ### Local URLs
 
-- **Frontend**: http://localhost:3000
+- **Frontend**: http://localhost:3000 (or http://Crawls-MacBook-Air.local:3000 for network access)
 - **Backend API**: http://localhost:8080/api/v1
 - **Database**: postgres://localhost:5433
+
+> **Network access:** The frontend uses a Next.js rewrite proxy (`/api/*` → `localhost:8080`), so API calls work from any device on the network without cookie/CORS issues.
 
 ## Production
 
@@ -72,7 +74,9 @@ cd client && gcloud run deploy esbio-frontend --source . --region europe-north1 
 cd server && gcloud run deploy esbio-backend --source . --region europe-north1 --allow-unauthenticated
 ```
 
-### Environment Variables (Cloud Run Backend)
+### Environment Variables
+
+**Backend (Cloud Run: esbio-backend):**
 
 | Variable | Description |
 |----------|-------------|
@@ -80,11 +84,20 @@ cd server && gcloud run deploy esbio-backend --source . --region europe-north1 -
 | `DATABASE_URL` | Cloud SQL connection string |
 | `SERVER_PORT` | Server port (default: `:8080`) |
 | `GEMINI_API_KEY` | Google Gemini API key (for Ester AI & receipt scanning) |
-| `STRIPE_SECRET_KEY` | Stripe secret key for subscription billing |
-| `STRIPE_WEBHOOK_SECRET` | Stripe webhook signing secret |
-| `FRONTEND_URL` | Frontend URL for Stripe redirects (default: `http://localhost:3000`) |
-| `COOKIE_SAMESITE` | Cookie SameSite policy (`none` or `lax`) |
-| `COOKIE_SECURE` | Cookie Secure flag (`true` or `false`) |
+| `STRIPE_SECRET_KEY` | Stripe secret key (`sk_live_` for prod, `sk_test_` for dev) |
+| `STRIPE_WEBHOOK_SECRET` | Stripe webhook signing secret (`whsec_`) |
+| `FRONTEND_URL` | Frontend URL for Stripe redirects (`https://esbio.se` in prod) |
+| `COOKIE_SAMESITE` | Cookie SameSite policy (`none` in prod, `lax` in dev) |
+| `COOKIE_SECURE` | Cookie Secure flag (`true` in prod, `false` in dev) |
+
+**Frontend (Cloud Run: esbio-frontend):**
+
+| Variable | Description |
+|----------|-------------|
+| `NEXT_PUBLIC_API_URL` | Backend API URL (`https://api.esbio.se/api/v1` in prod) |
+| `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | Stripe publishable key (`pk_live_` for prod) |
+
+> **Note:** `NEXT_PUBLIC_` vars are baked in at Docker build time. The frontend detects live vs test mode by checking `window.location.hostname === "esbio.se"` for Stripe price IDs.
 
 ## Project Structure
 
@@ -118,14 +131,19 @@ Esbio/
 - Double-entry bookkeeping
 - Voucher management with PDF export
 - AI receipt scanning (Gemini Vision — photo to voucher)
+- Ester AI assistant with streaming chat (Gemini 2.5 Flash Lite, SSE)
 - Account management & ledger
 - Financial reports (income statement, balance sheet, VAT with input/output moms & net calculation)
 - SIE file export
-- Ester AI assistant (Gemini-powered)
 - Stripe subscription billing (Starter 199kr/mån, Tillväxt 399kr/mån)
-- Self-service account deletion
+- Stripe Customer Portal for plan management & cancellation
+- 30-day free trial with sidebar countdown
+- Self-service account deletion (cascading)
+- Org number uniqueness validation
 - Multi-company support
 - Dark mode
+- Password visibility toggle on login
+- Next.js rewrite proxy for local dev (no IP/cookie issues)
 
 ## Stripe Billing
 
@@ -173,6 +191,9 @@ The webhook listener starts automatically with `./start.sh` if the Stripe CLI is
 - CORS whitelist
 - Parameterized SQL queries (injection protected)
 - Company data isolation via middleware
+- Org number uniqueness enforcement
+- Trial expiration enforced server-side (30 days from company creation)
+- Stripe checkout exempt from trial block (users can always pay)
 - Role-based access control (RBAC) on all write operations
 
 ## Roles & Permissions
