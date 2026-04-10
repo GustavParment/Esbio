@@ -31,6 +31,10 @@ func (s *CompanyService) GetCompanyByID(companyID int) (*domain.Company, error) 
 	return s.repo.GetCompanyByID(companyID)
 }
 
+func (s *CompanyService) GetCompanyByOrgNumber(orgNumber string) (*domain.Company, error) {
+	return s.repo.GetCompanyByOrgNumber(orgNumber)
+}
+
 func (s *CompanyService) GetCompaniesByUserID(userID int) ([]*domain.Company, error) {
 	return s.repo.GetCompaniesByUserID(userID)
 }

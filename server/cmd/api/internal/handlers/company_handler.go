@@ -73,6 +73,15 @@ func (h *CompanyHandler) CreateCompany(c *gin.Context) {
 		return
 	}
 
+	// Check if org number is already registered
+	if req.OrgNumber != "" {
+		existing, _ := h.companyService.GetCompanyByOrgNumber(req.OrgNumber)
+		if existing != nil {
+			c.JSON(http.StatusConflict, gin.H{"error": "Ett företag med detta organisationsnummer finns redan"})
+			return
+		}
+	}
+
 	company := &domain.Company{
 		CompanyName: req.CompanyName,
 		OrgNumber:   req.OrgNumber,

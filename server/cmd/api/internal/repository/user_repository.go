@@ -1,8 +1,8 @@
 package repository
 
 import (
-	"esbio/api/internal/domain"
 	"database/sql"
+	"esbio/api/internal/domain"
 	"fmt"
 )
 
@@ -145,44 +145,24 @@ func (r *userRepository) DeleteUserAndData(userID int) error {
 		return fmt.Errorf("failed to delete vouchers: %w", err)
 	}
 
-	// 3. Bank transactions
-	_, err = tx.Exec(`
-		DELETE FROM bank_transactions WHERE company_id IN (
-			SELECT company_id FROM companies WHERE created_by = $1
-		)
-	`, userID)
-	if err != nil {
-		return fmt.Errorf("failed to delete bank transactions: %w", err)
-	}
-
-	// 4. Bank accounts
-	_, err = tx.Exec(`
-		DELETE FROM bank_accounts WHERE company_id IN (
-			SELECT company_id FROM companies WHERE created_by = $1
-		)
-	`, userID)
-	if err != nil {
-		return fmt.Errorf("failed to delete bank accounts: %w", err)
-	}
-
-	// 5. Bank connections
-	_, err = tx.Exec(`
-		DELETE FROM bank_connections WHERE company_id IN (
-			SELECT company_id FROM companies WHERE created_by = $1
-		)
-	`, userID)
-	if err != nil {
-		return fmt.Errorf("failed to delete bank connections: %w", err)
-	}
-
-	// 6. Categorization rules
-	_, err = tx.Exec(`
-		DELETE FROM categorization_rules WHERE company_id IN (
-			SELECT company_id FROM companies WHERE created_by = $1
-		)
-	`, userID)
-	if err != nil {
-		return fmt.Errorf("failed to delete categorization rules: %w", err)
+	// 3-6. Bank data and categorization rules (tables may not exist in all environments)
+	optionalTables := []string{"bank_transactions", "bank_accounts", "bank_connections", "bank_categorization_rules"}
+	for _, table := range optionalTables {
+		var exists bool
+		err = tx.QueryRow(`SELECT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = $1)`, table).Scan(&exists)
+		if err != nil {
+			return fmt.Errorf("failed to check table %s: %w", table, err)
+		}
+		if exists {
+			_, err = tx.Exec(fmt.Sprintf(`
+				DELETE FROM %s WHERE company_id IN (
+					SELECT company_id FROM companies WHERE created_by = $1
+				)
+			`, table), userID)
+			if err != nil {
+				return fmt.Errorf("failed to delete %s: %w", table, err)
+			}
+		}
 	}
 
 	// 7. Scheduled tasks

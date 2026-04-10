@@ -15,6 +15,7 @@ type CompanyRepository interface {
 	UserOwnsCompany(userID, companyID int) (bool, error)
 	UpdateStripeCustomerID(companyID int, customerID string) error
 	UpdateSubscription(companyID int, subscriptionID string, plan string, planStatus string) error
+	GetCompanyByOrgNumber(orgNumber string) (*domain.Company, error)
 }
 
 type companyRepository struct {
@@ -60,6 +61,21 @@ func (r *companyRepository) GetCompanyByID(companyID int) (*domain.Company, erro
 	if stripeSubscriptionID.Valid {
 		c.StripeSubscriptionID = &stripeSubscriptionID.String
 	}
+	return c, nil
+}
+
+func (r *companyRepository) GetCompanyByOrgNumber(orgNumber string) (*domain.Company, error) {
+	query := `SELECT company_id, company_name, org_number FROM companies WHERE org_number = $1 LIMIT 1`
+	c := &domain.Company{}
+	var orgNum sql.NullString
+	err := r.db.QueryRow(query, orgNumber).Scan(&c.CompanyID, &c.CompanyName, &orgNum)
+	if err == sql.ErrNoRows {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, fmt.Errorf("failed to query by org number: %w", err)
+	}
+	c.OrgNumber = orgNum.String
 	return c, nil
 }
 
