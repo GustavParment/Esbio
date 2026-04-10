@@ -525,7 +525,7 @@ func (s *AgentService) executeTool(name string, args map[string]interface{}, aut
 	case "get_account_ledger":
 		accountNo := intFromArg(args["account_no"])
 		period, _ := args["period"].(string)
-		ledger, err := s.accountService.GetLedger(accountNo, period)
+		ledger, err := s.accountService.GetLedgerByCompany(accountNo, period, companyID)
 		if err != nil {
 			return fmt.Sprintf("Fel: %s", sanitizeError(err)), nil
 		}

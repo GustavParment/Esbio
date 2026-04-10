@@ -14,6 +14,7 @@ type AccountRepository interface {
 	UpdateAccount(account *domain.Account) error
 	DeleteAccount(accountNo int) error
 	GetLedger(accountNo int, period string) ([]*domain.LedgerEntry, error)
+	GetLedgerByCompany(accountNo int, period string, companyID int) ([]*domain.LedgerEntry, error)
 }
 
 type accountRepository struct {
@@ -226,6 +227,70 @@ func (r *accountRepository) GetLedger(accountNo int, period string) ([]*domain.L
 		runningBalance += entry.DebitAmount - entry.CreditAmount
 		entry.Balance = runningBalance
 
+		entries = append(entries, entry)
+	}
+
+	return entries, nil
+}
+
+func (r *accountRepository) GetLedgerByCompany(accountNo int, period string, companyID int) ([]*domain.LedgerEntry, error) {
+	var runningBalance float64 = 0
+	if period != "" {
+		obQuery := `
+			SELECT COALESCE(SUM(l.debit_amount - l.credit_amount), 0)
+			FROM line_items l
+			INNER JOIN vouchers v ON l.voucher_id = v.voucher_id
+			WHERE l.account_no = $1
+			  AND v.period < $2
+			  AND v.company_id = $3
+			  AND v.corrected_by_voucher_id IS NULL
+		`
+		if err := r.db.QueryRow(obQuery, accountNo, period, companyID).Scan(&runningBalance); err != nil {
+			return nil, fmt.Errorf("failed to get opening balance: %w", err)
+		}
+	}
+
+	query := `
+		SELECT
+			v.date,
+			v.voucher_id,
+			v.voucher_number,
+			v.description,
+			v.reference,
+			l.debit_amount,
+			l.credit_amount
+		FROM line_items l
+		INNER JOIN vouchers v ON l.voucher_id = v.voucher_id
+		WHERE l.account_no = $1
+			AND ($2 = '' OR v.period = $2)
+			AND v.company_id = $3
+			AND v.corrected_by_voucher_id IS NULL
+		ORDER BY v.date ASC, v.voucher_number ASC
+	`
+
+	rows, err := r.db.Query(query, accountNo, period, companyID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get ledger entries: %w", err)
+	}
+	defer rows.Close()
+
+	entries := make([]*domain.LedgerEntry, 0)
+	for rows.Next() {
+		entry := &domain.LedgerEntry{}
+		err := rows.Scan(
+			&entry.Date.Time,
+			&entry.VoucherID,
+			&entry.VoucherNumber,
+			&entry.Description,
+			&entry.Reference,
+			&entry.DebitAmount,
+			&entry.CreditAmount,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan ledger entry: %w", err)
+		}
+		runningBalance += entry.DebitAmount - entry.CreditAmount
+		entry.Balance = runningBalance
 		entries = append(entries, entry)
 	}
 

@@ -183,3 +183,11 @@ func (s *AccountService) GetLedger(accountNo int, period string) ([]*domain.Ledg
 
 	return entries, nil
 }
+
+// GetLedgerByCompany retrieves ledger entries for an account filtered by company
+func (s *AccountService) GetLedgerByCompany(accountNo int, period string, companyID int) ([]*domain.LedgerEntry, error) {
+	if accountNo <= 0 {
+		return nil, errors.New("invalid account number")
+	}
+	return s.repository.GetLedgerByCompany(accountNo, period, companyID)
+}

@@ -147,7 +147,8 @@ func (h *AccountHandler) GetAccountLedger(c *gin.Context) {
 	// Get period from query parameter (optional)
 	period := c.Query("period")
 
-	entries, err := h.accountService.GetLedger(accountNo, period)
+	companyID, _ := c.Get("companyID")
+	entries, err := h.accountService.GetLedgerByCompany(accountNo, period, companyID.(int))
 	if err != nil {
 		internalError(c, err)
 		return
