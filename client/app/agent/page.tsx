@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
-import { agentApi, ChatResponse } from "@/lib/api/agent";
+import { agentApi } from "@/lib/api/agent";
 import Link from "next/link";
 
 interface Message {
@@ -57,22 +57,69 @@ export default function AgentPage() {
     setMessages((prev) => [...prev, { role: "user", content: userMessage }]);
     setLoading(true);
 
+    // Add empty assistant message that we'll stream into
+    setMessages((prev) => [...prev, { role: "assistant", content: "" }]);
+
     try {
-      const response: ChatResponse = await agentApi.chat(userMessage, conversationId);
-      setConversationId(response.conversation_id);
-      setMessages((prev) => [
-        ...prev,
-        { role: "assistant", content: response.response },
-      ]);
-    } catch (err) {
-      setMessages((prev) => [
-        ...prev,
-        {
-          role: "assistant",
-          content: "Fel: Kunde inte kommunicera med Ester AI. Kontrollera att GEMINI_API_KEY är konfigurerad.",
+      await agentApi.chatStream(userMessage, conversationId, {
+        onText: (text) => {
+          setMessages((prev) => {
+            const updated = [...prev];
+            const last = updated[updated.length - 1];
+            if (last.role === "assistant") {
+              updated[updated.length - 1] = { ...last, content: last.content + text };
+            }
+            return updated;
+          });
         },
-      ]);
-    } finally {
+        onTool: (toolName) => {
+          setMessages((prev) => {
+            const updated = [...prev];
+            const last = updated[updated.length - 1];
+            if (last.role === "assistant") {
+              const status = `⏳ Använder ${toolName}...\n`;
+              updated[updated.length - 1] = { ...last, content: last.content + status };
+            }
+            return updated;
+          });
+        },
+        onConversationId: (id) => {
+          setConversationId(id);
+        },
+        onError: (error) => {
+          setMessages((prev) => {
+            const updated = [...prev];
+            const last = updated[updated.length - 1];
+            if (last.role === "assistant") {
+              updated[updated.length - 1] = { ...last, content: "Fel: " + error };
+            }
+            return updated;
+          });
+        },
+        onDone: () => {
+          setLoading(false);
+          // Remove tool status lines from final message
+          setMessages((prev) => {
+            const updated = [...prev];
+            const last = updated[updated.length - 1];
+            if (last.role === "assistant") {
+              const cleaned = last.content.replace(/⏳ Använder .*?\.\.\.\n/g, "");
+              updated[updated.length - 1] = { ...last, content: cleaned };
+            }
+            return updated;
+          });
+          inputRef.current?.focus();
+        },
+      });
+    } catch (err) {
+      setMessages((prev) => {
+        const updated = [...prev];
+        const last = updated[updated.length - 1];
+        if (last.role === "assistant") {
+          updated[updated.length - 1] = { ...last, content: "Fel: Kunde inte kommunicera med Ester AI. Försök igen senare." };
+        }
+        return updated;
+      });
       setLoading(false);
       inputRef.current?.focus();
     }

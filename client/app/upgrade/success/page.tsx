@@ -10,18 +10,17 @@ export default function UpgradeSuccessPage() {
 
   useEffect(() => {
     const timer = setInterval(() => {
-      setCountdown((prev) => {
-        if (prev <= 1) {
-          clearInterval(timer);
-          router.push("/dashboard");
-          return 0;
-        }
-        return prev - 1;
-      });
+      setCountdown((prev) => prev - 1);
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [router]);
+  }, []);
+
+  useEffect(() => {
+    if (countdown <= 0) {
+      router.push("/dashboard");
+    }
+  }, [countdown, router]);
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex items-center justify-center">

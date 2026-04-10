@@ -50,6 +50,15 @@ export default function UpgradePage() {
   const [error, setError] = useState("");
   const currentPlan = selectedCompany?.plan || "free";
 
+  // Check if trial is actually expired (30 days from creation)
+  const isTrialExpired = (() => {
+    if (currentPlan !== "free" || !selectedCompany?.created_at) return false;
+    const created = new Date(selectedCompany.created_at);
+    const now = new Date();
+    const daysSinceCreation = (now.getTime() - created.getTime()) / (1000 * 60 * 60 * 24);
+    return daysSinceCreation > 30;
+  })();
+
   useEffect(() => {
     if (!authLoading && !user) {
       router.push("/auth/login");
@@ -83,7 +92,7 @@ export default function UpgradePage() {
       <div className="max-w-4xl mx-auto px-4 py-12">
         {/* Header */}
         <div className="text-center mb-12">
-          {currentPlan === "free" ? (
+          {currentPlan === "free" && isTrialExpired ? (
             <>
               <div className="inline-block px-4 py-1.5 bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400 rounded-full text-sm font-medium mb-4">
                 Din provperiod har gått ut
@@ -94,6 +103,15 @@ export default function UpgradePage() {
               <p className="text-gray-600 dark:text-gray-400 text-lg max-w-xl mx-auto">
                 Din 30-dagars provperiod{selectedCompany ? ` för ${selectedCompany.company_name}` : ""} har löpt ut.
                 Välj en plan för att fortsätta använda Esbio.
+              </p>
+            </>
+          ) : currentPlan === "free" ? (
+            <>
+              <h1 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-3">
+                Välj en plan
+              </h1>
+              <p className="text-gray-600 dark:text-gray-400 text-lg max-w-xl mx-auto">
+                Uppgradera{selectedCompany ? ` ${selectedCompany.company_name}` : ""} för att låsa upp alla funktioner i Esbio.
               </p>
             </>
           ) : (

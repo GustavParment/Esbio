@@ -2,7 +2,15 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   output: "standalone",
-  allowedDevOrigins: ["192.168.0.38", "192.168.68.109", "192.168.68.110"],
+  allowedDevOrigins: ["*.local", "192.168.*.*", "10.*.*.*", "172.16.*.*"],
+  async rewrites() {
+    return [
+      {
+        source: "/api/:path*",
+        destination: "http://localhost:8080/api/:path*",
+      },
+    ];
+  },
 };
 
 export default nextConfig;

@@ -83,7 +83,7 @@ func (h *StripeHandler) HandleWebhook(c *gin.Context) {
 	var event stripe.Event
 
 	if webhookSecret != "" {
-		event, err = webhook.ConstructEvent(body, c.GetHeader("Stripe-Signature"), webhookSecret)
+		event, err = webhook.ConstructEventWithOptions(body, c.GetHeader("Stripe-Signature"), webhookSecret, webhook.ConstructEventOptions{IgnoreAPIVersionMismatch: true})
 		if err != nil {
 			log.Printf("Stripe webhook signature verification failed: %v", err)
 			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid signature"})

@@ -109,6 +109,7 @@ func SetupRoutes(
 		agent := v1.Group("/agent", authMiddleware, companyMiddleware)
 		{
 			agent.POST("/chat", agentHandler.Chat)
+			agent.POST("/stream", agentHandler.ChatStream)
 			agent.GET("/messages/:conversationId", agentHandler.GetMessages)
 			agent.GET("/tasks", agentHandler.GetScheduledTasks)
 			agent.PUT("/tasks/:id/toggle", agentHandler.ToggleScheduledTask)

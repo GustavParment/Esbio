@@ -41,12 +41,76 @@ export interface AgentUsageSummary {
   month_estimated_cost_sek: number;
 }
 
+export interface StreamCallbacks {
+  onText: (text: string) => void;
+  onTool: (toolName: string) => void;
+  onConversationId: (id: string) => void;
+  onError: (error: string) => void;
+  onDone: () => void;
+}
+
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "https://api.esbio.se/api/v1";
+
 export const agentApi = {
   chat: async (message: string, conversationId?: string): Promise<ChatResponse> => {
     return apiClient.post<ChatResponse>("/agent/chat", {
       message,
       conversation_id: conversationId || "",
     });
+  },
+
+  chatStream: async (message: string, conversationId: string, callbacks: StreamCallbacks): Promise<void> => {
+    const response = await fetch(`${API_BASE_URL}/agent/stream`, {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ message, conversation_id: conversationId || "" }),
+    });
+
+    if (!response.ok || !response.body) {
+      callbacks.onError("Kunde inte kommunicera med Ester AI.");
+      return;
+    }
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = "";
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split("\n");
+      buffer = lines.pop() || "";
+
+      let currentEvent = "";
+      for (const line of lines) {
+        if (line.startsWith("event: ")) {
+          currentEvent = line.slice(7);
+        } else if (line.startsWith("data: ")) {
+          const data = line.slice(6);
+          switch (currentEvent) {
+            case "text":
+              callbacks.onText(data);
+              break;
+            case "tool":
+              callbacks.onTool(data);
+              break;
+            case "conversation_id":
+              callbacks.onConversationId(data);
+              break;
+            case "error":
+              callbacks.onError(data);
+              break;
+            case "done":
+              callbacks.onDone();
+              break;
+          }
+        }
+      }
+    }
+    callbacks.onDone();
   },
 
   getMessages: async (conversationId: string): Promise<AgentMessage[]> => {

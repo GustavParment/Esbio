@@ -341,27 +341,6 @@ export default function LandingPage() {
         }
         .plan-btn:hover { opacity: 0.8; }
 
-        .testimonials {
-          display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-          gap: 1.5rem; max-width: 900px; margin: 0 auto;
-        }
-        .testimonial {
-          background: var(--ink-2); border: 1px solid var(--l-border);
-          border-radius: 16px; padding: 1.75rem; text-align: left;
-        }
-        .testimonial-text {
-          font-style: italic; color: var(--text-muted);
-          font-size: 0.95rem; line-height: 1.7; font-weight: 300; margin-bottom: 1.25rem;
-        }
-        .testimonial-author { display: flex; align-items: center; gap: 0.75rem; }
-        .avatar-circle {
-          width: 36px; height: 36px; border-radius: 50%;
-          background: var(--teal-mid); border: 1px solid var(--border-teal);
-          display: flex; align-items: center; justify-content: center;
-          font-size: 0.75rem; font-weight: 500; color: var(--teal);
-        }
-        .author-name { font-size: 0.875rem; font-weight: 500; color: var(--l-text); }
-        .author-role { font-size: 0.75rem; color: var(--text-dim); }
 
         .cta-section {
           text-align: center; padding: 6rem 2rem;
@@ -672,44 +651,7 @@ export default function LandingPage() {
           </div>
         </section>
 
-        {/* TESTIMONIALS */}
-        <section className="landing-section" style={{ textAlign: "center" }}>
-          <div className="section-label">Vad kunderna säger</div>
-          <h2 className="section-title" style={{ marginBottom: "3rem" }}>Tusentals svenska företag sparar tid med Esbio</h2>
-
-          <div className="testimonials">
-            <div className="testimonial">
-              <p className="testimonial-text">&quot;Jag brukade lägga tre timmar i månaden på bokföring. Nu tar det tjugo minuter. Esbio är det bästa jag gjort för mitt företag.&quot;</p>
-              <div className="testimonial-author">
-                <div className="avatar-circle">AS</div>
-                <div>
-                  <div className="author-name">Anna Ström</div>
-                  <div className="author-role">Grundare, Ström Design AB</div>
-                </div>
-              </div>
-            </div>
-            <div className="testimonial">
-              <p className="testimonial-text">&quot;AI:n lär sig snabbt. Efter tre veckor konterade den rätt på nästan allt. Momsrapporterna sköter sig helt själva nu.&quot;</p>
-              <div className="testimonial-author">
-                <div className="avatar-circle">MK</div>
-                <div>
-                  <div className="author-name">Marcus Karlsson</div>
-                  <div className="author-role">VD, Nordisk Konsult AB</div>
-                </div>
-              </div>
-            </div>
-            <div className="testimonial">
-              <p className="testimonial-text">&quot;Som frilansare ville jag inte betala en revisor 5000 kr för enkla saker. Esbio gör jobbet för en bråkdel av kostnaden.&quot;</p>
-              <div className="testimonial-author">
-                <div className="avatar-circle">LJ</div>
-                <div>
-                  <div className="author-name">Linn Johansson</div>
-                  <div className="author-role">Frilansfotograf</div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
+        {/* TESTIMONIALS - removed, will add real reviews later */}
 
         {/* CTA */}
         <section className="cta-section">

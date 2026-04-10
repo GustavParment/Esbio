@@ -17,7 +17,8 @@ func CORSMiddleware() gin.HandlerFunc {
 		origin := c.Request.Header.Get("Origin")
 		// Allow exact matches and any local network origin (192.168.x.x:3000)
 		isAllowed := allowedOrigins[origin] ||
-			(strings.HasPrefix(origin, "http://192.168.") && strings.HasSuffix(origin, ":3000"))
+			(strings.HasPrefix(origin, "http://192.168.") && strings.HasSuffix(origin, ":3000")) ||
+			strings.HasSuffix(origin, ".local:3000")
 		if isAllowed {
 			c.Writer.Header().Set("Access-Control-Allow-Origin", origin)
 		}

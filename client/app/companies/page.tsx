@@ -78,7 +78,9 @@ export default function CompanySelectorPage() {
                   </h3>
                   <div className="flex gap-4 mt-1 text-sm text-gray-500 dark:text-gray-400">
                     {company.org_number && <span>Org.nr: {company.org_number}</span>}
-                    <span className="capitalize">{company.plan}</span>
+                    <span className="capitalize">
+                      {company.plan === "free" ? "Gratis" : company.plan === "starter" ? "Starter" : company.plan === "growth" ? "Tillväxt" : company.plan}
+                    </span>
                   </div>
                 </div>
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-400 group-hover:text-blue-600 transition-colors">

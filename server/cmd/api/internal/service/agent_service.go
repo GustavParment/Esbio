@@ -708,7 +708,7 @@ func (s *AgentService) executeTool(name string, args map[string]interface{}, aut
 
 func (s *AgentService) Chat(userID int, companyID int, conversationID string, userMessage string, history []domain.AgentMessage) (string, error) {
 	if s.apiKey == "" {
-		return "", fmt.Errorf("GEMINI_API_KEY is not configured")
+		return "", fmt.Errorf("AI-tjänsten är inte tillgänglig just nu. Försök igen senare.")
 	}
 
 	now := time.Now()
@@ -749,7 +749,7 @@ func (s *AgentService) Chat(userID int, companyID int, conversationID string, us
 			return "", fmt.Errorf("failed to marshal request: %w", err)
 		}
 
-		url := fmt.Sprintf("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=%s", s.apiKey)
+		url := fmt.Sprintf("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=%s", s.apiKey)
 
 		req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonBody))
 		if err != nil {
@@ -853,6 +853,171 @@ func (s *AgentService) Chat(userID int, companyID int, conversationID string, us
 	}
 
 	return "Jag kunde inte slutföra uppgiften efter flera försök.", nil
+}
+
+// StreamWriter is a callback for sending SSE events to the client
+type StreamWriter func(event string, data string)
+
+// ChatStream is like Chat but streams the final text response via SSE
+func (s *AgentService) ChatStream(userID int, companyID int, conversationID string, userMessage string, history []domain.AgentMessage, write StreamWriter) (string, error) {
+	if s.apiKey == "" {
+		return "", fmt.Errorf("AI-tjänsten är inte tillgänglig just nu. Försök igen senare.")
+	}
+
+	now := time.Now()
+	todayStr := now.Format("2006-01-02")
+	periodStr := fmt.Sprintf("%d-%02d", now.Year(), now.Month())
+	systemPrompt := fmt.Sprintf(systemPromptTemplate, todayStr, periodStr, userID)
+
+	var contents []geminiContent
+	for _, msg := range history {
+		role := "user"
+		if msg.Role == "assistant" {
+			role = "model"
+		}
+		contents = append(contents, geminiContent{
+			Role:  role,
+			Parts: []geminiPart{{Text: msg.Content}},
+		})
+	}
+	contents = append(contents, geminiContent{
+		Role:  "user",
+		Parts: []geminiPart{{Text: userMessage}},
+	})
+
+	for i := 0; i < 10; i++ {
+		reqBody := geminiRequest{
+			Contents: contents,
+			Tools:    s.getToolDeclarations(),
+			SystemInstruction: &geminiContent{
+				Parts: []geminiPart{{Text: systemPrompt}},
+			},
+		}
+
+		jsonBody, err := json.Marshal(reqBody)
+		if err != nil {
+			return "", fmt.Errorf("failed to marshal request: %w", err)
+		}
+
+		// First, do a non-streaming request to check for tool calls
+		url := fmt.Sprintf("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=%s", s.apiKey)
+
+		req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonBody))
+		if err != nil {
+			return "", fmt.Errorf("failed to create request: %w", err)
+		}
+		req.Header.Set("Content-Type", "application/json")
+
+		client := &http.Client{Timeout: 120 * time.Second}
+		resp, err := client.Do(req)
+		if err != nil {
+			return "", fmt.Errorf("API request failed: %w", err)
+		}
+
+		body, err := io.ReadAll(resp.Body)
+		resp.Body.Close()
+		if err != nil {
+			return "", fmt.Errorf("failed to read response: %w", err)
+		}
+
+		if resp.StatusCode != 200 {
+			return "", fmt.Errorf("Gemini API error (status %d): %s", resp.StatusCode, string(body))
+		}
+
+		var geminiResp geminiResponse
+		if err := json.Unmarshal(body, &geminiResp); err != nil {
+			return "", fmt.Errorf("failed to parse response: %w", err)
+		}
+
+		if geminiResp.Error != nil {
+			return "", fmt.Errorf("Gemini API error: %s", geminiResp.Error.Message)
+		}
+
+		if geminiResp.UsageMetadata != nil && s.usageRepo != nil {
+			usage := &domain.AgentUsage{
+				UserID:           userID,
+				CompanyID:        companyID,
+				PromptTokens:     geminiResp.UsageMetadata.PromptTokenCount,
+				CompletionTokens: geminiResp.UsageMetadata.CandidatesTokenCount,
+				TotalTokens:      geminiResp.UsageMetadata.TotalTokenCount,
+			}
+			if err := s.usageRepo.SaveUsage(usage); err != nil {
+				log.Printf("[Agent] Failed to save usage: %v", err)
+			}
+		}
+
+		if len(geminiResp.Candidates) == 0 {
+			return "Inget svar från agenten.", nil
+		}
+
+		candidate := geminiResp.Candidates[0]
+		parts := candidate.Content.Parts
+
+		var hasFunctionCall bool
+		var textResult strings.Builder
+
+		for _, part := range parts {
+			if part.FunctionCall != nil {
+				hasFunctionCall = true
+			}
+			if part.Text != "" {
+				textResult.WriteString(part.Text)
+			}
+		}
+
+		if !hasFunctionCall {
+			// Stream the final text response word by word
+			fullText := textResult.String()
+			s.streamText(fullText, write)
+			return fullText, nil
+		}
+
+		// Has tool calls — notify client and execute
+		contents = append(contents, geminiContent{
+			Role:  "model",
+			Parts: parts,
+		})
+
+		var responseParts []geminiPart
+		for _, part := range parts {
+			if part.FunctionCall != nil {
+				write("tool", part.FunctionCall.Name)
+				result, err := s.executeTool(part.FunctionCall.Name, part.FunctionCall.Args, userID, companyID)
+				if err != nil {
+					result = fmt.Sprintf("Fel: %s", sanitizeError(err))
+				}
+				responseParts = append(responseParts, geminiPart{
+					FunctionResponse: &geminiFunctionResp{
+						Name: part.FunctionCall.Name,
+						Response: map[string]interface{}{
+							"result": result,
+						},
+					},
+				})
+			}
+		}
+
+		contents = append(contents, geminiContent{
+			Role:  "user",
+			Parts: responseParts,
+		})
+	}
+
+	return "Jag kunde inte slutföra uppgiften efter flera försök.", nil
+}
+
+// streamText sends text in small chunks to simulate streaming
+func (s *AgentService) streamText(text string, write StreamWriter) {
+	runes := []rune(text)
+	chunkSize := 3 // send ~3 characters at a time
+	for i := 0; i < len(runes); i += chunkSize {
+		end := i + chunkSize
+		if end > len(runes) {
+			end = len(runes)
+		}
+		write("text", string(runes[i:end]))
+		time.Sleep(15 * time.Millisecond)
+	}
 }
 
 // sanitizeError removes sensitive database/internal details from error messages

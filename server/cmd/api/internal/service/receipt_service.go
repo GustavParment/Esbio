@@ -88,7 +88,7 @@ func (s *ReceiptService) ScanReceipt(imageData []byte, mimeType string) (*domain
 		return nil, fmt.Errorf("failed to marshal request: %w", err)
 	}
 
-	url := fmt.Sprintf("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=%s", s.apiKey)
+	url := fmt.Sprintf("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=%s", s.apiKey)
 
 	resp, err := http.Post(url, "application/json", bytes.NewReader(jsonBody))
 	if err != nil {

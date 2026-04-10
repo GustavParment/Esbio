@@ -104,6 +104,86 @@ func (h *AgentHandler) Chat(c *gin.Context) {
 	})
 }
 
+// ChatStream handles POST /agent/chat/stream (SSE streaming)
+func (h *AgentHandler) ChatStream(c *gin.Context) {
+	userID, exists := c.Get("userID")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "user not authenticated"})
+		return
+	}
+
+	companyID, exists := c.Get("companyID")
+	if !exists {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "no company selected"})
+		return
+	}
+
+	var req struct {
+		Message        string `json:"message" binding:"required"`
+		ConversationID string `json:"conversation_id"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "message is required"})
+		return
+	}
+
+	uid := userID.(int)
+	cid := companyID.(int)
+
+	if req.ConversationID == "" {
+		req.ConversationID = fmt.Sprintf("conv-%d-%d", uid, time.Now().UnixNano())
+	}
+
+	// Load conversation history
+	history, _ := h.messageRepo.GetMessagesByConversation(req.ConversationID)
+	var historyMessages []domain.AgentMessage
+	for _, msg := range history {
+		historyMessages = append(historyMessages, *msg)
+	}
+
+	// Save user message
+	userMsg := &domain.AgentMessage{
+		UserID:         uid,
+		CompanyID:      cid,
+		ConversationID: req.ConversationID,
+		Role:           "user",
+		Content:        req.Message,
+	}
+	h.messageRepo.SaveMessage(userMsg)
+
+	// Set SSE headers
+	c.Writer.Header().Set("Content-Type", "text/event-stream")
+	c.Writer.Header().Set("Cache-Control", "no-cache")
+	c.Writer.Header().Set("Connection", "keep-alive")
+
+	// Send conversation_id first
+	fmt.Fprintf(c.Writer, "event: conversation_id\ndata: %s\n\n", req.ConversationID)
+	c.Writer.Flush()
+
+	write := func(event string, data string) {
+		fmt.Fprintf(c.Writer, "event: %s\ndata: %s\n\n", event, data)
+		c.Writer.Flush()
+	}
+
+	response, err := h.agentService.ChatStream(uid, cid, req.ConversationID, req.Message, historyMessages, write)
+	if err != nil {
+		write("error", "Kunde inte kommunicera med Ester AI. Försök igen senare.")
+		return
+	}
+
+	// Save assistant message
+	assistantMsg := &domain.AgentMessage{
+		UserID:         uid,
+		CompanyID:      cid,
+		ConversationID: req.ConversationID,
+		Role:           "assistant",
+		Content:        response,
+	}
+	h.messageRepo.SaveMessage(assistantMsg)
+
+	write("done", "")
+}
+
 // GetMessages handles GET /agent/messages/:conversationId
 func (h *AgentHandler) GetMessages(c *gin.Context) {
 	conversationID := c.Param("conversationId")
