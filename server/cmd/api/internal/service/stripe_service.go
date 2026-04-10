@@ -186,9 +186,15 @@ func (s *StripeService) HandleCheckoutCompleted(session *stripe.CheckoutSession)
 // priceToPlan maps Stripe Price IDs to plan names.
 func (s *StripeService) priceToPlan(priceID string) string {
 	switch priceID {
+	// Test/sandbox prices
 	case "price_1TKFEmF27XxV0OojLLuaOAfg":
 		return "starter"
 	case "price_1TKFFGF27XxV0Ooj3uaT41ho":
+		return "growth"
+	// Live/production prices
+	case "price_1TKG9DFQgVJ3jY3cTQwpxKd7":
+		return "starter"
+	case "price_1TKG9HFQgVJ3jY3cQWf0Tq16":
 		return "growth"
 	default:
 		log.Printf("Unknown price ID: %s, defaulting to starter", priceID)

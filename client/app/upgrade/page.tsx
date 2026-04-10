@@ -6,6 +6,8 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { stripeApi } from "@/lib/api/stripe";
 
+const isLive = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY?.startsWith("pk_live_");
+
 const plans = [
   {
     id: "starter",
@@ -20,7 +22,7 @@ const plans = [
       "5 fakturor/mån",
     ],
     featured: false,
-    priceId: "price_1TKFEmF27XxV0OojLLuaOAfg",
+    priceId: isLive ? "price_1TKG9DFQgVJ3jY3cTQwpxKd7" : "price_1TKFEmF27XxV0OojLLuaOAfg",
   },
   {
     id: "growth",
@@ -37,7 +39,7 @@ const plans = [
       "Prioriterad support",
     ],
     featured: true,
-    priceId: "price_1TKFFGF27XxV0Ooj3uaT41ho",
+    priceId: isLive ? "price_1TKG9HFQgVJ3jY3cQWf0Tq16" : "price_1TKFFGF27XxV0Ooj3uaT41ho",
   },
 ];
 
