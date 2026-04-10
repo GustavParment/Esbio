@@ -5,6 +5,7 @@ import (
 	"esbio/api/internal/repository"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -116,9 +117,10 @@ func CompanyMiddleware(companyRepo repository.CompanyRepository) gin.HandlerFunc
 			return
 		}
 
-		// Check trial expiration and plan status
+		// Check trial expiration and plan status (skip for stripe routes — users must be able to pay)
 		company, err := companyRepo.GetCompanyByID(companyID)
-		if err == nil {
+		isStripeRoute := strings.HasPrefix(c.Request.URL.Path, "/api/v1/stripe/")
+		if err == nil && !isStripeRoute {
 			// Block past_due subscriptions
 			if company.PlanStatus == "past_due" {
 				c.JSON(http.StatusPaymentRequired, gin.H{
