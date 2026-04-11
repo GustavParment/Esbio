@@ -7,6 +7,7 @@ import (
 	"strconv"
 
 	"github.com/gin-gonic/gin"
+	"github.com/shopspring/decimal"
 )
 
 type VoucherHandler struct {
@@ -235,20 +236,20 @@ func (h *VoucherHandler) CreateCorrectionWithChanges(c *gin.Context) {
 
 	// Get request body with new voucher data
 	var req struct {
-		UserID int `json:"user_id" binding:"required"`
+		UserID     int `json:"user_id" binding:"required"`
 		NewVoucher struct {
-			Date        string  `json:"date"`
-			Description string  `json:"description"`
-			Reference   string  `json:"reference"`
-			TotalAmount float64 `json:"total_amount"`
-			Period      string  `json:"period"`
-			CreatedBy   int     `json:"created_by"`
+			Date        string          `json:"date"`
+			Description string          `json:"description"`
+			Reference   string          `json:"reference"`
+			TotalAmount decimal.Decimal `json:"total_amount"`
+			Period      string          `json:"period"`
+			CreatedBy   int             `json:"created_by"`
 		} `json:"new_voucher" binding:"required"`
 		NewLineItems []struct {
-			AccountNo    int     `json:"account_no"`
-			DebitAmount  float64 `json:"debit_amount"`
-			CreditAmount float64 `json:"credit_amount"`
-			TaxCode      int     `json:"tax_code"`
+			AccountNo    int             `json:"account_no"`
+			DebitAmount  decimal.Decimal `json:"debit_amount"`
+			CreditAmount decimal.Decimal `json:"credit_amount"`
+			TaxCode      int             `json:"tax_code"`
 		} `json:"new_line_items" binding:"required"`
 	}
 

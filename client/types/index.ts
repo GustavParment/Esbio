@@ -81,13 +81,19 @@ export interface UpdateAccountRequest {
   standard_side?: StandardSide;
 }
 
+// Money values are transported as decimal strings (e.g. "1234.56") to
+// preserve exact precision — JS number cannot represent 2-decimal values
+// past 2^53 and rounds subtotals (0.1+0.2 !== 0.3). Parse with parseFloat
+// for display, or use a Decimal library for client-side math.
+export type MoneyString = string;
+
 // Line Item types
 export interface LineItem {
   line_id: number;
   voucher_id: number;
   account_no: number;
-  debit_amount: number;
-  credit_amount: number;
+  debit_amount: MoneyString;
+  credit_amount: MoneyString;
   tax_code: number; // 0, 6, 12, 25
   project_id?: number;
   cost_center_id?: number;
@@ -97,8 +103,8 @@ export interface LineItem {
 export interface CreateLineItemRequest {
   voucher_id: number;
   account_no: number;
-  debit_amount: number;
-  credit_amount: number;
+  debit_amount: MoneyString | number;
+  credit_amount: MoneyString | number;
   tax_code: number;
   project_id?: number;
   cost_center_id?: number;
@@ -106,8 +112,8 @@ export interface CreateLineItemRequest {
 
 export interface UpdateLineItemRequest {
   account_no?: number;
-  debit_amount?: number;
-  credit_amount?: number;
+  debit_amount?: MoneyString | number;
+  credit_amount?: MoneyString | number;
   tax_code?: number;
   project_id?: number;
   cost_center_id?: number;
@@ -120,7 +126,7 @@ export interface Voucher {
   date: string;
   description: string;
   reference: string;
-  total_amount: number;
+  total_amount: MoneyString;
   period: string; // YYYY-MM
   created_by: number;
   corrects_voucher_id?: number | null;     // ID för verifikat som detta rättar
@@ -134,7 +140,7 @@ export interface CreateVoucherRequest {
   date: string;
   description: string;
   reference: string;
-  total_amount: number;
+  total_amount: MoneyString | number;
   period: string;
   created_by: number;
   lines?: CreateLineItemRequest[];
@@ -144,7 +150,7 @@ export interface UpdateVoucherRequest {
   date?: string;
   description?: string;
   reference?: string;
-  total_amount?: number;
+  total_amount?: MoneyString | number;
   period?: string;
 }
 
@@ -175,8 +181,8 @@ export interface RegisterResponse {
 export interface ReceiptLineItem {
   account_no: number;
   account_name: string;
-  debit_amount: number;
-  credit_amount: number;
+  debit_amount: MoneyString;
+  credit_amount: MoneyString;
   tax_code: number;
 }
 
@@ -184,10 +190,10 @@ export interface ReceiptScanResult {
   date: string;
   vendor: string;
   description: string;
-  total_amount: number;
+  total_amount: MoneyString;
   vat_rate: number;
-  vat_amount: number;
-  amount_excl_vat: number;
+  vat_amount: MoneyString;
+  amount_excl_vat: MoneyString;
   currency: string;
   suggested_lines: ReceiptLineItem[];
 }
@@ -200,9 +206,9 @@ export interface ApiError {
 
 export interface ValidationResponse {
   balanced: boolean;
-  total_debit: number;
-  total_credit: number;
-  difference: number;
+  total_debit: MoneyString;
+  total_credit: MoneyString;
+  difference: MoneyString;
 }
 
 // Pagination and filtering
@@ -230,7 +236,7 @@ export interface LedgerEntry {
   voucher_number: number;
   description: string;
   reference: string;
-  debit_amount: number;
-  credit_amount: number;
-  balance: number;
+  debit_amount: MoneyString;
+  credit_amount: MoneyString;
+  balance: MoneyString;
 }

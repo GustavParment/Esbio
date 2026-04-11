@@ -1,9 +1,10 @@
 import { apiClient } from "./client";
+import type { MoneyString } from "@/types";
 
 export interface IncomeStatementEntry {
   account_no: number;
   account_name: string;
-  balance: number;
+  balance: MoneyString;
 }
 
 export interface IncomeStatement {
@@ -13,37 +14,37 @@ export interface IncomeStatement {
   };
   income: IncomeStatementEntry[];
   expenses: IncomeStatementEntry[];
-  total_income: number;
-  total_expenses: number;
-  net_result: number;
+  total_income: MoneyString;
+  total_expenses: MoneyString;
+  net_result: MoneyString;
 }
 
 export interface BalanceSheetEntry {
   account_no: number;
   account_name: string;
-  balance: number;
+  balance: MoneyString;
 }
 
 export interface BalanceSheet {
   as_of_date: string;
   assets: BalanceSheetEntry[];
   equity_liabilities: BalanceSheetEntry[];
-  total_assets: number;
-  total_equity_liabilities: number;
-  net_result: number;
+  total_assets: MoneyString;
+  total_equity_liabilities: MoneyString;
+  net_result: MoneyString;
 }
 
 export interface VATReportEntry {
   tax_code: number;
   tax_rate: string;
-  total_sales: number;
-  total_vat: number;
+  total_sales: MoneyString;
+  total_vat: MoneyString;
 }
 
 export interface VATInputEntry {
   account_no: number;
   account_name: string;
-  amount: number;
+  amount: MoneyString;
 }
 
 export interface VATReport {
@@ -52,11 +53,11 @@ export interface VATReport {
     to_date: string;
   };
   entries: VATReportEntry[];
-  total_sales: number;
-  total_vat: number;
+  total_sales: MoneyString;
+  total_vat: MoneyString;
   input_entries: VATInputEntry[];
-  total_input_vat: number;
-  net_vat: number;
+  total_input_vat: MoneyString;
+  net_vat: MoneyString;
 }
 
 export const reportsApi = {

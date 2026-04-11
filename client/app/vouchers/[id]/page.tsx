@@ -7,6 +7,7 @@ import { vouchersApi } from "@/lib/api/vouchers";
 import { lineItemsApi } from "@/lib/api/lineitems";
 import { accountsApi } from "@/lib/api/accounts";
 import { Voucher, LineItem, Account } from "@/types";
+import { formatSEK, parseMoney, sumMoney } from "@/lib/money";
 import { useAuth } from "@/lib/contexts/AuthContext";
 import Link from "next/link";
 
@@ -105,8 +106,8 @@ export default function VoucherDetailPage() {
     }
   };
 
-  const totalDebit = lineItems.reduce((sum, item) => sum + (item.debit_amount || 0), 0);
-  const totalCredit = lineItems.reduce((sum, item) => sum + (item.credit_amount || 0), 0);
+  const totalDebit = sumMoney(lineItems, (item) => item.debit_amount);
+  const totalCredit = sumMoney(lineItems, (item) => item.credit_amount);
   const isBalanced = Math.abs(totalDebit - totalCredit) < 0.01;
 
   if (loading) {
@@ -243,11 +244,7 @@ export default function VoucherDetailPage() {
             <div>
               <p className="text-sm text-gray-500 mb-1">Totalbelopp</p>
               <p className="font-medium text-gray-900">
-                {voucher.total_amount.toLocaleString("sv-SE", {
-                  minimumFractionDigits: 2,
-                  maximumFractionDigits: 2,
-                })}{" "}
-                kr
+                {formatSEK(voucher.total_amount)} kr
               </p>
             </div>
           </div>
@@ -311,20 +308,10 @@ export default function VoucherDetailPage() {
                         {accounts[item.account_no]?.account_name || "-"}
                       </td>
                       <td className="py-4 px-6 text-sm text-gray-900 text-right">
-                        {item.debit_amount > 0
-                          ? item.debit_amount.toLocaleString("sv-SE", {
-                              minimumFractionDigits: 2,
-                              maximumFractionDigits: 2,
-                            })
-                          : "-"}
+                        {parseMoney(item.debit_amount) > 0 ? formatSEK(item.debit_amount) : "-"}
                       </td>
                       <td className="py-4 px-6 text-sm text-gray-900 text-right">
-                        {item.credit_amount > 0
-                          ? item.credit_amount.toLocaleString("sv-SE", {
-                              minimumFractionDigits: 2,
-                              maximumFractionDigits: 2,
-                            })
-                          : "-"}
+                        {parseMoney(item.credit_amount) > 0 ? formatSEK(item.credit_amount) : "-"}
                       </td>
                       <td className="py-4 px-6 text-sm text-gray-600 text-center">
                         {item.tax_code}%
@@ -338,16 +325,10 @@ export default function VoucherDetailPage() {
                       Summa
                     </td>
                     <td className="py-4 px-6 text-sm text-gray-900 text-right">
-                      {totalDebit.toLocaleString("sv-SE", {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 2,
-                      })}
+                      {formatSEK(totalDebit)}
                     </td>
                     <td className="py-4 px-6 text-sm text-gray-900 text-right">
-                      {totalCredit.toLocaleString("sv-SE", {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 2,
-                      })}
+                      {formatSEK(totalCredit)}
                     </td>
                     <td></td>
                   </tr>
@@ -382,11 +363,7 @@ export default function VoucherDetailPage() {
                   isBalanced ? "text-green-600" : "text-red-600"
                 }`}
               >
-                {Math.abs(totalDebit - totalCredit).toLocaleString("sv-SE", {
-                  minimumFractionDigits: 2,
-                  maximumFractionDigits: 2,
-                })}{" "}
-                kr
+                {formatSEK(Math.abs(totalDebit - totalCredit))} kr
               </span>
             </div>
           </div>

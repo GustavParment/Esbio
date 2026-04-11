@@ -8,6 +8,7 @@ import { vouchersApi } from "@/lib/api/vouchers";
 import { accountsApi } from "@/lib/api/accounts";
 import { lineItemsApi } from "@/lib/api/lineitems";
 import { Account, ReceiptScanResult } from "@/types";
+import { formatSEK, parseMoney } from "@/lib/money";
 import { useAuth } from "@/lib/contexts/AuthContext";
 import AccountSearch from "@/components/ui/AccountSearch";
 
@@ -82,8 +83,8 @@ export default function ScanReceiptPage() {
           result.suggested_lines.map((line, i) => ({
             id: String(i + 1),
             account_no: String(line.account_no),
-            debit_amount: line.debit_amount > 0 ? String(line.debit_amount) : "",
-            credit_amount: line.credit_amount > 0 ? String(line.credit_amount) : "",
+            debit_amount: parseMoney(line.debit_amount) > 0 ? String(line.debit_amount) : "",
+            credit_amount: parseMoney(line.credit_amount) > 0 ? String(line.credit_amount) : "",
             tax_code: line.tax_code,
           }))
         );
@@ -266,13 +267,13 @@ export default function ScanReceiptPage() {
                     <div>
                       <span className="text-green-700">Belopp:</span>
                       <p className="font-medium text-green-900">
-                        {scanResult.total_amount.toLocaleString("sv-SE", { minimumFractionDigits: 2 })} {scanResult.currency}
+                        {formatSEK(scanResult.total_amount)} {scanResult.currency}
                       </p>
                     </div>
                     <div>
                       <span className="text-green-700">Moms ({scanResult.vat_rate}%):</span>
                       <p className="font-medium text-green-900">
-                        {scanResult.vat_amount.toLocaleString("sv-SE", { minimumFractionDigits: 2 })} {scanResult.currency}
+                        {formatSEK(scanResult.vat_amount)} {scanResult.currency}
                       </p>
                     </div>
                     <div>
