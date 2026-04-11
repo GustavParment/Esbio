@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { reportsApi, BalanceSheet } from "@/lib/api/reports";
+import { parseMoney } from "@/lib/money";
 import Link from "next/link";
 
 export default function BalanceSheetPage() {
@@ -36,8 +37,8 @@ export default function BalanceSheetPage() {
     fetchSheet();
   }, []);
 
-  const formatCurrency = (value: number) =>
-    value.toLocaleString("sv-SE", {
+  const formatCurrency = (value: string | number) =>
+    parseMoney(value).toLocaleString("sv-SE", {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     });
@@ -139,7 +140,7 @@ export default function BalanceSheetPage() {
             <h3 className="text-lg font-semibold text-gray-900 mb-4 mt-6">
               EGET KAPITAL OCH SKULDER
             </h3>
-            {sheet.equity_liabilities.length === 0 && sheet.net_result === 0 ? (
+            {sheet.equity_liabilities.length === 0 && parseMoney(sheet.net_result) === 0 ? (
               <p className="text-gray-500 italic">Inget eget kapital eller skulder bokförda</p>
             ) : (
               <table className="w-full">
@@ -159,7 +160,7 @@ export default function BalanceSheetPage() {
                       </td>
                     </tr>
                   ))}
-                  {sheet.net_result !== 0 && (
+                  {parseMoney(sheet.net_result) !== 0 && (
                     <tr className="border-b border-gray-100">
                       <td className="py-2 text-sm text-gray-600 italic">
                         Periodens resultat
@@ -183,33 +184,33 @@ export default function BalanceSheetPage() {
           </div>
 
           {/* Balance Check */}
-          <div
-            className={`px-6 py-6 border-t-4 ${
-              Math.abs(sheet.total_assets - sheet.total_equity_liabilities) < 0.01
-                ? "bg-green-50 border-green-500"
-                : "bg-red-50 border-red-500"
-            }`}
-          >
-            <div className="flex justify-between items-center">
-              <h3 className="text-xl font-bold text-gray-900">BALANS</h3>
-              <div className="text-right">
-                {Math.abs(sheet.total_assets - sheet.total_equity_liabilities) < 0.01 ? (
-                  <p className="text-lg font-bold text-green-600">Balanserar</p>
-                ) : (
-                  <div>
-                    <p className="text-lg font-bold text-red-600">Balanserar inte</p>
-                    <p className="text-sm text-red-500">
-                      Differens:{" "}
-                      {formatCurrency(
-                        sheet.total_assets - sheet.total_equity_liabilities
-                      )}{" "}
-                      kr
-                    </p>
+          {(() => {
+            const diff = parseMoney(sheet.total_assets) - parseMoney(sheet.total_equity_liabilities);
+            const balances = Math.abs(diff) < 0.01;
+            return (
+              <div
+                className={`px-6 py-6 border-t-4 ${
+                  balances ? "bg-green-50 border-green-500" : "bg-red-50 border-red-500"
+                }`}
+              >
+                <div className="flex justify-between items-center">
+                  <h3 className="text-xl font-bold text-gray-900">BALANS</h3>
+                  <div className="text-right">
+                    {balances ? (
+                      <p className="text-lg font-bold text-green-600">Balanserar</p>
+                    ) : (
+                      <div>
+                        <p className="text-lg font-bold text-red-600">Balanserar inte</p>
+                        <p className="text-sm text-red-500">
+                          Differens: {formatCurrency(diff)} kr
+                        </p>
+                      </div>
+                    )}
                   </div>
-                )}
+                </div>
               </div>
-            </div>
-          </div>
+            );
+          })()}
         </div>
       )}
 

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { reportsApi, IncomeStatement } from "@/lib/api/reports";
+import { formatSEK, parseMoney } from "@/lib/money";
 import Link from "next/link";
 
 export default function IncomeStatementPage() {
@@ -128,22 +129,14 @@ export default function IncomeStatementPage() {
                         </Link>
                       </td>
                       <td className="py-2 text-sm text-gray-900 text-right font-medium">
-                        {entry.balance.toLocaleString("sv-SE", {
-                          minimumFractionDigits: 2,
-                          maximumFractionDigits: 2,
-                        })}{" "}
-                        kr
+                        {formatSEK(entry.balance)} kr
                       </td>
                     </tr>
                   ))}
                   <tr className="border-t-2 border-gray-300">
                     <td className="py-3 text-sm font-bold text-gray-900">Summa intäkter</td>
                     <td className="py-3 text-sm font-bold text-gray-900 text-right">
-                      {statement.total_income.toLocaleString("sv-SE", {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 2,
-                      })}{" "}
-                      kr
+                      {formatSEK(statement.total_income)} kr
                     </td>
                   </tr>
                 </tbody>
@@ -170,22 +163,14 @@ export default function IncomeStatementPage() {
                         </Link>
                       </td>
                       <td className="py-2 text-sm text-gray-900 text-right font-medium">
-                        {entry.balance.toLocaleString("sv-SE", {
-                          minimumFractionDigits: 2,
-                          maximumFractionDigits: 2,
-                        })}{" "}
-                        kr
+                        {formatSEK(entry.balance)} kr
                       </td>
                     </tr>
                   ))}
                   <tr className="border-t-2 border-gray-300">
                     <td className="py-3 text-sm font-bold text-gray-900">Summa kostnader</td>
                     <td className="py-3 text-sm font-bold text-gray-900 text-right">
-                      {statement.total_expenses.toLocaleString("sv-SE", {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 2,
-                      })}{" "}
-                      kr
+                      {formatSEK(statement.total_expenses)} kr
                     </td>
                   </tr>
                 </tbody>
@@ -199,14 +184,10 @@ export default function IncomeStatementPage() {
               <h3 className="text-xl font-bold text-gray-900">RESULTAT</h3>
               <p
                 className={`text-2xl font-bold ${
-                  statement.net_result >= 0 ? "text-green-600" : "text-red-600"
+                  parseMoney(statement.net_result) >= 0 ? "text-green-600" : "text-red-600"
                 }`}
               >
-                {statement.net_result.toLocaleString("sv-SE", {
-                  minimumFractionDigits: 2,
-                  maximumFractionDigits: 2,
-                })}{" "}
-                kr
+                {formatSEK(statement.net_result)} kr
               </p>
             </div>
           </div>

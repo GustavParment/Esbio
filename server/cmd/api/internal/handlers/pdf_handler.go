@@ -9,6 +9,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/go-pdf/fpdf"
+	"github.com/shopspring/decimal"
 )
 
 type PDFHandler struct {
@@ -105,7 +106,8 @@ func (h *PDFHandler) GenerateVoucherPDF(c *gin.Context) {
 
 	// Line items
 	pdf.SetFont("Arial", "", 10)
-	var totalDebit, totalCredit float64
+	totalDebit := decimal.Zero
+	totalCredit := decimal.Zero
 	for _, line := range voucher.Lines {
 		// Get account name
 		accountName := ""
@@ -116,13 +118,13 @@ func (h *PDFHandler) GenerateVoucherPDF(c *gin.Context) {
 		pdf.CellFormat(25, 7, strconv.Itoa(line.AccountNo), "1", 0, "C", false, 0, "")
 		pdf.CellFormat(70, 7, tr(truncateString(accountName, 35)), "1", 0, "L", false, 0, "")
 
-		if line.DebitAmount > 0 {
+		if line.DebitAmount.IsPositive() {
 			pdf.CellFormat(35, 7, formatCurrency(line.DebitAmount), "1", 0, "R", false, 0, "")
 		} else {
 			pdf.CellFormat(35, 7, "", "1", 0, "R", false, 0, "")
 		}
 
-		if line.CreditAmount > 0 {
+		if line.CreditAmount.IsPositive() {
 			pdf.CellFormat(35, 7, formatCurrency(line.CreditAmount), "1", 0, "R", false, 0, "")
 		} else {
 			pdf.CellFormat(35, 7, "", "1", 0, "R", false, 0, "")
@@ -131,8 +133,8 @@ func (h *PDFHandler) GenerateVoucherPDF(c *gin.Context) {
 		pdf.CellFormat(20, 7, fmt.Sprintf("%d%%", line.TaxCode), "1", 0, "C", false, 0, "")
 		pdf.Ln(7)
 
-		totalDebit += line.DebitAmount
-		totalCredit += line.CreditAmount
+		totalDebit = totalDebit.Add(line.DebitAmount)
+		totalCredit = totalCredit.Add(line.CreditAmount)
 	}
 
 	// Totals row
@@ -145,7 +147,7 @@ func (h *PDFHandler) GenerateVoucherPDF(c *gin.Context) {
 	pdf.Ln(12)
 
 	// Balance check
-	if totalDebit == totalCredit {
+	if totalDebit.Equal(totalCredit) {
 		pdf.SetTextColor(0, 128, 0)
 		pdf.Cell(0, 6, tr("Verifikatet är balanserat"))
 	} else {
@@ -176,8 +178,8 @@ func (h *PDFHandler) GenerateVoucherPDF(c *gin.Context) {
 	c.Data(http.StatusOK, "application/pdf", buf.Bytes())
 }
 
-func formatCurrency(amount float64) string {
-	return fmt.Sprintf("%.2f kr", amount)
+func formatCurrency(amount decimal.Decimal) string {
+	return fmt.Sprintf("%s kr", amount.StringFixed(2))
 }
 
 func truncateString(s string, maxLen int) string {

@@ -4,6 +4,8 @@ import (
 	"esbio/api/internal/domain"
 	"database/sql"
 	"fmt"
+
+	"github.com/shopspring/decimal"
 )
 
 type AccountRepository interface {
@@ -168,7 +170,7 @@ func (r *accountRepository) DeleteAccount(accountNo int) error {
 
 func (r *accountRepository) GetLedger(accountNo int, period string) ([]*domain.LedgerEntry, error) {
 	// Calculate opening balance from prior periods when filtering
-	var runningBalance float64 = 0
+	runningBalance := decimal.Zero
 	if period != "" {
 		obQuery := `
 			SELECT COALESCE(SUM(l.debit_amount - l.credit_amount), 0)
@@ -224,7 +226,7 @@ func (r *accountRepository) GetLedger(accountNo int, period string) ([]*domain.L
 		}
 
 		// Calculate running balance (Debit increases, Credit decreases)
-		runningBalance += entry.DebitAmount - entry.CreditAmount
+		runningBalance = runningBalance.Add(entry.DebitAmount).Sub(entry.CreditAmount)
 		entry.Balance = runningBalance
 
 		entries = append(entries, entry)
@@ -234,7 +236,7 @@ func (r *accountRepository) GetLedger(accountNo int, period string) ([]*domain.L
 }
 
 func (r *accountRepository) GetLedgerByCompany(accountNo int, period string, companyID int) ([]*domain.LedgerEntry, error) {
-	var runningBalance float64 = 0
+	runningBalance := decimal.Zero
 	if period != "" {
 		obQuery := `
 			SELECT COALESCE(SUM(l.debit_amount - l.credit_amount), 0)
@@ -289,7 +291,7 @@ func (r *accountRepository) GetLedgerByCompany(accountNo int, period string, com
 		if err != nil {
 			return nil, fmt.Errorf("failed to scan ledger entry: %w", err)
 		}
-		runningBalance += entry.DebitAmount - entry.CreditAmount
+		runningBalance = runningBalance.Add(entry.DebitAmount).Sub(entry.CreditAmount)
 		entry.Balance = runningBalance
 		entries = append(entries, entry)
 	}

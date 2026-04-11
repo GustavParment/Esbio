@@ -120,28 +120,48 @@ func (s *StripeService) CreatePortalSession(companyID int) (string, error) {
 	return session.URL, nil
 }
 
-// HandleSubscriptionEvent processes subscription changes from webhooks
+// HandleSubscriptionEvent processes subscription changes from webhooks.
+//
+// Defense in depth: even though the webhook signature has already been
+// verified by the handler, we re-fetch the subscription directly from the
+// Stripe API to get the authoritative state. This means a forged event
+// (e.g. if signature verification were somehow bypassed) cannot upgrade
+// a plan, because Stripe will 404 on a non-existent subscription ID.
 func (s *StripeService) HandleSubscriptionEvent(sub *stripe.Subscription) error {
-	companyIDStr, ok := sub.Metadata["company_id"]
+	if sub == nil || sub.ID == "" {
+		return fmt.Errorf("subscription event has no subscription ID")
+	}
+
+	// Re-fetch from Stripe — ignore whatever the webhook body contained
+	authoritative, err := subscription.Get(sub.ID, nil)
+	if err != nil {
+		return fmt.Errorf("failed to verify subscription %s with Stripe: %w", sub.ID, err)
+	}
+
+	companyIDStr, ok := authoritative.Metadata["company_id"]
 	if !ok {
-		return fmt.Errorf("no company_id in subscription metadata")
+		return fmt.Errorf("subscription %s has no company_id in metadata", authoritative.ID)
 	}
 
 	var companyID int
 	if _, err := fmt.Sscanf(companyIDStr, "%d", &companyID); err != nil {
-		return fmt.Errorf("invalid company_id: %s", companyIDStr)
+		return fmt.Errorf("invalid company_id in subscription metadata: %s", companyIDStr)
 	}
 
-	// Map price to plan name
-	plan := "free"
-	if len(sub.Items.Data) > 0 {
-		priceID := sub.Items.Data[0].Price.ID
-		plan = s.priceToPlan(priceID)
+	// Map price to plan name. Reject unknown prices rather than silently
+	// defaulting to a paid tier — a forged price_id must never upgrade.
+	if authoritative.Items == nil || len(authoritative.Items.Data) == 0 || authoritative.Items.Data[0].Price == nil {
+		return fmt.Errorf("subscription %s has no price items", authoritative.ID)
+	}
+	priceID := authoritative.Items.Data[0].Price.ID
+	plan := s.priceToPlan(priceID)
+	if plan == "" {
+		return fmt.Errorf("subscription %s has unknown price_id %s — refusing to upgrade", authoritative.ID, priceID)
 	}
 
 	// Map Stripe status to our plan_status
 	planStatus := "active"
-	switch sub.Status {
+	switch authoritative.Status {
 	case stripe.SubscriptionStatusActive:
 		planStatus = "active"
 	case stripe.SubscriptionStatusPastDue:
@@ -153,9 +173,9 @@ func (s *StripeService) HandleSubscriptionEvent(sub *stripe.Subscription) error 
 		planStatus = "trialing"
 	}
 
-	log.Printf("Stripe webhook: company=%d plan=%s status=%s subscription=%s", companyID, plan, planStatus, sub.ID)
+	log.Printf("Stripe webhook: company=%d plan=%s status=%s subscription=%s", companyID, plan, planStatus, authoritative.ID)
 
-	return s.companyRepo.UpdateSubscription(companyID, sub.ID, plan, planStatus)
+	return s.companyRepo.UpdateSubscription(companyID, authoritative.ID, plan, planStatus)
 }
 
 // HandleCheckoutCompleted processes a completed checkout session
@@ -183,7 +203,9 @@ func (s *StripeService) HandleCheckoutCompleted(session *stripe.CheckoutSession)
 	return s.HandleSubscriptionEvent(sub)
 }
 
-// priceToPlan maps Stripe Price IDs to plan names.
+// priceToPlan maps Stripe Price IDs to plan names. Returns an empty
+// string for unknown prices — callers must reject, never default to a
+// paid tier.
 func (s *StripeService) priceToPlan(priceID string) string {
 	switch priceID {
 	// Test/sandbox prices
@@ -197,7 +219,7 @@ func (s *StripeService) priceToPlan(priceID string) string {
 	case "price_1TKG9HFQgVJ3jY3cQWf0Tq16":
 		return "growth"
 	default:
-		log.Printf("Unknown price ID: %s, defaulting to starter", priceID)
-		return "starter"
+		log.Printf("ERROR: unknown Stripe price_id %s — refusing to map to a plan", priceID)
+		return ""
 	}
 }

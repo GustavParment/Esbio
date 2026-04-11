@@ -79,22 +79,25 @@ func (h *StripeHandler) HandleWebhook(c *gin.Context) {
 	}
 
 	webhookSecret := h.stripeService.GetWebhookSecret()
+	if webhookSecret == "" {
+		// Refuse to process any webhook without signature verification.
+		// A misconfigured deploy missing STRIPE_WEBHOOK_SECRET must never
+		// open a plan-upgrade bypass — fail closed instead of fail open.
+		log.Printf("ERROR: /stripe/webhook invoked but STRIPE_WEBHOOK_SECRET is not configured — refusing")
+		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "webhook not configured"})
+		return
+	}
 
-	var event stripe.Event
-
-	if webhookSecret != "" {
-		event, err = webhook.ConstructEventWithOptions(body, c.GetHeader("Stripe-Signature"), webhookSecret, webhook.ConstructEventOptions{IgnoreAPIVersionMismatch: true})
-		if err != nil {
-			log.Printf("Stripe webhook signature verification failed: %v", err)
-			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid signature"})
-			return
-		}
-	} else {
-		// No webhook secret configured — parse without verification (dev only)
-		if err := json.Unmarshal(body, &event); err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid event"})
-			return
-		}
+	event, err := webhook.ConstructEventWithOptions(
+		body,
+		c.GetHeader("Stripe-Signature"),
+		webhookSecret,
+		webhook.ConstructEventOptions{IgnoreAPIVersionMismatch: true},
+	)
+	if err != nil {
+		log.Printf("Stripe webhook signature verification failed: %v", err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid signature"})
+		return
 	}
 
 	log.Printf("Stripe webhook received: %s", event.Type)

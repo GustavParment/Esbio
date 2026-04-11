@@ -170,11 +170,28 @@ Ester can create recurring monthly tasks that execute automatically. Tasks are s
 
 ## Model
 
-Ester uses **Gemini 2.5 Flash** via the Google Generative Language API. This model was chosen for:
-- Free tier availability (1,500 requests/day on free, 1,000 RPM on paid tier 1)
+Ester uses **Gemini 2.5 Flash** (the full model, not `-lite`) via the Google Generative Language API. Chosen for:
 - Good Swedish language support
 - Function calling (tool use) support
-- Fast response times
+- Reliable final-turn summaries after tool execution (the `-lite` variant frequently returns empty text after a tool call, leaving the user with no confirmation — we hit this and switched to full `flash`)
+- Fast response times for interactive chat
+- Free-tier friendly (1,500 req/day free, 1,000 RPM on paid tier 1)
+
+The receipt OCR path (`receipt_service.go`) still uses `gemini-2.5-flash-lite` because it's single-shot vision work, no tool calls involved, and lite is faster + cheaper.
+
+## Streaming (`POST /agent/stream`)
+
+In addition to the blocking `/agent/chat` endpoint, there's a Server-Sent Events variant at `/agent/stream` that emits:
+- `conversation_id` — once, at the start
+- `tool <name>` — once per tool call, as it executes
+- `text <chunk>` — incremental chunks of the final text response
+- `done` — end of stream
+
+### Fallback behavior
+
+Function-calling LLMs occasionally return an empty final turn after a tool has executed successfully (the model implicitly assumes the tool's return value is self-explanatory). To avoid a silent UX, `ChatStream` tracks the last tool result and streams it verbatim if the LLM returns no text in its final turn. Users always see a confirmation.
+
+The same fallback applies if the 10-iteration loop limit is hit — the last tool result is streamed instead of a generic error.
 
 ## Chat History
 
@@ -183,14 +200,15 @@ Messages are stored in the `agent_messages` table with:
 - `role` — "user" or "assistant"
 - `content` — the message text
 
-Only the current message is sent to Gemini (no conversation history in the API call). Each request is stateless from the model's perspective.
+Conversation history IS loaded and passed to Gemini as prior-turn context on each request (see `ChatStream` in `agent_service.go`). Each request is therefore stateful within a conversation, stateless across conversations.
 
 ## API Endpoints
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/api/v1/agent/chat` | Send message to Ester |
-| GET | `/api/v1/agent/messages/:conversationId` | Get conversation history |
-| GET | `/api/v1/agent/tasks` | List scheduled tasks |
-| PUT | `/api/v1/agent/tasks/:id/toggle` | Pause/resume a task |
-| DELETE | `/api/v1/agent/tasks/:id` | Delete a scheduled task |
+| Method | Endpoint                              | Description |
+|--------|---------------------------------------|-------------|
+| POST   | `/api/v1/agent/chat`                  | Send message to Ester (blocking JSON response) |
+| POST   | `/api/v1/agent/stream`                | Send message to Ester (SSE streaming) |
+| GET    | `/api/v1/agent/messages/:conversationId` | Get conversation history |
+| GET    | `/api/v1/agent/tasks`                 | List scheduled tasks |
+| PUT    | `/api/v1/agent/tasks/:id/toggle`      | Pause/resume a task |
+| DELETE | `/api/v1/agent/tasks/:id`             | Delete a scheduled task |

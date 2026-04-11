@@ -5,6 +5,7 @@ import DashboardLayout from "@/components/layout/DashboardLayout";
 import { vouchersApi } from "@/lib/api/vouchers";
 import { accountsApi } from "@/lib/api/accounts";
 import { Voucher, Account } from "@/types";
+import { formatSEK } from "@/lib/money";
 import { useAuth } from "@/lib/contexts/AuthContext";
 import Link from "next/link";
 
@@ -139,7 +140,7 @@ export default function DashboardPage() {
                     <td className="py-3 px-4 text-sm text-gray-900">{voucher.description}</td>
                     <td className="py-3 px-4 text-sm text-gray-600">{voucher.reference}</td>
                     <td className="py-3 px-4 text-sm text-gray-900 text-right font-medium">
-                      {voucher.total_amount.toLocaleString("sv-SE")} kr
+                      {formatSEK(voucher.total_amount)} kr
                     </td>
                   </tr>
                 ))}

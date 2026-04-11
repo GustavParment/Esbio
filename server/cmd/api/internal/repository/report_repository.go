@@ -4,6 +4,8 @@ import (
 	"esbio/api/internal/domain"
 	"database/sql"
 	"fmt"
+
+	"github.com/shopspring/decimal"
 )
 
 type ReportRepository interface {
@@ -60,7 +62,7 @@ func (r *reportRepository) GetIncomeStatement(fromDate, toDate string, companyID
 		var accountNo int
 		var accountName string
 		var accountType string
-		var balance float64
+		var balance decimal.Decimal
 
 		err := rows.Scan(&accountNo, &accountName, &accountType, &balance)
 		if err != nil {
@@ -73,9 +75,9 @@ func (r *reportRepository) GetIncomeStatement(fromDate, toDate string, companyID
 		// Negate so expenses display as negative.
 		displayBalance := balance
 		if accountNo >= 3000 && accountNo < 4000 {
-			displayBalance = -balance
+			displayBalance = balance.Neg()
 		} else if accountNo >= 4000 && accountNo < 9000 {
-			displayBalance = -balance
+			displayBalance = balance.Neg()
 		}
 
 		entry := domain.IncomeStatementEntry{
@@ -86,10 +88,10 @@ func (r *reportRepository) GetIncomeStatement(fromDate, toDate string, companyID
 
 		if accountNo >= 3000 && accountNo < 4000 {
 			statement.Income = append(statement.Income, entry)
-			statement.TotalIncome += displayBalance
+			statement.TotalIncome = statement.TotalIncome.Add(displayBalance)
 		} else if accountNo >= 4000 && accountNo < 9000 {
 			statement.Expenses = append(statement.Expenses, entry)
-			statement.TotalExpenses += displayBalance
+			statement.TotalExpenses = statement.TotalExpenses.Add(displayBalance)
 		}
 	}
 
@@ -98,7 +100,7 @@ func (r *reportRepository) GetIncomeStatement(fromDate, toDate string, companyID
 	}
 
 	// Net result: positive income + negative expenses = profit (positive) or loss (negative)
-	statement.NetResult = statement.TotalIncome + statement.TotalExpenses
+	statement.NetResult = statement.TotalIncome.Add(statement.TotalExpenses)
 
 	return statement, nil
 }
@@ -139,7 +141,7 @@ func (r *reportRepository) GetBalanceSheet(asOfDate string, companyID int) (*dom
 		var accountNo int
 		var accountName string
 		var accountGroup int
-		var balance float64
+		var balance decimal.Decimal
 
 		if err := rows.Scan(&accountNo, &accountName, &accountGroup, &balance); err != nil {
 			return nil, fmt.Errorf("failed to scan row: %w", err)
@@ -153,17 +155,18 @@ func (r *reportRepository) GetBalanceSheet(asOfDate string, companyID int) (*dom
 				Balance:     balance,
 			}
 			sheet.Assets = append(sheet.Assets, entry)
-			sheet.TotalAssets += balance
+			sheet.TotalAssets = sheet.TotalAssets.Add(balance)
 		} else if accountGroup == 2 {
 			// Equity & Liabilities: credit balances are negative in debit-credit math.
 			// Negate so they display as positive.
+			negBalance := balance.Neg()
 			entry := domain.BalanceSheetEntry{
 				AccountNo:   accountNo,
 				AccountName: accountName,
-				Balance:     -balance,
+				Balance:     negBalance,
 			}
 			sheet.EquityLiabilities = append(sheet.EquityLiabilities, entry)
-			sheet.TotalEquityLiab += -balance
+			sheet.TotalEquityLiab = sheet.TotalEquityLiab.Add(negBalance)
 		}
 	}
 
@@ -184,15 +187,15 @@ func (r *reportRepository) GetBalanceSheet(asOfDate string, companyID int) (*dom
 		  AND a.type = 'P&L'
 	`
 
-	var netResult float64
+	var netResult decimal.Decimal
 	if err := r.db.QueryRow(plQuery, asOfDate, companyID).Scan(&netResult); err != nil {
 		return nil, fmt.Errorf("failed to query P&L net result: %w", err)
 	}
 
 	// Negate P&L net result: in debit-credit math profit is negative (credit balance).
 	// Negate so profit displays as positive on the equity side.
-	sheet.NetResult = -netResult
-	sheet.TotalEquityLiab += -netResult
+	sheet.NetResult = netResult.Neg()
+	sheet.TotalEquityLiab = sheet.TotalEquityLiab.Add(netResult.Neg())
 
 	return sheet, nil
 }
@@ -236,7 +239,7 @@ func (r *reportRepository) GetVATReport(fromDate, toDate string, companyID int) 
 
 	for rows.Next() {
 		var taxCode int
-		var totalSales float64
+		var totalSales decimal.Decimal
 
 		if err := rows.Scan(&taxCode, &totalSales); err != nil {
 			return nil, fmt.Errorf("failed to scan row: %w", err)
@@ -247,7 +250,7 @@ func (r *reportRepository) GetVATReport(fromDate, toDate string, companyID int) 
 			label = fmt.Sprintf("%d%%", taxCode)
 		}
 
-		vatAmount := totalSales * float64(taxCode) / 100.0
+		vatAmount := totalSales.Mul(decimal.NewFromInt(int64(taxCode))).Div(decimal.NewFromInt(100))
 
 		entry := domain.VATReportEntry{
 			TaxCode:    taxCode,
@@ -257,8 +260,8 @@ func (r *reportRepository) GetVATReport(fromDate, toDate string, companyID int) 
 		}
 
 		report.Entries = append(report.Entries, entry)
-		report.TotalSales += totalSales
-		report.TotalVAT += vatAmount
+		report.TotalSales = report.TotalSales.Add(totalSales)
+		report.TotalVAT = report.TotalVAT.Add(vatAmount)
 	}
 
 	if err = rows.Err(); err != nil {
@@ -297,7 +300,7 @@ func (r *reportRepository) GetVATReport(fromDate, toDate string, companyID int) 
 			return nil, fmt.Errorf("failed to scan input VAT row: %w", err)
 		}
 		report.InputEntries = append(report.InputEntries, entry)
-		report.TotalInputVAT += entry.Amount
+		report.TotalInputVAT = report.TotalInputVAT.Add(entry.Amount)
 	}
 
 	if err = inputRows.Err(); err != nil {
@@ -305,7 +308,7 @@ func (r *reportRepository) GetVATReport(fromDate, toDate string, companyID int) 
 	}
 
 	// Net VAT = output VAT - input VAT (positive = pay to Skatteverket)
-	report.NetVAT = report.TotalVAT - report.TotalInputVAT
+	report.NetVAT = report.TotalVAT.Sub(report.TotalInputVAT)
 
 	return report, nil
 }

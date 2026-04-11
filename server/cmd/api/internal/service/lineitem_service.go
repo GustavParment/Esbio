@@ -29,11 +29,11 @@ func (s *LineItemService) CreateLineItem(lineItem *domain.LineItem) error {
 	}
 
 	// Business rule: Either debit or credit must be > 0, but not both
-	if lineItem.DebitAmount > 0 && lineItem.CreditAmount > 0 {
+	if lineItem.DebitAmount.IsPositive() && lineItem.CreditAmount.IsPositive() {
 		return errors.New("a line item cannot have both debit and credit amounts")
 	}
 
-	if lineItem.DebitAmount == 0 && lineItem.CreditAmount == 0 {
+	if lineItem.DebitAmount.IsZero() && lineItem.CreditAmount.IsZero() {
 		return errors.New("a line item must have either debit or credit amount")
 	}
 
@@ -115,11 +115,11 @@ func (s *LineItemService) UpdateLineItem(lineItem *domain.LineItem) error {
 	}
 
 	// Business rule: Either debit or credit must be > 0, but not both
-	if lineItem.DebitAmount > 0 && lineItem.CreditAmount > 0 {
+	if lineItem.DebitAmount.IsPositive() && lineItem.CreditAmount.IsPositive() {
 		return errors.New("a line item cannot have both debit and credit amounts")
 	}
 
-	if lineItem.DebitAmount == 0 && lineItem.CreditAmount == 0 {
+	if lineItem.DebitAmount.IsZero() && lineItem.CreditAmount.IsZero() {
 		return errors.New("a line item must have either debit or credit amount")
 	}
 

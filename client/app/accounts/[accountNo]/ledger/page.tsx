@@ -6,6 +6,7 @@ import DashboardLayout from "@/components/layout/DashboardLayout";
 import { accountsApi } from "@/lib/api/accounts";
 import { vouchersApi } from "@/lib/api/vouchers";
 import { Account, LedgerEntry } from "@/types";
+import { formatSEK, parseMoney } from "@/lib/money";
 import Link from "next/link";
 
 export default function AccountLedgerPage() {
@@ -81,8 +82,12 @@ export default function AccountLedgerPage() {
     );
   }
 
-  const openingBalance = entries.length > 0 ? entries[0].balance - entries[0].debit_amount + entries[0].credit_amount : 0;
-  const closingBalance = entries.length > 0 ? entries[entries.length - 1].balance : 0;
+  // Derive opening balance from the first row: reverse the effect of its first line
+  // (running balance in row 0 = opening + debit0 - credit0  =>  opening = balance0 - debit0 + credit0)
+  const openingBalance = entries.length > 0
+    ? parseMoney(entries[0].balance) - parseMoney(entries[0].debit_amount) + parseMoney(entries[0].credit_amount)
+    : 0;
+  const closingBalance = entries.length > 0 ? parseMoney(entries[entries.length - 1].balance) : 0;
 
   return (
     <DashboardLayout>
@@ -158,11 +163,7 @@ export default function AccountLedgerPage() {
                     Ingående balans
                   </td>
                   <td className="py-3 px-6 text-sm text-gray-900 text-right">
-                    {openingBalance.toLocaleString("sv-SE", {
-                      minimumFractionDigits: 2,
-                      maximumFractionDigits: 2,
-                    })}{" "}
-                    kr
+                    {formatSEK(openingBalance)} kr
                   </td>
                 </tr>
 
@@ -183,33 +184,13 @@ export default function AccountLedgerPage() {
                     <td className="py-3 px-6 text-sm text-gray-900">{entry.description}</td>
                     <td className="py-3 px-6 text-sm text-gray-600">{entry.reference}</td>
                     <td className="py-3 px-6 text-sm text-gray-900 text-right">
-                      {entry.debit_amount > 0 && (
-                        <>
-                          {entry.debit_amount.toLocaleString("sv-SE", {
-                            minimumFractionDigits: 2,
-                            maximumFractionDigits: 2,
-                          })}{" "}
-                          kr
-                        </>
-                      )}
+                      {parseMoney(entry.debit_amount) > 0 && <>{formatSEK(entry.debit_amount)} kr</>}
                     </td>
                     <td className="py-3 px-6 text-sm text-gray-900 text-right">
-                      {entry.credit_amount > 0 && (
-                        <>
-                          {entry.credit_amount.toLocaleString("sv-SE", {
-                            minimumFractionDigits: 2,
-                            maximumFractionDigits: 2,
-                          })}{" "}
-                          kr
-                        </>
-                      )}
+                      {parseMoney(entry.credit_amount) > 0 && <>{formatSEK(entry.credit_amount)} kr</>}
                     </td>
                     <td className="py-3 px-6 text-sm text-gray-900 text-right font-medium">
-                      {entry.balance.toLocaleString("sv-SE", {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 2,
-                      })}{" "}
-                      kr
+                      {formatSEK(entry.balance)} kr
                     </td>
                   </tr>
                 ))}
@@ -220,11 +201,7 @@ export default function AccountLedgerPage() {
                     Utgående balans
                   </td>
                   <td className="py-3 px-6 text-sm text-gray-900 text-right">
-                    {closingBalance.toLocaleString("sv-SE", {
-                      minimumFractionDigits: 2,
-                      maximumFractionDigits: 2,
-                    })}{" "}
-                    kr
+                    {formatSEK(closingBalance)} kr
                   </td>
                 </tr>
               </tbody>
