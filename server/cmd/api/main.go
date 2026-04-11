@@ -72,6 +72,10 @@ func main() {
 	companyMiddleware := middleware.CompanyMiddleware(companyRepo)
 
 	router := gin.Default()
+	router.ForwardedByClientIP = true
+	if err := router.SetTrustedProxies([]string{"0.0.0.0/0"}); err != nil {
+		log.Fatal("Failed to set trusted proxies:", err)
+	}
 
 	// Add security headers
 	router.Use(middleware.SecurityHeadersMiddleware())
