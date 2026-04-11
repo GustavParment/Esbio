@@ -157,6 +157,8 @@ User message → Agent Handler → Gemini API (with tool definitions)
 
 ## Security
 
+For the internal pentest playbook (tools, commands, Esbio-specific tests, findings), see [pentest-guide.md](./pentest-guide.md).
+
 - Passwords hashed with **bcrypt**
 - JWT stored in **httpOnly cookies** (not accessible via JavaScript)
 - CORS whitelist for allowed origins

@@ -59,14 +59,30 @@ Fixes:
 
 See [ester-ai.md](./ester-ai.md#streaming-post-agentstream) for the streaming contract.
 
+**4. Stripe webhook — plan upgrade bypass chain** (`server/cmd/api/internal/handlers/stripe_handler.go`, `service/stripe_service.go`)
+
+Found and verified a chain of three bugs in the Stripe webhook path that together allowed an unauthenticated `free → starter` plan upgrade via a single POST. Verified locally by running an exploit curl from the Kali pentest VM against the dev backend — the webhook returned `200 {"received":true}` and the DB row flipped to `plan=starter, status=active, stripe_subscription_id=sub_fake_exploit_001`. All three bugs now fixed and verified.
+
+- **Signature fallback**: `stripe_handler.go:92-98` had an `if webhookSecret != "" { verify } else { parse anyway }` fallback. Prod currently has `STRIPE_WEBHOOK_SECRET` configured so the bypass wasn't actively exploitable there, but a single misconfigured deploy (missing env var, stripped secret, new region) would have re-opened it. Now fails closed: returns `503 {"error":"webhook not configured"}` with an ERROR-level log line when the secret is missing. No unverified webhook body is ever parsed.
+- **`priceToPlan` default**: `stripe_service.go:199-201` returned `"starter"` for any unknown `price_id`, meaning a forged webhook with `"price_id":"price_anything"` would map to a paid tier. Now returns `""` and the caller rejects empty plans.
+- **Nil pointer panic**: `stripe_service.go:137` dereferenced `sub.Items.Data` without a nil check, panicking on any subscription payload without items. sqlmap hit this during fuzzing and crashed the request. Added nil guards on `Items`, `Data[0]`, and `Price`.
+- **Defense in depth**: `HandleSubscriptionEvent` now re-fetches the subscription directly from the Stripe API via `subscription.Get(sub.ID, nil)` and uses **only** that authoritative state. A forged `sub_fake_xxx` ID will 404 at Stripe before any DB update happens — even if signature verification were somehow bypassed, the forged event can't drive an upgrade.
+
+Post-fix verification from the same Kali VM: exploit curl returns `503`, DB row unchanged. See [pentest-guide.md §"What was found during the 2026-04-11 session"](./pentest-guide.md#what-was-found-during-the-2026-04-11-session) for full regression steps.
+
+### New documentation
+
+- [pentest-guide.md](./pentest-guide.md) — internal pentest playbook covering scope, environment setup, 10+ Kali Linux tools (sqlmap, ffuf, nuclei, jwt_tool, Burp, semgrep, gitleaks, testssl.sh, etc.), Esbio-specific business-logic tests (company isolation, plan upgrade, mass assignment, LLM tool injection), and cleanup procedures. Includes the exact sqlmap commands used in this session and the full exploit trace for the Stripe bugs.
+
 ### Operational state changes
 
 - **Prod backend paused** via `gcloud run services update esbio-backend --ingress=internal` on 2026-04-11. External requests to `api.esbio.se` are rejected at Google's edge. Unpause with `--ingress=all`.
 - **Cloud SQL `esbio-db`** still has public IP (`34.88.55.83`) with whatever authorized networks are configured. Not yet migrated to private IP. See [network-access-setup.md](./network-access-setup.md) and the TODO below.
+- **`STRIPE_SECRET_KEY` (live) must be rotated**: during the pentest session the live key was echoed to the terminal via `gcloud run services describe`. It's now in shell scrollback and may persist in logs. Rotate in Stripe Dashboard → Developers → API keys → Roll, then update the Cloud Run env var.
 
 ### Outstanding TODOs
 
 - Browser click-through of the refactored frontend against local dev backend
-- Split the agent streaming fix onto `dev` as its own PR (or keep bundled in the money refactor — decision pending)
-- Commit everything on `refactor/money-int64`, merge `→ dev → main`, redeploy, unpause prod
+- **Rotate `STRIPE_SECRET_KEY`** (live key leaked to terminal during pentest session)
+- Redeploy `main` to Cloud Run and unpause prod (`--ingress=all`)
 - Migrate `esbio-db` to private IP + Cloud SQL Auth Proxy (still planned; original proposal was option B — `gcloud run services update --add-cloudsql-instances=...`)
