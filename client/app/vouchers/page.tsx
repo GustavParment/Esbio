@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { vouchersApi } from "@/lib/api/vouchers";
 import { Voucher } from "@/types";
+import { formatSEK, sumMoney } from "@/lib/money";
 import { useAuth } from "@/lib/contexts/AuthContext";
 import Link from "next/link";
 
@@ -192,11 +193,7 @@ export default function VouchersPage() {
                       })}
                     </td>
                     <td className="py-4 px-6 text-sm text-gray-900 text-right font-medium">
-                      {voucher.total_amount.toLocaleString("sv-SE", {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 2,
-                      })}{" "}
-                      kr
+                      {formatSEK(voucher.total_amount)} kr
                     </td>
                     <td className="py-4 px-6 text-sm text-right">
                       <Link
@@ -221,13 +218,12 @@ export default function VouchersPage() {
         </div>
         <div className="font-medium">
           Total summa:{" "}
-          {filteredVouchers
-            .filter((v) => !v.corrected_by_voucher_id) // Exclude corrected vouchers
-            .reduce((sum, v) => sum + v.total_amount, 0)
-            .toLocaleString("sv-SE", {
-              minimumFractionDigits: 2,
-              maximumFractionDigits: 2,
-            })}{" "}
+          {formatSEK(
+            sumMoney(
+              filteredVouchers.filter((v) => !v.corrected_by_voucher_id),
+              (v) => v.total_amount
+            )
+          )}{" "}
           kr
         </div>
       </div>

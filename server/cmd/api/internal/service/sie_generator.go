@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/shopspring/decimal"
 	"golang.org/x/text/encoding/charmap"
 )
 
@@ -51,7 +52,7 @@ func (g *SIEGenerator) GenerateSIE4(fromDate, toDate string, companyID int) ([]b
 
 	// 5. Calculate closing balances and results
 	// Build opening balance map
-	ibMap := make(map[int]float64)
+	ibMap := make(map[int]decimal.Decimal)
 	ibTypeMap := make(map[int]string)
 	for _, b := range openingBalances {
 		ibMap[b.AccountNo] = b.Balance
@@ -59,12 +60,12 @@ func (g *SIEGenerator) GenerateSIE4(fromDate, toDate string, companyID int) ([]b
 	}
 
 	// Calculate period movements per account
-	periodMovement := make(map[int]float64)
+	periodMovement := make(map[int]decimal.Decimal)
 	periodType := make(map[int]string)
 	for _, v := range vouchers {
 		for _, li := range v.Lines {
-			movement := li.DebitAmount - li.CreditAmount
-			periodMovement[li.AccountNo] += movement
+			movement := li.DebitAmount.Sub(li.CreditAmount)
+			periodMovement[li.AccountNo] = periodMovement[li.AccountNo].Add(movement)
 		}
 	}
 
@@ -110,7 +111,7 @@ func (g *SIEGenerator) GenerateSIE4(fromDate, toDate string, companyID int) ([]b
 	// Opening balances (IB) — BS accounts only
 	for _, b := range openingBalances {
 		if b.Type == "BS" {
-			w("#IB 0 %d %.2f", b.AccountNo, b.Balance)
+			w("#IB 0 %d %s", b.AccountNo, b.Balance.StringFixed(2))
 		}
 	}
 	w("")
@@ -118,17 +119,17 @@ func (g *SIEGenerator) GenerateSIE4(fromDate, toDate string, companyID int) ([]b
 	// Closing balances (UB) — BS accounts only
 	for accNo, ib := range ibMap {
 		if ibTypeMap[accNo] == "BS" {
-			ub := ib + periodMovement[accNo]
-			if ub != 0 {
-				w("#UB 0 %d %.2f", accNo, ub)
+			ub := ib.Add(periodMovement[accNo])
+			if !ub.IsZero() {
+				w("#UB 0 %d %s", accNo, ub.StringFixed(2))
 			}
 		}
 	}
 	// Also accounts that only have period movement (no IB)
 	for accNo, movement := range periodMovement {
 		if periodType[accNo] == "BS" {
-			if _, hasIB := ibMap[accNo]; !hasIB && movement != 0 {
-				w("#UB 0 %d %.2f", accNo, movement)
+			if _, hasIB := ibMap[accNo]; !hasIB && !movement.IsZero() {
+				w("#UB 0 %d %s", accNo, movement.StringFixed(2))
 			}
 		}
 	}
@@ -136,8 +137,8 @@ func (g *SIEGenerator) GenerateSIE4(fromDate, toDate string, companyID int) ([]b
 
 	// Result balances (RES) — P&L accounts only
 	for accNo, movement := range periodMovement {
-		if periodType[accNo] == "P&L" && movement != 0 {
-			w("#RES 0 %d %.2f", accNo, movement)
+		if periodType[accNo] == "P&L" && !movement.IsZero() {
+			w("#RES 0 %d %s", accNo, movement.StringFixed(2))
 		}
 	}
 	w("")
@@ -149,8 +150,8 @@ func (g *SIEGenerator) GenerateSIE4(fromDate, toDate string, companyID int) ([]b
 		w("#VER \"A\" %d %s \"%s\"", v.VoucherNumber, dateCompact, description)
 		w("{")
 		for _, li := range v.Lines {
-			amount := li.DebitAmount - li.CreditAmount
-			w("  #TRANS %d {} %.2f", li.AccountNo, amount)
+			amount := li.DebitAmount.Sub(li.CreditAmount)
+			w("  #TRANS %d {} %s", li.AccountNo, amount.StringFixed(2))
 		}
 		w("}")
 	}

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { reportsApi, VATReport } from "@/lib/api/reports";
+import { parseMoney } from "@/lib/money";
 import Link from "next/link";
 
 export default function VATReportPage() {
@@ -37,8 +38,8 @@ export default function VATReportPage() {
     fetchReport();
   }, []);
 
-  const formatCurrency = (value: number) =>
-    value.toLocaleString("sv-SE", {
+  const formatCurrency = (value: string | number) =>
+    parseMoney(value).toLocaleString("sv-SE", {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     });
@@ -214,30 +215,36 @@ export default function VATReportPage() {
           </div>
 
           {/* Net VAT */}
-          <div className={`px-6 py-6 border-t-4 ${report.net_vat >= 0 ? "bg-red-50 border-red-500" : "bg-green-50 border-green-500"}`}>
-            <div className="grid grid-cols-3 gap-4">
-              <div>
-                <p className="text-sm text-gray-600">Utgående moms</p>
-                <p className="text-lg font-bold text-red-600">
-                  {formatCurrency(report.total_vat)} kr
-                </p>
+          {(() => {
+            const netVatNum = parseMoney(report.net_vat);
+            const isPayable = netVatNum >= 0;
+            return (
+              <div className={`px-6 py-6 border-t-4 ${isPayable ? "bg-red-50 border-red-500" : "bg-green-50 border-green-500"}`}>
+                <div className="grid grid-cols-3 gap-4">
+                  <div>
+                    <p className="text-sm text-gray-600">Utgående moms</p>
+                    <p className="text-lg font-bold text-red-600">
+                      {formatCurrency(report.total_vat)} kr
+                    </p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-sm text-gray-600">Ingående moms</p>
+                    <p className="text-lg font-bold text-green-600">
+                      -{formatCurrency(report.total_input_vat)} kr
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-sm text-gray-600">
+                      {isPayable ? "Moms att betala" : "Moms att få tillbaka"}
+                    </p>
+                    <p className={`text-2xl font-bold ${isPayable ? "text-red-600" : "text-green-600"}`}>
+                      {formatCurrency(Math.abs(netVatNum))} kr
+                    </p>
+                  </div>
+                </div>
               </div>
-              <div className="text-center">
-                <p className="text-sm text-gray-600">Ingående moms</p>
-                <p className="text-lg font-bold text-green-600">
-                  -{formatCurrency(report.total_input_vat)} kr
-                </p>
-              </div>
-              <div className="text-right">
-                <p className="text-sm text-gray-600">
-                  {report.net_vat >= 0 ? "Moms att betala" : "Moms att få tillbaka"}
-                </p>
-                <p className={`text-2xl font-bold ${report.net_vat >= 0 ? "text-red-600" : "text-green-600"}`}>
-                  {formatCurrency(Math.abs(report.net_vat))} kr
-                </p>
-              </div>
-            </div>
-          </div>
+            );
+          })()}
         </div>
       )}
 

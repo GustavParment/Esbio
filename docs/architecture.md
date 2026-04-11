@@ -165,3 +165,18 @@ User message → Agent Handler → Gemini API (with tool definitions)
 - Role-based middleware (`RequireRole("Admin")`) for sensitive endpoints
 - Input validation via `go-playground/validator`
 - Foreign key constraints with `ON DELETE RESTRICT` / `CASCADE`
+- **Gin trusted proxies** are explicitly configured (`router.SetTrustedProxies(["0.0.0.0/0"])` + `ForwardedByClientIP = true`) so `c.ClientIP()` returns the real user IP from `X-Forwarded-For` set by Google Cloud Run's front end. Safe because Cloud Run is the only ingress path to the container.
+
+## Money representation
+
+Monetary values are handled with `github.com/shopspring/decimal` end-to-end:
+
+- **Database**: `DECIMAL(15, 2)` columns (always exact)
+- **Go**: `decimal.Decimal` fields in all domain models, repositories, services, handlers — arithmetic uses `.Add`, `.Sub`, `.Mul`, `.Div`, comparisons use `.Equal` / `.GreaterThan` / `.IsZero`, never `==` or `+`/`-`
+- **JSON on the wire**: decimal strings (`"1234.56"`) — JSON numbers decode to IEEE 754 floats in every language, reintroducing precision loss, so strings are the only safe wire format
+- **Frontend (TypeScript)**: money-bearing fields are typed as `MoneyString` (an alias for `string`). Use `parseMoney()` and `formatSEK()` from `client/lib/money.ts` at the display boundary; do not do client-side arithmetic on money without a decimal library
+- **Exception**: LLM token cost tracking in `agent_usage_repository.go` stays on `float64` — it's a display-only estimate, not ledger data
+
+This is an end-to-end correctness guarantee: `0.1 + 0.2` equals `0.3` exactly, voucher balance checks use strict equality (no epsilon), and SIE4 exports emit `.StringFixed(2)` directly from decimal.
+
+See [money-refactor-plan.md](./money-refactor-plan.md) for the rationale and rollout history.

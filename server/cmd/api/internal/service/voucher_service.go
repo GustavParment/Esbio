@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/go-playground/validator/v10"
+	"github.com/shopspring/decimal"
 )
 
 type VoucherService struct {
@@ -225,16 +226,15 @@ func (s *VoucherService) ValidateVoucherBalance(voucherID int) (bool, error) {
 		return false, fmt.Errorf("failed to get line items: %w", err)
 	}
 
-	var totalDebit, totalCredit float64
+	totalDebit := decimal.Zero
+	totalCredit := decimal.Zero
 	for _, item := range lineItems {
-		totalDebit += item.DebitAmount
-		totalCredit += item.CreditAmount
+		totalDebit = totalDebit.Add(item.DebitAmount)
+		totalCredit = totalCredit.Add(item.CreditAmount)
 	}
 
-	// Check if debit equals credit (with small tolerance for floating point)
-	balanced := (totalDebit - totalCredit) < 0.01 && (totalDebit - totalCredit) > -0.01
-
-	return balanced, nil
+	// Exact equality — no floating-point tolerance needed
+	return totalDebit.Equal(totalCredit), nil
 }
 
 // CreateCorrectionVoucher creates a correction voucher that reverses the original voucher
@@ -333,10 +333,10 @@ func (s *VoucherService) CreateCorrectionWithChanges(
 	}
 
 	// Calculate total from new line items
-	var newTotal float64
+	newTotal := decimal.Zero
 	for _, item := range newLineItems {
-		if item.DebitAmount > 0 {
-			newTotal += item.DebitAmount
+		if item.DebitAmount.IsPositive() {
+			newTotal = newTotal.Add(item.DebitAmount)
 		}
 	}
 

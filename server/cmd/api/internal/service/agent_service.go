@@ -12,6 +12,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/shopspring/decimal"
 )
 
 type AgentService struct {
@@ -431,7 +433,7 @@ func (s *AgentService) executeTool(name string, args map[string]interface{}, aut
 
 	// SECURITY: Rate limit - max voucher amount per single creation
 	if name == "create_voucher" {
-		if amount := floatFromArg(args["total_amount"]); amount > 10000000 {
+		if amount := decimalFromArg(args["total_amount"]); amount.GreaterThan(decimal.NewFromInt(10000000)) {
 			return "Fel: Maxbelopp per verifikat är 10 000 000 kr. Kontakta admin för större belopp.", nil
 		}
 	}
@@ -475,7 +477,7 @@ func (s *AgentService) executeTool(name string, args map[string]interface{}, aut
 		dateStr, _ := args["date"].(string)
 		description, _ := args["description"].(string)
 		reference, _ := args["reference"].(string)
-		totalAmount := floatFromArg(args["total_amount"])
+		totalAmount := decimalFromArg(args["total_amount"])
 		period, _ := args["period"].(string)
 		createdBy := intFromArg(args["created_by"])
 
@@ -509,8 +511,8 @@ func (s *AgentService) executeTool(name string, args map[string]interface{}, aut
 				lineItem := &domain.LineItem{
 					VoucherID:    voucher.VoucherID,
 					AccountNo:    intFromArg(li["account_no"]),
-					DebitAmount:  floatFromArg(li["debit_amount"]),
-					CreditAmount: floatFromArg(li["credit_amount"]),
+					DebitAmount:  decimalFromArg(li["debit_amount"]),
+					CreditAmount: decimalFromArg(li["credit_amount"]),
 					TaxCode:      intFromArg(li["tax_code"]),
 				}
 				if err := s.lineItemService.CreateLineItem(lineItem); err != nil {
@@ -519,8 +521,8 @@ func (s *AgentService) executeTool(name string, args map[string]interface{}, aut
 			}
 		}
 
-		return fmt.Sprintf("Verifikat #%d skapat (ID: %d) med %d konteringsrader. Datum: %s, Belopp: %.2f kr",
-			voucher.VoucherNumber, voucher.VoucherID, len(lineItemsRaw), dateStr, totalAmount), nil
+		return fmt.Sprintf("Verifikat #%d skapat (ID: %d) med %d konteringsrader. Datum: %s, Belopp: %s kr",
+			voucher.VoucherNumber, voucher.VoucherID, len(lineItemsRaw), dateStr, totalAmount.StringFixed(2)), nil
 
 	case "get_account_ledger":
 		accountNo := intFromArg(args["account_no"])
@@ -610,7 +612,7 @@ func (s *AgentService) executeTool(name string, args map[string]interface{}, aut
 		for _, v := range allVouchers {
 			if strings.Contains(strings.ToLower(v.Description), q) ||
 				strings.Contains(strings.ToLower(v.Reference), q) ||
-				strings.Contains(fmt.Sprintf("%.2f", v.TotalAmount), q) ||
+				strings.Contains(v.TotalAmount.StringFixed(2), q) ||
 				strings.Contains(strconv.Itoa(v.VoucherNumber), q) {
 				results = append(results, v)
 			}
@@ -647,15 +649,15 @@ func (s *AgentService) executeTool(name string, args map[string]interface{}, aut
 		}
 
 		// Calculate total amount from new line items
-		var totalAmount float64
+		totalAmount := decimal.Zero
 		for _, liRaw := range newLineItems {
 			li, ok := liRaw.(map[string]interface{})
 			if !ok {
 				continue
 			}
-			debit := floatFromArg(li["debit_amount"])
-			if debit > 0 {
-				totalAmount += debit
+			debit := decimalFromArg(li["debit_amount"])
+			if debit.IsPositive() {
+				totalAmount = totalAmount.Add(debit)
 			}
 		}
 
@@ -683,8 +685,8 @@ func (s *AgentService) executeTool(name string, args map[string]interface{}, aut
 			lineItem := &domain.LineItem{
 				VoucherID:    newVoucher.VoucherID,
 				AccountNo:    intFromArg(li["account_no"]),
-				DebitAmount:  floatFromArg(li["debit_amount"]),
-				CreditAmount: floatFromArg(li["credit_amount"]),
+				DebitAmount:  decimalFromArg(li["debit_amount"]),
+				CreditAmount: decimalFromArg(li["credit_amount"]),
 				TaxCode:      intFromArg(li["tax_code"]),
 			}
 			s.lineItemService.CreateLineItem(lineItem)
@@ -749,7 +751,7 @@ func (s *AgentService) Chat(userID int, companyID int, conversationID string, us
 			return "", fmt.Errorf("failed to marshal request: %w", err)
 		}
 
-		url := fmt.Sprintf("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=%s", s.apiKey)
+		url := fmt.Sprintf("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=%s", s.apiKey)
 
 		req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonBody))
 		if err != nil {
@@ -885,6 +887,8 @@ func (s *AgentService) ChatStream(userID int, companyID int, conversationID stri
 		Parts: []geminiPart{{Text: userMessage}},
 	})
 
+	var lastToolResult string
+
 	for i := 0; i < 10; i++ {
 		reqBody := geminiRequest{
 			Contents: contents,
@@ -900,7 +904,7 @@ func (s *AgentService) ChatStream(userID int, companyID int, conversationID stri
 		}
 
 		// First, do a non-streaming request to check for tool calls
-		url := fmt.Sprintf("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=%s", s.apiKey)
+		url := fmt.Sprintf("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=%s", s.apiKey)
 
 		req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonBody))
 		if err != nil {
@@ -947,6 +951,7 @@ func (s *AgentService) ChatStream(userID int, companyID int, conversationID stri
 		}
 
 		if len(geminiResp.Candidates) == 0 {
+			s.streamText("Inget svar från agenten.", write)
 			return "Inget svar från agenten.", nil
 		}
 
@@ -966,8 +971,13 @@ func (s *AgentService) ChatStream(userID int, companyID int, conversationID stri
 		}
 
 		if !hasFunctionCall {
-			// Stream the final text response word by word
+			// Stream the final text response. If the model returned no text
+			// (common on short tool-result turns), fall back to the last tool
+			// execution result so the user always sees confirmation.
 			fullText := textResult.String()
+			if fullText == "" && lastToolResult != "" {
+				fullText = lastToolResult
+			}
 			s.streamText(fullText, write)
 			return fullText, nil
 		}
@@ -986,6 +996,7 @@ func (s *AgentService) ChatStream(userID int, companyID int, conversationID stri
 				if err != nil {
 					result = fmt.Sprintf("Fel: %s", sanitizeError(err))
 				}
+				lastToolResult = result
 				responseParts = append(responseParts, geminiPart{
 					FunctionResponse: &geminiFunctionResp{
 						Name: part.FunctionCall.Name,
@@ -1003,20 +1014,28 @@ func (s *AgentService) ChatStream(userID int, companyID int, conversationID stri
 		})
 	}
 
-	return "Jag kunde inte slutföra uppgiften efter flera försök.", nil
+	fallback := "Jag kunde inte slutföra uppgiften efter flera försök."
+	if lastToolResult != "" {
+		fallback = lastToolResult
+	}
+	s.streamText(fallback, write)
+	return fallback, nil
 }
 
 // streamText sends text in small chunks to simulate streaming
 func (s *AgentService) streamText(text string, write StreamWriter) {
+	if text == "" {
+		return
+	}
 	runes := []rune(text)
-	chunkSize := 3 // send ~3 characters at a time
+	chunkSize := 8
 	for i := 0; i < len(runes); i += chunkSize {
 		end := i + chunkSize
 		if end > len(runes) {
 			end = len(runes)
 		}
 		write("text", string(runes[i:end]))
-		time.Sleep(15 * time.Millisecond)
+		time.Sleep(5 * time.Millisecond)
 	}
 }
 
@@ -1070,5 +1089,34 @@ func floatFromArg(v interface{}) float64 {
 		return f
 	default:
 		return 0
+	}
+}
+
+// decimalFromArg converts an LLM tool call argument into decimal.Decimal.
+// JSON numbers decode as float64 — this is the single boundary where float
+// enters the money pipeline. The user still confirms each voucher in the UI,
+// so any precision loss here is bounded to the LLM's own suggestion.
+func decimalFromArg(v interface{}) decimal.Decimal {
+	switch val := v.(type) {
+	case float64:
+		return decimal.NewFromFloat(val)
+	case int:
+		return decimal.NewFromInt(int64(val))
+	case int64:
+		return decimal.NewFromInt(val)
+	case json.Number:
+		d, err := decimal.NewFromString(val.String())
+		if err != nil {
+			return decimal.Zero
+		}
+		return d
+	case string:
+		d, err := decimal.NewFromString(val)
+		if err != nil {
+			return decimal.Zero
+		}
+		return d
+	default:
+		return decimal.Zero
 	}
 }

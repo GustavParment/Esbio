@@ -2,6 +2,14 @@
 
 All endpoints are prefixed with `/api/v1`. Authenticated endpoints require a valid JWT cookie. Most endpoints also require a `company_id` cookie (set via company selection) and the CompanyMiddleware verifies that the authenticated user owns the selected company.
 
+## Money fields on the wire
+
+Monetary values (`debit_amount`, `credit_amount`, `total_amount`, `balance`, `amount`, and any `total_*` / `net_*` aggregate) are serialized as **decimal strings** like `"1234.56"` — not JSON numbers. This preserves exact precision through JSON; the backend uses `decimal.Decimal` over `DECIMAL(15,2)` columns end-to-end.
+
+Requests may send money either as strings (`"10000.00"`) or numbers (`10000`) — the backend accepts both on write. Responses always return strings.
+
+Frontend: parse with `parseMoney()` from `client/lib/money.ts` for display, or use a `decimal` library for any client-side arithmetic. See [money-refactor-plan.md](./money-refactor-plan.md) for the rationale.
+
 ## Authentication
 
 | Method | Endpoint              | Description            | Auth |
@@ -150,25 +158,29 @@ Returns ledger entries with running balance. Corrected vouchers are excluded.
   "date": "2025-01-15",
   "description": "Faktura #1234",
   "reference": "F-1234",
-  "total_amount": 10000.00,
+  "total_amount": "10000.00",
   "period": "2025-01",
   "lines": [
-    { "account_no": 1930, "debit_amount": 10000, "credit_amount": 0, "tax_code": 25 },
-    { "account_no": 3010, "debit_amount": 0, "credit_amount": 10000, "tax_code": 25 }
+    { "account_no": 1930, "debit_amount": "10000.00", "credit_amount": "0", "tax_code": 25 },
+    { "account_no": 3010, "debit_amount": "0", "credit_amount": "10000.00", "tax_code": 25 }
   ]
 }
 ```
+
+Note: the handler currently creates only the voucher envelope from `POST /vouchers`. Line items are persisted via separate `POST /lineitems` calls (or via the agent's `create_voucher` tool, which handles both in one request).
 
 ### GET /vouchers/:id/validate
 
 ```json
 {
   "balanced": true,
-  "total_debit": 10000.00,
-  "total_credit": 10000.00,
-  "difference": 0.00
+  "total_debit": "10000.00",
+  "total_credit": "10000.00",
+  "difference": "0.00"
 }
 ```
+
+Balance check is exact — no floating-point tolerance. `0.1 + 0.2` equals `0.3` exactly.
 
 ### Voucher Corrections
 
@@ -234,14 +246,14 @@ Returns:
 {
   "as_of_date": "2025-12-31",
   "assets": [
-    { "account_no": 1930, "account_name": "Bankkonto", "balance": 50000.00 }
+    { "account_no": 1930, "account_name": "Bankkonto", "balance": "50000.00" }
   ],
   "equity_liabilities": [
-    { "account_no": 2010, "account_name": "Eget kapital", "balance": -30000.00 }
+    { "account_no": 2010, "account_name": "Eget kapital", "balance": "-30000.00" }
   ],
-  "total_assets": 50000.00,
-  "total_equity_liabilities": -50000.00,
-  "net_result": -20000.00
+  "total_assets": "50000.00",
+  "total_equity_liabilities": "-50000.00",
+  "net_result": "-20000.00"
 }
 ```
 
@@ -260,11 +272,13 @@ Returns VAT (moms) breakdown by tax rate for revenue accounts (3000-3999):
 {
   "period": { "from_date": "2025-01-01", "to_date": "2025-12-31" },
   "entries": [
-    { "tax_code": 25, "tax_rate": "25%", "total_sales": 100000.00, "total_vat": 25000.00 },
-    { "tax_code": 12, "tax_rate": "12%", "total_sales": 20000.00, "total_vat": 2400.00 }
+    { "tax_code": 25, "tax_rate": "25%", "total_sales": "100000.00", "total_vat": "25000.00" },
+    { "tax_code": 12, "tax_rate": "12%", "total_sales": "20000.00", "total_vat": "2400.00" }
   ],
-  "total_sales": 120000.00,
-  "total_vat": 27400.00
+  "total_sales": "120000.00",
+  "total_vat": "27400.00",
+  "total_input_vat": "5200.00",
+  "net_vat": "22200.00"
 }
 ```
 
@@ -276,13 +290,25 @@ Ester AI is Esbio's intelligent bookkeeping assistant. She can create vouchers, 
 
 Requires the `GEMINI_API_KEY` environment variable to be set in `server/cmd/.env`. Ester is company-scoped: all tool calls use the selected company_id from the cookie.
 
-| Method | Endpoint                      | Description              | Auth |
-|--------|-------------------------------|--------------------------|------|
-| POST   | `/agent/chat`                 | Send message to agent    | Yes  |
+| Method | Endpoint                          | Description              | Auth |
+|--------|-----------------------------------|--------------------------|------|
+| POST   | `/agent/chat`                     | Send message (blocking)  | Yes  |
+| POST   | `/agent/stream`                   | Send message (SSE)       | Yes  |
 | GET    | `/agent/messages/:conversationId` | Get conversation history | Yes  |
-| GET    | `/agent/tasks`                | List scheduled tasks     | Yes  |
-| PUT    | `/agent/tasks/:id/toggle`     | Pause/resume a task      | Yes  |
-| DELETE | `/agent/tasks/:id`            | Delete a scheduled task  | Yes  |
+| GET    | `/agent/tasks`                    | List scheduled tasks     | Yes  |
+| PUT    | `/agent/tasks/:id/toggle`         | Pause/resume a task      | Yes  |
+| DELETE | `/agent/tasks/:id`                | Delete a scheduled task  | Yes  |
+
+### POST /agent/stream
+
+Same request body as `/agent/chat`, but responds with Server-Sent Events. Event types:
+- `conversation_id` — sent first, carries the conversation ID
+- `tool` — sent once per tool call, data is the tool name (e.g. `create_voucher`)
+- `text` — incremental text chunks of the assistant's final response
+- `error` — fatal error, stream ends
+- `done` — normal end of stream
+
+If the LLM returns an empty final turn after a tool call (can happen with function-calling flows), the server falls back to streaming the tool's own return text so the client always sees a confirmation message.
 
 ### POST /agent/chat
 
