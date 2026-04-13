@@ -215,8 +215,206 @@ curl -sS -b /tmp/test.cookies -X PUT http://$MAC/api/v1/invoices/settings \
 
 ## Known limitations (Fas 1)
 
-- No invoice creation yet (Fas 2)
-- No PDF generation (Fas 3)
-- Invoice list page is a placeholder
-- Customer deletion does not check for existing invoices (will add FK constraint in Fas 2)
+- Customer deletion does not check for existing invoices (FK RESTRICT on invoices.customer_id prevents orphans at DB level)
 - No pagination on customer list (fine for <100 customers, revisit if needed)
+
+---
+
+# Fas 2 — Invoice CRUD + Auto-bokforing
+
+## Test 12: Create a draft invoice
+
+1. Ensure at least one customer exists (from Fas 1 tests)
+2. Ensure invoice settings are configured (bankgiro, F-skatt from Test 8)
+3. Navigate to `/invoices/new`
+4. Select a customer from the dropdown
+5. Set fakturadatum to today, betalningsvillkor 30
+6. Add invoice lines:
+   - Rad 1: "Konsulttjänst april", antal 10, enhet "tim", á-pris 950, moms 25%
+   - Rad 2: "Resekostnader", antal 1, enhet "st", á-pris 1500, moms 25%
+7. Verify live calculation:
+   - Netto: (10×950 + 1×1500) = 11 000,00 kr
+   - Moms 25%: 2 750,00 kr
+   - Att betala: 13 750 kr (already whole krona, no rounding)
+8. Click "Skapa faktura (utkast)"
+9. Should redirect to invoice detail page showing status "Utkast"
+10. Invoice number should be assigned (e.g. #1 for first invoice)
+11. OCR number should be visible (Luhn check digit appended)
+
+**Pass criteria:** Draft invoice created with correct totals, OCR number, and line items.
+
+## Test 13: Invoice list with status tabs
+
+1. Navigate to `/invoices`
+2. The draft invoice from Test 12 should appear
+3. Click "Utkast" tab — should show the invoice
+4. Click "Skickade" tab — should show empty
+5. Click "Alla" tab — back to full list
+6. Verify columns: Nr, Kund (name, not ID), Datum, Förfaller, Status badge, Belopp
+
+**Pass criteria:** List renders, tabs filter correctly, customer name resolved.
+
+## Test 14: Finalize invoice (draft → sent, auto-bokforing)
+
+1. Go to the draft invoice detail page
+2. Click "Skicka faktura"
+3. Confirm the dialog
+4. Status should change to "Skickad"
+5. A link to the sales voucher should appear ("Visa verifikat")
+6. Click the voucher link — verify the voucher has:
+   - Debit 1510 (Kundfordringar): 13 750,00 kr
+   - Credit 3010 (Försäljning): 11 000,00 kr
+   - Credit 2610 (Utg. moms 25%): 2 750,00 kr
+   - Total balanced
+7. Go back to invoice — action buttons should now show "Markera som betald" and "Makulera"
+
+**Pass criteria:** Status transition, voucher auto-generated with correct BAS accounts and amounts.
+
+## Test 15: Mark invoice as paid (sent → paid, payment voucher)
+
+1. On the sent invoice detail page
+2. Set betalningsdatum to today
+3. Click "Markera som betald"
+4. Status should change to "Betald"
+5. A link to the payment voucher should appear
+6. Click the voucher link — verify:
+   - Debit 1930 (Bank): 13 750,00 kr
+   - Credit 1510 (Kundfordringar): 13 750,00 kr
+   - Balanced
+
+**Pass criteria:** Payment recorded, voucher correct, 1510 zeroed out.
+
+## Test 16: Cancel invoice (sent → cancelled, correction voucher)
+
+1. Create and finalize a new invoice (repeat Test 12 + 14 with different data)
+2. On the sent invoice detail page, click "Makulera faktura"
+3. Confirm the dialog
+4. Status should change to "Makulerad"
+5. The original sales voucher should now be marked as corrected
+6. Verify in /vouchers that a correction voucher was created (reversed amounts)
+
+**Pass criteria:** Cancellation creates correction voucher, original voucher marked corrected.
+
+## Test 17: Delete draft invoice
+
+1. Create a new draft invoice
+2. On the detail page, click "Radera utkast"
+3. Confirm — should redirect to `/invoices`
+4. The invoice should be gone from the list
+5. Try to delete a sent invoice via API — should fail:
+   ```bash
+   curl -sS -b /tmp/test.cookies -X DELETE http://localhost:8080/api/v1/invoices/<sent_id>
+   # → {"error":"only draft invoices can be deleted"}
+   ```
+
+**Pass criteria:** Draft deletable, non-draft protected.
+
+## Test 18: Oresavrundning (Swedish rounding)
+
+1. Create an invoice with lines that produce a non-whole total:
+   - "Tjänst", antal 1, á-pris 99.50, moms 25%
+   - Netto: 99.50, moms: 24.875 → total raw: 124.375
+   - Rounded: 124 kr, avrundning: -0.375 → shown as "Öresavrundning: -0,38 kr"
+2. Finalize the invoice
+3. Check the voucher — it should include an extra line for account 3740 (Öresavrundning)
+4. Verify the voucher is balanced despite the rounding
+
+**Pass criteria:** Rounding calculated and booked correctly.
+
+## Test 19: OCR number validation
+
+1. Create invoice #1 → OCR should be "18" (1 + Luhn digit 8)
+2. Create invoice #2 → OCR should be "26"
+3. Create invoice #10 → OCR should be "109"
+4. Verify manually: take the digits before the last one, apply Luhn, check digit matches
+
+**Pass criteria:** OCR numbers follow Luhn algorithm.
+
+## Test 20: Multiple VAT rates on one invoice
+
+1. Create an invoice with mixed VAT rates:
+   - "Konsulttjänst", 10000 kr, 25% moms
+   - "Livsmedel", 5000 kr, 12% moms
+   - "Tidning", 2000 kr, 6% moms
+2. Finalize the invoice
+3. Check the voucher has separate credit lines:
+   - 2610 (25%): 2 500,00 kr
+   - 2611 (12%): 600,00 kr
+   - 2612 (6%): 120,00 kr
+   - 3010 (Försäljning): 17 000,00 kr
+   - 1510 (Kundfordringar): total including all VAT
+
+**Pass criteria:** Each VAT rate gets its own account line in the voucher.
+
+## Test 21: Invoice settings snapshot
+
+1. Configure bankgiro to "1111-2222" in invoice settings
+2. Create and finalize an invoice — it should show bankgiro "1111-2222"
+3. Change bankgiro to "3333-4444" in settings
+4. View the old invoice — it should still show "1111-2222" (snapshotted at creation)
+5. Create a new invoice — it should show "3333-4444"
+
+**Pass criteria:** Payment details are frozen at invoice creation time.
+
+## Test 22: Company isolation for invoices
+
+1. As user A (company A), create a customer and an invoice
+2. As user B (company B), list invoices — A's invoice should NOT appear
+3. As user B, try `GET /invoices/<A's invoice id>` — should get 403
+
+**Pass criteria:** Full company-scoped isolation.
+
+---
+
+# Fas 3 — Invoice PDF
+
+## Test 23: Download invoice PDF
+
+1. Create and finalize an invoice with 2-3 line items
+2. On the invoice detail page, click the PDF download button
+3. The browser should download a `.pdf` file
+4. Open the PDF and verify it contains:
+   - Company name and org number at the top
+   - "FAKTURA" heading
+   - Invoice number, date, due date
+   - OCR number
+   - Customer name and address
+   - Line items table with description, quantity, unit, unit price, VAT rate, amount
+   - VAT summary (per rate)
+   - Totals: netto, moms, öresavrundning (if any), att betala
+   - Payment details: bankgiro/plusgiro, OCR
+   - F-skattetext at the bottom
+
+**Pass criteria:** Professional Swedish invoice PDF with all required information.
+
+## Test 24: PDF with oresavrundning
+
+1. Create an invoice where rounding applies (see Test 18)
+2. Download the PDF
+3. Verify the rounding line appears in the totals section
+
+**Pass criteria:** Rounding visible in PDF.
+
+## Test 25: PDF for different statuses
+
+1. Download PDF for a draft invoice — should work (preview before sending)
+2. Download PDF for a sent invoice — should work
+3. Download PDF for a paid invoice — should work (for records)
+4. Download PDF for a cancelled invoice — should work but ideally shows "MAKULERAD" watermark (nice-to-have, not required)
+
+**Pass criteria:** PDF downloadable for all non-deleted statuses.
+
+---
+
+## Edge cases to verify (Fas 2-3)
+
+- Creating an invoice with only one line item
+- Creating an invoice with 0% VAT (export, exempt sales)
+- Invoice with very large amounts (e.g. 10 000 000 kr)
+- Invoice with quantity = 0.5 (half units — should calculate correctly)
+- Invoice with 100% discount on a line — line total should be 0
+- Trying to finalize an already-sent invoice — should fail
+- Trying to pay an already-paid invoice — should fail
+- Trying to cancel a paid invoice — should fail
+- Trying to delete a sent invoice — should fail
+- Two users creating invoices simultaneously — invoice numbers should not collide (atomic increment)

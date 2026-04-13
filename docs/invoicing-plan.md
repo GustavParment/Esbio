@@ -1,7 +1,7 @@
 # Fakturering (Invoicing) — Implementation Plan
 
 **Branch:** `feature/invoicing`
-**Status:** Fas 1 complete, Fas 2 in progress
+**Status:** Fas 1-3 complete, Fas 4 in progress
 **Date:** 2026-04-12
 
 ### Fas 1 status (complete)
@@ -10,6 +10,18 @@
 - Frontend: customer list/create/detail pages, invoice settings page, sidebar nav updated
 - `go build` + `go vet` + `npx tsc --noEmit` all clean
 - See [invoicing-test-guide.md](./invoicing-test-guide.md) for manual test steps
+
+### Fas 2 status (complete)
+- DB migrations: `invoices` + `invoice_lines` tables created
+- Backend: InvoiceService with CreateInvoice, FinalizeInvoice (auto-voucher),
+  MarkAsPaid (payment voucher), CancelInvoice (correction voucher),
+  CheckOverdueInvoices, OCR generation (Luhn), oresavrundning (3740)
+- Invoice repository + invoice line repository (full CRUD + status queries)
+- Invoice handler: 7 endpoints wired to routes
+- Frontend: invoice list with 6 status tabs, create invoice with dynamic
+  line editor + live total calculation, invoice detail with contextual
+  action buttons (Skicka/Betald/Makulera/Radera)
+- `go build` + `go vet` + `npx tsc --noEmit` all clean
 
 ---
 

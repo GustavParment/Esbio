@@ -24,6 +24,7 @@ func SetupRoutes(
 	customerHandler *handlers.CustomerHandler,
 	invoiceSettingsHandler *handlers.InvoiceSettingsHandler,
 	invoiceHandler *handlers.InvoiceHandler,
+	invoicePDFHandler *handlers.InvoicePDFHandler,
 	authMiddleware gin.HandlerFunc,
 	companyMiddleware gin.HandlerFunc) {
 
@@ -127,6 +128,7 @@ func SetupRoutes(
 			invoices.GET("/settings", invoiceSettingsHandler.GetSettings)
 			invoices.PUT("/settings", middleware.RequireRole("Admin", "Bookkeeper"), invoiceSettingsHandler.UpdateSettings)
 			invoices.GET("/:id", invoiceHandler.GetInvoiceByID)
+			invoices.GET("/:id/pdf", invoicePDFHandler.GenerateInvoicePDF)
 			invoices.POST("/:id/finalize", middleware.RequireRole("Admin", "Bookkeeper"), invoiceHandler.FinalizeInvoice)
 			invoices.POST("/:id/pay", middleware.RequireRole("Admin", "Bookkeeper"), invoiceHandler.MarkAsPaid)
 			invoices.POST("/:id/cancel", middleware.RequireRole("Admin", "Bookkeeper"), invoiceHandler.CancelInvoice)

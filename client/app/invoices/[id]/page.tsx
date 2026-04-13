@@ -129,6 +129,14 @@ export default function InvoiceDetailPage() {
               {STATUS_LABELS[status] || status}
             </span>
           </div>
+          <a
+            href={`${process.env.NEXT_PUBLIC_API_URL || "https://api.esbio.se/api/v1"}/invoices/${invoice.invoice_id}/pdf`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="px-4 py-2.5 bg-gray-700 text-white rounded-lg hover:bg-gray-800 transition-colors font-medium text-sm"
+          >
+            Ladda ner PDF
+          </a>
         </div>
       </div>
 
