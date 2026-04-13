@@ -103,7 +103,10 @@ func main() {
 	routes.SetupRoutes(router, userHandler, accountHandler, lineItemHandler, voucherHandler, authHandler, pdfHandler, reportHandler, sieHandler, agentHandler, companyHandler, receiptHandler, stripeHandler, customerHandler, invoiceSettingsHandler, invoiceHandler, invoicePDFHandler, authMiddleware, companyMiddleware)
 
 	// Start the scheduler for recurring tasks
-	schedulerService := service.NewSchedulerService(scheduledTaskService, agentService)
+	schedulerService := service.NewSchedulerService(scheduledTaskService, agentService, invoiceService, func() []int {
+		ids, _ := companyRepo.GetAllCompanyIDs()
+		return ids
+	})
 	schedulerService.Start()
 	defer schedulerService.Stop()
 

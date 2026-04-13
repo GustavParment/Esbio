@@ -1,7 +1,7 @@
 # Fakturering (Invoicing) — Implementation Plan
 
 **Branch:** `feature/invoicing`
-**Status:** Fas 1-3 complete, Fas 4 in progress
+**Status:** Fas 1-4 complete
 **Date:** 2026-04-12
 
 ### Fas 1 status (complete)
