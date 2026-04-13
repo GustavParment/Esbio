@@ -240,3 +240,72 @@ export interface LedgerEntry {
   credit_amount: MoneyString;
   balance: MoneyString;
 }
+
+// Customer types
+export interface Customer {
+  customer_id: number;
+  company_id: number;
+  name: string;
+  org_number?: string;
+  vat_number?: string;
+  address_line1?: string;
+  address_line2?: string;
+  postal_code?: string;
+  city?: string;
+  country?: string;
+  email?: string;
+  phone?: string;
+  payment_terms_days: number;
+  default_revenue_account?: number;
+  notes?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CreateCustomerRequest {
+  name: string;
+  org_number?: string;
+  vat_number?: string;
+  address_line1?: string;
+  address_line2?: string;
+  postal_code?: string;
+  city?: string;
+  country?: string;
+  email?: string;
+  phone?: string;
+  payment_terms_days?: number;
+  default_revenue_account?: number;
+  notes?: string;
+}
+
+// Invoice settings types
+export interface InvoiceSettings {
+  settings_id: number;
+  company_id: number;
+  bankgiro?: string;
+  plusgiro?: string;
+  swish?: string;
+  iban?: string;
+  bic?: string;
+  f_skatt_text: string;
+  default_payment_terms_days: number;
+  next_invoice_number: number;
+  invoice_prefix?: string;
+  default_revenue_account: number;
+  default_payment_account: number;
+  footer_text?: string;
+}
+
+export interface UpdateInvoiceSettingsRequest {
+  bankgiro?: string;
+  plusgiro?: string;
+  swish?: string;
+  iban?: string;
+  bic?: string;
+  f_skatt_text?: string;
+  default_payment_terms_days?: number;
+  invoice_prefix?: string;
+  default_revenue_account?: number;
+  default_payment_account?: number;
+  footer_text?: string;
+}
