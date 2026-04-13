@@ -99,48 +99,24 @@ export default function CustomersPage() {
             )}
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="text-left py-3 px-6 text-sm font-semibold text-gray-700">Namn</th>
-                  <th className="text-left py-3 px-6 text-sm font-semibold text-gray-700">Org.nr</th>
-                  <th className="text-left py-3 px-6 text-sm font-semibold text-gray-700">E-post</th>
-                  <th className="text-left py-3 px-6 text-sm font-semibold text-gray-700">Ort</th>
-                  <th className="text-left py-3 px-6 text-sm font-semibold text-gray-700">Betalningsvillkor</th>
-                  <th className="text-right py-3 px-6 text-sm font-semibold text-gray-700"></th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {filteredCustomers.map((customer) => (
-                  <tr key={customer.customer_id} className="hover:bg-gray-50">
-                    <td className="py-4 px-6 text-sm font-medium text-gray-900">
-                      {customer.name}
-                    </td>
-                    <td className="py-4 px-6 text-sm text-gray-600">
-                      {customer.org_number || "-"}
-                    </td>
-                    <td className="py-4 px-6 text-sm text-gray-600">
-                      {customer.email || "-"}
-                    </td>
-                    <td className="py-4 px-6 text-sm text-gray-600">
-                      {customer.city || "-"}
-                    </td>
-                    <td className="py-4 px-6 text-sm text-gray-600">
-                      {customer.payment_terms_days} dagar
-                    </td>
-                    <td className="py-4 px-6 text-sm text-right">
-                      <Link
-                        href={`/customers/${customer.customer_id}`}
-                        className="text-blue-600 hover:text-blue-700 font-medium"
-                      >
-                        Visa
-                      </Link>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <div className="divide-y divide-gray-100">
+            {filteredCustomers.map((customer) => (
+              <Link
+                key={customer.customer_id}
+                href={`/customers/${customer.customer_id}`}
+                className="block p-4 hover:bg-gray-50 transition-colors"
+              >
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-sm font-medium text-gray-900">{customer.name}</span>
+                  <span className="text-xs text-gray-500">{customer.payment_terms_days} dagar</span>
+                </div>
+                <div className="flex flex-wrap items-center gap-3 text-xs text-gray-500">
+                  {customer.org_number && <span>{customer.org_number}</span>}
+                  {customer.email && <span>{customer.email}</span>}
+                  {customer.city && <span>{customer.city}</span>}
+                </div>
+              </Link>
+            ))}
           </div>
         )}
       </div>

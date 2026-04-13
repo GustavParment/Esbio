@@ -210,31 +210,18 @@ export default function InvoiceDetailPage() {
           <div className="p-6 border-b border-gray-200">
             <h2 className="text-lg font-semibold text-gray-900">Fakturarader</h2>
           </div>
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="text-left py-3 px-6 text-sm font-semibold text-gray-700">Beskrivning</th>
-                  <th className="text-right py-3 px-4 text-sm font-semibold text-gray-700">Antal</th>
-                  <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Enhet</th>
-                  <th className="text-right py-3 px-4 text-sm font-semibold text-gray-700">Á-pris</th>
-                  <th className="text-center py-3 px-4 text-sm font-semibold text-gray-700">Moms</th>
-                  <th className="text-right py-3 px-6 text-sm font-semibold text-gray-700">Summa</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {invoice.lines.map((line) => (
-                  <tr key={line.line_id}>
-                    <td className="py-3 px-6 text-sm text-gray-900">{line.description}</td>
-                    <td className="py-3 px-4 text-sm text-gray-900 text-right">{parseMoney(line.quantity)}</td>
-                    <td className="py-3 px-4 text-sm text-gray-600">{line.unit}</td>
-                    <td className="py-3 px-4 text-sm text-gray-900 text-right">{formatSEK(line.unit_price)}</td>
-                    <td className="py-3 px-4 text-sm text-gray-600 text-center">{line.vat_rate}%</td>
-                    <td className="py-3 px-6 text-sm text-gray-900 text-right font-medium">{formatSEK(line.line_total)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <div className="divide-y divide-gray-100">
+            {invoice.lines.map((line) => (
+              <div key={line.line_id} className="p-4">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-sm text-gray-900">{line.description}</span>
+                  <span className="text-sm font-medium text-gray-900">{formatSEK(line.line_total)} kr</span>
+                </div>
+                <div className="text-xs text-gray-500">
+                  {parseMoney(line.quantity)} {line.unit} &times; {formatSEK(line.unit_price)} kr · {line.vat_rate}% moms
+                </div>
+              </div>
+            ))}
           </div>
 
           {/* Totals */}

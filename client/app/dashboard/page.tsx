@@ -123,33 +123,24 @@ export default function DashboardPage() {
             </Link>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-gray-200">
-                  <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Nr</th>
-                  <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Datum</th>
-                  <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Beskrivning</th>
-                  <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Referens</th>
-                  <th className="text-right py-3 px-4 text-sm font-semibold text-gray-700">Belopp</th>
-                </tr>
-              </thead>
-              <tbody>
-                {vouchers.map((voucher) => (
-                  <tr key={voucher.voucher_id} className="border-b border-gray-100 hover:bg-gray-50">
-                    <td className="py-3 px-4 text-sm font-semibold text-blue-600">#{voucher.voucher_number}</td>
-                    <td className="py-3 px-4 text-sm text-gray-600">
-                      {new Date(voucher.date).toLocaleDateString("sv-SE")}
-                    </td>
-                    <td className="py-3 px-4 text-sm text-gray-900">{voucher.description}</td>
-                    <td className="py-3 px-4 text-sm text-gray-600">{voucher.reference}</td>
-                    <td className="py-3 px-4 text-sm text-gray-900 text-right font-medium">
-                      {formatSEK(voucher.total_amount)} kr
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <div className="divide-y divide-gray-100">
+            {vouchers.map((voucher) => (
+              <Link
+                key={voucher.voucher_id}
+                href={`/vouchers/${voucher.voucher_id}`}
+                className="block py-3 px-1 hover:bg-gray-50 transition-colors"
+              >
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-sm font-semibold text-blue-600">#{voucher.voucher_number}</span>
+                  <span className="text-sm font-medium text-gray-900">{formatSEK(voucher.total_amount)} kr</span>
+                </div>
+                <p className="text-sm text-gray-900 truncate">{voucher.description}</p>
+                <span className="text-xs text-gray-500">
+                  {new Date(voucher.date).toLocaleDateString("sv-SE")}
+                  {voucher.reference ? ` · ${voucher.reference}` : ""}
+                </span>
+              </Link>
+            ))}
           </div>
         )}
       </div>

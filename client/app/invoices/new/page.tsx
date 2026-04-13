@@ -195,74 +195,75 @@ export default function NewInvoicePage() {
             </button>
           </div>
 
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="text-left py-2 px-3 text-xs font-semibold text-gray-700 w-1/3">Beskrivning</th>
-                  <th className="text-right py-2 px-3 text-xs font-semibold text-gray-700 w-16">Antal</th>
-                  <th className="text-left py-2 px-3 text-xs font-semibold text-gray-700 w-16">Enhet</th>
-                  <th className="text-right py-2 px-3 text-xs font-semibold text-gray-700 w-24">Á-pris</th>
-                  <th className="text-right py-2 px-3 text-xs font-semibold text-gray-700 w-20">Rabatt %</th>
-                  <th className="text-center py-2 px-3 text-xs font-semibold text-gray-700 w-20">Moms</th>
-                  <th className="text-right py-2 px-3 text-xs font-semibold text-gray-700 w-24">Summa</th>
-                  <th className="w-10"></th>
-                </tr>
-              </thead>
-              <tbody>
-                {lines.map((line) => {
-                  const { lineTotal, vatAmount } = calcLine(line);
-                  return (
-                    <tr key={line.id} className="border-b border-gray-100">
-                      <td className="py-2 px-3">
-                        <input value={line.description} placeholder="Beskrivning..."
-                          onChange={(e) => updateLine(line.id, "description", e.target.value)}
-                          className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm text-gray-900" />
-                      </td>
-                      <td className="py-2 px-3">
+          <div className="space-y-4">
+            {lines.map((line, idx) => {
+              const { lineTotal } = calcLine(line);
+              return (
+                <div key={line.id} className="border border-gray-200 rounded-lg p-4 relative">
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-sm font-semibold text-gray-500">Rad {idx + 1}</span>
+                    <button type="button" onClick={() => removeLine(line.id)}
+                      className="text-red-500 hover:text-red-700 text-sm font-medium">
+                      Ta bort
+                    </button>
+                  </div>
+
+                  <div className="space-y-3">
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 mb-1">Beskrivning</label>
+                      <input value={line.description} placeholder="Vad säljer du..."
+                        onChange={(e) => updateLine(line.id, "description", e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900" />
+                    </div>
+
+                    <div className="grid grid-cols-3 gap-3">
+                      <div>
+                        <label className="block text-xs font-medium text-gray-600 mb-1">Antal</label>
                         <input type="number" step="any" value={line.quantity}
                           onChange={(e) => updateLine(line.id, "quantity", e.target.value)}
-                          className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm text-gray-900 text-right" />
-                      </td>
-                      <td className="py-2 px-3">
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900" />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-600 mb-1">Enhet</label>
                         <input value={line.unit}
                           onChange={(e) => updateLine(line.id, "unit", e.target.value)}
-                          className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm text-gray-900" />
-                      </td>
-                      <td className="py-2 px-3">
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900" />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-600 mb-1">Á-pris</label>
                         <input type="number" step="0.01" value={line.unit_price} placeholder="0.00"
                           onChange={(e) => updateLine(line.id, "unit_price", e.target.value)}
-                          className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm text-gray-900 text-right" />
-                      </td>
-                      <td className="py-2 px-3">
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900" />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-3 gap-3">
+                      <div>
+                        <label className="block text-xs font-medium text-gray-600 mb-1">Rabatt %</label>
                         <input type="number" step="0.01" value={line.discount_percent}
                           onChange={(e) => updateLine(line.id, "discount_percent", e.target.value)}
-                          className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm text-gray-900 text-right" />
-                      </td>
-                      <td className="py-2 px-3">
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900" />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-600 mb-1">Moms</label>
                         <select value={line.vat_rate}
                           onChange={(e) => updateLine(line.id, "vat_rate", Number(e.target.value))}
-                          className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm text-gray-900">
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900">
                           <option value={25}>25%</option>
                           <option value={12}>12%</option>
                           <option value={6}>6%</option>
                           <option value={0}>0%</option>
                         </select>
-                      </td>
-                      <td className="py-2 px-3 text-right text-sm text-gray-900 font-medium">
-                        {formatSEK(lineTotal)}
-                      </td>
-                      <td className="py-2 px-1">
-                        <button type="button" onClick={() => removeLine(line.id)}
-                          className="text-red-500 hover:text-red-700 text-lg font-bold px-2">
-                          &times;
-                        </button>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-600 mb-1">Summa</label>
+                        <p className="px-3 py-2 text-sm font-semibold text-gray-900">{formatSEK(lineTotal)} kr</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
           </div>
 
           {/* Totals */}

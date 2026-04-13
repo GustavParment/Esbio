@@ -124,54 +124,36 @@ export default function AccountsPage() {
             </Link>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="text-left py-3 px-6 text-sm font-semibold text-gray-700">Kontonr</th>
-                  <th className="text-left py-3 px-6 text-sm font-semibold text-gray-700">Kontonamn</th>
-                  <th className="text-left py-3 px-6 text-sm font-semibold text-gray-700">Grupp</th>
-                  <th className="text-left py-3 px-6 text-sm font-semibold text-gray-700">Typ</th>
-                  <th className="text-left py-3 px-6 text-sm font-semibold text-gray-700">Normalside</th>
-                  <th className="text-left py-3 px-6 text-sm font-semibold text-gray-700">Moms</th>
-                  <th className="text-right py-3 px-6 text-sm font-semibold text-gray-700">Åtgärder</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {filteredAccounts.map((account) => (
-                  <tr key={account.account_no} className="hover:bg-gray-50">
-                    <td className="py-4 px-6 text-sm font-medium text-gray-900">{account.account_no}</td>
-                    <td className="py-4 px-6 text-sm text-gray-900">{account.account_name}</td>
-                    <td className="py-4 px-6 text-sm text-gray-600">{account.account_group}</td>
-                    <td className="py-4 px-6">
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                        account.type === "BS"
-                          ? "bg-blue-100 text-blue-800"
-                          : "bg-green-100 text-green-800"
-                      }`}>
-                        {account.type}
-                      </span>
-                    </td>
-                    <td className="py-4 px-6 text-sm text-gray-600">{account.standard_side}</td>
-                    <td className="py-4 px-6 text-sm text-gray-600">{account.tax_standard}</td>
-                    <td className="py-4 px-6 text-sm text-right space-x-4">
-                      <Link
-                        href={`/accounts/${account.account_no}/ledger`}
-                        className="text-blue-600 hover:text-blue-700 font-medium"
-                      >
-                        Kontoutdrag
-                      </Link>
-                      <Link
-                        href={`/accounts/${account.account_no}`}
-                        className="text-gray-600 hover:text-gray-700 font-medium"
-                      >
-                        Redigera →
-                      </Link>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <div className="divide-y divide-gray-100">
+            {filteredAccounts.map((account) => (
+              <div key={account.account_no} className="p-4 hover:bg-gray-50">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-sm font-medium text-gray-900">
+                    {account.account_no} — {account.account_name}
+                  </span>
+                  <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium ${
+                    account.type === "BS" ? "bg-blue-100 text-blue-800" : "bg-green-100 text-green-800"
+                  }`}>
+                    {account.type}
+                  </span>
+                </div>
+                <div className="flex items-center gap-3 text-xs text-gray-500 mb-2">
+                  <span>Grupp {account.account_group}</span>
+                  <span>{account.standard_side}</span>
+                  <span>{account.tax_standard}</span>
+                </div>
+                <div className="flex gap-4">
+                  <Link href={`/accounts/${account.account_no}/ledger`}
+                    className="text-xs text-blue-600 hover:text-blue-700 font-medium">
+                    Kontoutdrag
+                  </Link>
+                  <Link href={`/accounts/${account.account_no}`}
+                    className="text-xs text-gray-600 hover:text-gray-700 font-medium">
+                    Redigera
+                  </Link>
+                </div>
+              </div>
+            ))}
           </div>
         )}
       </div>

@@ -138,58 +138,31 @@ export default function InvoicesPage() {
             )}
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="text-left py-3 px-6 text-sm font-semibold text-gray-700">Nr</th>
-                  <th className="text-left py-3 px-6 text-sm font-semibold text-gray-700">Kund</th>
-                  <th className="text-left py-3 px-6 text-sm font-semibold text-gray-700">Datum</th>
-                  <th className="text-left py-3 px-6 text-sm font-semibold text-gray-700">Förfaller</th>
-                  <th className="text-left py-3 px-6 text-sm font-semibold text-gray-700">Status</th>
-                  <th className="text-right py-3 px-6 text-sm font-semibold text-gray-700">Belopp</th>
-                  <th className="text-right py-3 px-6 text-sm font-semibold text-gray-700"></th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {invoices.map((inv) => (
-                  <tr key={inv.invoice_id} className="hover:bg-gray-50">
-                    <td className="py-4 px-6 text-sm font-semibold text-blue-600">
-                      #{inv.invoice_number}
-                    </td>
-                    <td className="py-4 px-6 text-sm text-gray-900">
-                      {customers[inv.customer_id]?.name || `Kund #${inv.customer_id}`}
-                    </td>
-                    <td className="py-4 px-6 text-sm text-gray-600">
-                      {new Date(inv.invoice_date).toLocaleDateString("sv-SE")}
-                    </td>
-                    <td className="py-4 px-6 text-sm text-gray-600">
-                      {new Date(inv.due_date).toLocaleDateString("sv-SE")}
-                    </td>
-                    <td className="py-4 px-6 text-sm">
-                      <span
-                        className={`inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                          STATUS_COLORS[inv.status as InvoiceStatus] || ""
-                        }`}
-                      >
-                        {STATUS_LABELS[inv.status as InvoiceStatus] || inv.status}
-                      </span>
-                    </td>
-                    <td className="py-4 px-6 text-sm text-gray-900 text-right font-medium">
-                      {formatSEK(inv.total)} kr
-                    </td>
-                    <td className="py-4 px-6 text-sm text-right">
-                      <Link
-                        href={`/invoices/${inv.invoice_id}`}
-                        className="text-blue-600 hover:text-blue-700 font-medium"
-                      >
-                        Visa
-                      </Link>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <div className="divide-y divide-gray-100">
+            {invoices.map((inv) => (
+              <Link
+                key={inv.invoice_id}
+                href={`/invoices/${inv.invoice_id}`}
+                className="block p-4 hover:bg-gray-50 transition-colors"
+              >
+                <div className="flex items-center justify-between mb-1">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-semibold text-blue-600">#{inv.invoice_number}</span>
+                    <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium ${STATUS_COLORS[inv.status as InvoiceStatus] || ""}`}>
+                      {STATUS_LABELS[inv.status as InvoiceStatus] || inv.status}
+                    </span>
+                  </div>
+                  <span className="text-sm font-medium text-gray-900">{formatSEK(inv.total)} kr</span>
+                </div>
+                <p className="text-sm text-gray-900 truncate">
+                  {customers[inv.customer_id]?.name || `Kund #${inv.customer_id}`}
+                </p>
+                <div className="flex items-center gap-3 mt-1 text-xs text-gray-500">
+                  <span>{new Date(inv.invoice_date).toLocaleDateString("sv-SE")}</span>
+                  <span>Förfaller: {new Date(inv.due_date).toLocaleDateString("sv-SE")}</span>
+                </div>
+              </Link>
+            ))}
           </div>
         )}
       </div>
