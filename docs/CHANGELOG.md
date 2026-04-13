@@ -4,9 +4,41 @@ Notable changes grouped by session / branch. For day-to-day history, use `git lo
 
 ---
 
-## Unreleased — branch `refactor/money-int64` (2026-04-11)
+## On dev, awaiting testing — `feature/invoicing` (2026-04-12)
 
-All changes below are **uncommitted** on the `refactor/money-int64` branch and not yet deployed. Prod backend is still paused (`ingress=internal`, applied 2026-04-11). See individual doc links for full details.
+Invoicing module merged to `dev`. NOT on `main`/prod yet — awaiting manual testing.
+
+### Invoicing module (Fas 1-4)
+
+Full Swedish invoicing with auto-bokforing:
+- **Customer registry**: CRUD + search (6 API endpoints, 3 frontend pages)
+- **Invoice settings**: bankgiro, plusgiro, swish, F-skatt, payment terms, invoice number sequence
+- **Invoice CRUD**: create draft, finalize (auto-generates sales voucher: 1510/3010/2610-2612/3740), mark as paid (payment voucher: bank/1510), cancel (correction voucher), delete draft
+- **Invoice PDF**: Swedish layout via fpdf (company/customer info, lines, VAT summary, OCR, payment details, F-skatt)
+- **Overdue detection**: scheduler checks all companies every 60s, flips sent→overdue past due date
+- **Dashboard widget**: outstanding, overdue, and paid invoice summaries
+- OCR number generation (Luhn), oresavrundning (round to whole krona, diff to 3740)
+- 4 DB tables: `customers`, `invoice_settings`, `invoices`, `invoice_lines`
+- 17 API endpoints, ~20 new Go files, ~10 new frontend pages
+
+See [invoicing-plan.md](./invoicing-plan.md) and [invoicing-test-guide.md](./invoicing-test-guide.md).
+
+### Mobile-first UI overhaul
+
+Replaced all HTML tables across the entire app with card-based layouts:
+- Lists: vouchers, invoices, customers, accounts, ledger, dashboard — all clickable cards
+- Forms: voucher line editor, invoice line editor — vertical cards with full-width fields
+- Detail views: voucher lines, invoice lines — compact card display
+- Settings: full-width buttons, wrapping subscription section
+- Sidebar: full screen width on mobile (was w-64 leaving black strip)
+- Voucher detail: buttons wrap, Invalid Date bug fixed
+- 12 files, net -200 lines
+
+---
+
+## Deployed to prod — `refactor/money-int64` (2026-04-11/12)
+
+Deployed to prod on 2026-04-12. Stripe key rotated. All changes below are live.
 
 ### Fixes
 

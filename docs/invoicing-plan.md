@@ -1,7 +1,7 @@
 # Fakturering (Invoicing) — Implementation Plan
 
 **Branch:** `feature/invoicing`
-**Status:** Fas 1-4 complete
+**Status:** Fas 1-4 complete, merged to dev, awaiting testing before prod deploy
 **Date:** 2026-04-12
 
 ### Fas 1 status (complete)
@@ -22,6 +22,31 @@
   line editor + live total calculation, invoice detail with contextual
   action buttons (Skicka/Betald/Makulera/Radera)
 - `go build` + `go vet` + `npx tsc --noEmit` all clean
+
+### Fas 3 status (complete)
+- `invoice_pdf_handler.go`: Swedish invoice PDF via fpdf
+- "Ladda ner PDF" button on invoice detail page
+- Route: `GET /invoices/:id/pdf`
+
+### Fas 4 status (complete)
+- Overdue invoice detection in scheduler (every 60s, all companies)
+- Dashboard invoice summary widget (outstanding/overdue/paid)
+
+### Mobile-first UI overhaul (complete, bundled with invoicing)
+- All HTML tables replaced with card-based layouts across the entire app
+- 12 pages fixed: voucher/invoice/customer/account lists, detail views,
+  form editors, dashboard, settings, sidebar
+
+### Deploy status
+- `feature/invoicing` → `dev`: merged 2026-04-12
+- `dev` → `main`: **NOT YET** — awaiting manual testing
+- Prod still running pre-invoicing code
+
+### Future: Fas 5 — SMTP integration
+- Send invoices via email (attach PDF)
+- Registration verification emails
+- Same SMTP setup serves both use cases
+- Not started
 
 ---
 
