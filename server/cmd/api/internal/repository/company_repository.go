@@ -16,6 +16,7 @@ type CompanyRepository interface {
 	UpdateStripeCustomerID(companyID int, customerID string) error
 	UpdateSubscription(companyID int, subscriptionID string, plan string, planStatus string) error
 	GetCompanyByOrgNumber(orgNumber string) (*domain.Company, error)
+	GetAllCompanyIDs() ([]int, error)
 }
 
 type companyRepository struct {
@@ -145,4 +146,21 @@ func (r *companyRepository) UpdateSubscription(companyID int, subscriptionID str
 		subscriptionID, plan, planStatus, companyID,
 	)
 	return err
+}
+
+func (r *companyRepository) GetAllCompanyIDs() ([]int, error) {
+	rows, err := r.db.Query("SELECT company_id FROM companies ORDER BY company_id")
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var ids []int
+	for rows.Next() {
+		var id int
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		ids = append(ids, id)
+	}
+	return ids, nil
 }

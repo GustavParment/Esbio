@@ -251,100 +251,73 @@ export default function NewVoucherPage() {
               </button>
             </div>
 
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b border-gray-200">
-                    <th className="text-left py-3 px-2 text-sm font-semibold text-gray-700">Konto</th>
-                    <th className="text-right py-3 px-2 text-sm font-semibold text-gray-700">Debet</th>
-                    <th className="text-right py-3 px-2 text-sm font-semibold text-gray-700">Kredit</th>
-                    <th className="text-left py-3 px-2 text-sm font-semibold text-gray-700">Moms</th>
-                    <th className="py-3 px-2"></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {lineItems.map((item, index) => (
-                    <tr key={item.id} className="border-b border-gray-100">
-                      <td className="py-3 px-2 min-w-[280px]">
-                        <AccountSearch
-                          accounts={accounts}
-                          value={item.account_no}
-                          onChange={(accountNo) => updateLineItem(item.id, "account_no", accountNo)}
-                          placeholder="Sök konto..."
-                        />
-                      </td>
-                      <td className="py-3 px-2">
-                        <input
-                          type="number"
-                          step="0.01"
-                          value={item.debit_amount}
-                          onChange={(e) => updateLineItem(item.id, "debit_amount", e.target.value)}
-                          className="w-full px-2 py-2 border border-gray-300 rounded text-sm text-right text-black focus:ring-2 focus:ring-blue-500"
-                          placeholder="0.00"
-                        />
-                      </td>
-                      <td className="py-3 px-2">
-                        <input
-                          type="number"
-                          step="0.01"
-                          value={item.credit_amount}
-                          onChange={(e) => updateLineItem(item.id, "credit_amount", e.target.value)}
-                          className="w-full px-2 py-2 border border-gray-300 rounded text-sm text-right text-black focus:ring-2 focus:ring-blue-500"
-                          placeholder="0.00"
-                        />
-                      </td>
-                      <td className="py-3 px-2">
-                        <select
-                          value={item.tax_code}
-                          onChange={(e) => updateLineItem(item.id, "tax_code", parseInt(e.target.value))}
-                          className="w-full px-2 py-2 border border-gray-300 rounded text-sm text-black focus:ring-2 focus:ring-blue-500"
-                        >
-                          <option value={0}>0%</option>
-                          <option value={6}>6%</option>
-                          <option value={12}>12%</option>
-                          <option value={25}>25%</option>
-                        </select>
-                      </td>
-                      <td className="py-3 px-2 text-center">
-                        {lineItems.length > 2 && (
-                          <button
-                            type="button"
-                            onClick={() => removeLineItem(item.id)}
-                            className="text-red-600 hover:text-red-700 text-sm"
-                          >
-                            ✕
-                          </button>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-                <tfoot>
-                  <tr className="border-t-2 border-gray-300 font-semibold">
-                    <td className="py-3 px-2 text-sm text-gray-900">Summa:</td>
-                    <td className="py-3 px-2 text-right text-sm text-gray-900">
-                      {totalDebit.toLocaleString("sv-SE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} kr
-                    </td>
-                    <td className="py-3 px-2 text-right text-sm text-gray-900">
-                      {totalCredit.toLocaleString("sv-SE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} kr
-                    </td>
-                    <td colSpan={2} className="py-3 px-2"></td>
-                  </tr>
-                  <tr>
-                    <td className="py-2 px-2 text-sm font-medium text-gray-700">Differens:</td>
-                    <td
-                      colSpan={2}
-                      className={`py-2 px-2 text-right text-sm font-semibold ${
-                        isBalanced ? "text-green-600" : "text-red-600"
-                      }`}
-                    >
-                      {Math.abs(difference).toLocaleString("sv-SE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} kr
-                      {isBalanced ? " ✓ Balanserat" : " ✗ Ej balanserat"}
-                    </td>
-                    <td colSpan={2}></td>
-                  </tr>
-                </tfoot>
-              </table>
+            <div className="space-y-4">
+              {lineItems.map((item, index) => (
+                <div key={item.id} className="border border-gray-200 rounded-lg p-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-sm font-semibold text-gray-500">Rad {index + 1}</span>
+                    {lineItems.length > 2 && (
+                      <button type="button" onClick={() => removeLineItem(item.id)}
+                        className="text-red-500 hover:text-red-700 text-sm font-medium">
+                        Ta bort
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="space-y-3">
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 mb-1">Konto</label>
+                      <AccountSearch
+                        accounts={accounts}
+                        value={item.account_no}
+                        onChange={(accountNo) => updateLineItem(item.id, "account_no", accountNo)}
+                        placeholder="Sök konto..."
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 mb-1">Debet</label>
+                      <input type="number" step="0.01" value={item.debit_amount} placeholder="0.00"
+                        onChange={(e) => updateLineItem(item.id, "debit_amount", e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900" />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 mb-1">Kredit</label>
+                      <input type="number" step="0.01" value={item.credit_amount} placeholder="0.00"
+                        onChange={(e) => updateLineItem(item.id, "credit_amount", e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900" />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 mb-1">Moms</label>
+                      <select value={item.tax_code}
+                        onChange={(e) => updateLineItem(item.id, "tax_code", parseInt(e.target.value))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900">
+                        <option value={0}>0%</option>
+                        <option value={6}>6%</option>
+                        <option value={12}>12%</option>
+                        <option value={25}>25%</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Totals */}
+            <div className="mt-4 border-t pt-4">
+              <div className="flex justify-between text-sm font-semibold text-gray-900">
+                <span>Summa:</span>
+                <span>
+                  {totalDebit.toLocaleString("sv-SE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} kr (D) / {totalCredit.toLocaleString("sv-SE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} kr (K)
+                </span>
+              </div>
+              <div className={`flex justify-between text-sm font-semibold mt-2 ${isBalanced ? "text-green-600" : "text-red-600"}`}>
+                <span>Differens:</span>
+                <span>
+                  {Math.abs(difference).toLocaleString("sv-SE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} kr
+                  {isBalanced ? " ✓ Balanserat" : " ✗ Ej balanserat"}
+                </span>
+              </div>
             </div>
           </div>
 

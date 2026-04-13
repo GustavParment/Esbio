@@ -4,8 +4,9 @@ import { useEffect, useState } from "react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { vouchersApi } from "@/lib/api/vouchers";
 import { accountsApi } from "@/lib/api/accounts";
-import { Voucher, Account } from "@/types";
-import { formatSEK } from "@/lib/money";
+import { invoicesApi } from "@/lib/api/invoices";
+import { Voucher, Account, Invoice } from "@/types";
+import { formatSEK, parseMoney } from "@/lib/money";
 import { useAuth } from "@/lib/contexts/AuthContext";
 import Link from "next/link";
 
@@ -13,6 +14,7 @@ export default function DashboardPage() {
   const { user } = useAuth();
   const [vouchers, setVouchers] = useState<Voucher[]>([]);
   const [accounts, setAccounts] = useState<Account[]>([]);
+  const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentPeriod] = useState(() => {
     const now = new Date();
@@ -30,9 +32,10 @@ export default function DashboardPage() {
         // Fetch vouchers for the selected company
         const vouchersPromise = vouchersApi.getByCompany();
 
-        const [vouchersData, accountsData] = await Promise.all([
+        const [vouchersData, accountsData, invoicesData] = await Promise.all([
           vouchersPromise,
           accountsApi.getAll(),
+          invoicesApi.getAll().catch(() => []),
         ]);
         // Handle null/undefined responses by defaulting to empty arrays
         const vouchersArray = Array.isArray(vouchersData) ? vouchersData : [];
@@ -40,6 +43,7 @@ export default function DashboardPage() {
         const activeVouchers = vouchersArray.filter(v => !v.corrected_by_voucher_id);
         setVouchers(activeVouchers.slice(0, 5)); // Latest 5 active vouchers
         setAccounts(Array.isArray(accountsData) ? accountsData : []);
+        setInvoices(Array.isArray(invoicesData) ? invoicesData : []);
       } catch (error) {
         console.error("Failed to fetch dashboard data:", error);
       } finally {
@@ -119,36 +123,66 @@ export default function DashboardPage() {
             </Link>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-gray-200">
-                  <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Nr</th>
-                  <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Datum</th>
-                  <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Beskrivning</th>
-                  <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Referens</th>
-                  <th className="text-right py-3 px-4 text-sm font-semibold text-gray-700">Belopp</th>
-                </tr>
-              </thead>
-              <tbody>
-                {vouchers.map((voucher) => (
-                  <tr key={voucher.voucher_id} className="border-b border-gray-100 hover:bg-gray-50">
-                    <td className="py-3 px-4 text-sm font-semibold text-blue-600">#{voucher.voucher_number}</td>
-                    <td className="py-3 px-4 text-sm text-gray-600">
-                      {new Date(voucher.date).toLocaleDateString("sv-SE")}
-                    </td>
-                    <td className="py-3 px-4 text-sm text-gray-900">{voucher.description}</td>
-                    <td className="py-3 px-4 text-sm text-gray-600">{voucher.reference}</td>
-                    <td className="py-3 px-4 text-sm text-gray-900 text-right font-medium">
-                      {formatSEK(voucher.total_amount)} kr
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <div className="divide-y divide-gray-100">
+            {vouchers.map((voucher) => (
+              <Link
+                key={voucher.voucher_id}
+                href={`/vouchers/${voucher.voucher_id}`}
+                className="block py-3 px-1 hover:bg-gray-50 transition-colors"
+              >
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-sm font-semibold text-blue-600">#{voucher.voucher_number}</span>
+                  <span className="text-sm font-medium text-gray-900">{formatSEK(voucher.total_amount)} kr</span>
+                </div>
+                <p className="text-sm text-gray-900 truncate">{voucher.description}</p>
+                <span className="text-xs text-gray-500">
+                  {new Date(voucher.date).toLocaleDateString("sv-SE")}
+                  {voucher.reference ? ` · ${voucher.reference}` : ""}
+                </span>
+              </Link>
+            ))}
           </div>
         )}
       </div>
+
+      {/* Invoice summary */}
+      {invoices.length > 0 && (() => {
+        const unpaid = invoices.filter(i => i.status === "sent" || i.status === "overdue");
+        const overdue = invoices.filter(i => i.status === "overdue");
+        const unpaidTotal = unpaid.reduce((sum, i) => sum + parseMoney(i.total), 0);
+        const overdueTotal = overdue.reduce((sum, i) => sum + parseMoney(i.total), 0);
+        return (
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-8">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-gray-900">Fakturor</h2>
+              <Link href="/invoices" className="text-sm text-blue-600 hover:text-blue-700 font-medium">
+                Visa alla &rarr;
+              </Link>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="p-4 bg-blue-50 rounded-lg">
+                <p className="text-sm text-blue-600 font-medium">Utestående</p>
+                <p className="text-2xl font-bold text-blue-900 mt-1">{formatSEK(unpaidTotal)} kr</p>
+                <p className="text-xs text-blue-600 mt-1">{unpaid.length} fakturor</p>
+              </div>
+              {overdue.length > 0 && (
+                <div className="p-4 bg-red-50 rounded-lg">
+                  <p className="text-sm text-red-600 font-medium">Förfallna</p>
+                  <p className="text-2xl font-bold text-red-900 mt-1">{formatSEK(overdueTotal)} kr</p>
+                  <p className="text-xs text-red-600 mt-1">{overdue.length} fakturor</p>
+                </div>
+              )}
+              <div className="p-4 bg-green-50 rounded-lg">
+                <p className="text-sm text-green-600 font-medium">Betalda denna period</p>
+                <p className="text-2xl font-bold text-green-900 mt-1">
+                  {formatSEK(invoices.filter(i => i.status === "paid").reduce((sum, i) => sum + parseMoney(i.total), 0))} kr
+                </p>
+                <p className="text-xs text-green-600 mt-1">{invoices.filter(i => i.status === "paid").length} fakturor</p>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Quick actions */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

@@ -240,3 +240,152 @@ export interface LedgerEntry {
   credit_amount: MoneyString;
   balance: MoneyString;
 }
+
+// Customer types
+export interface Customer {
+  customer_id: number;
+  company_id: number;
+  name: string;
+  org_number?: string;
+  vat_number?: string;
+  address_line1?: string;
+  address_line2?: string;
+  postal_code?: string;
+  city?: string;
+  country?: string;
+  email?: string;
+  phone?: string;
+  payment_terms_days: number;
+  default_revenue_account?: number;
+  notes?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CreateCustomerRequest {
+  name: string;
+  org_number?: string;
+  vat_number?: string;
+  address_line1?: string;
+  address_line2?: string;
+  postal_code?: string;
+  city?: string;
+  country?: string;
+  email?: string;
+  phone?: string;
+  payment_terms_days?: number;
+  default_revenue_account?: number;
+  notes?: string;
+}
+
+// Invoice settings types
+export interface InvoiceSettings {
+  settings_id: number;
+  company_id: number;
+  bankgiro?: string;
+  plusgiro?: string;
+  swish?: string;
+  iban?: string;
+  bic?: string;
+  f_skatt_text: string;
+  default_payment_terms_days: number;
+  next_invoice_number: number;
+  invoice_prefix?: string;
+  default_revenue_account: number;
+  default_payment_account: number;
+  footer_text?: string;
+}
+
+export interface UpdateInvoiceSettingsRequest {
+  bankgiro?: string;
+  plusgiro?: string;
+  swish?: string;
+  iban?: string;
+  bic?: string;
+  f_skatt_text?: string;
+  default_payment_terms_days?: number;
+  invoice_prefix?: string;
+  default_revenue_account?: number;
+  default_payment_account?: number;
+  footer_text?: string;
+}
+
+// Invoice types
+export type InvoiceStatus = "draft" | "sent" | "paid" | "overdue" | "cancelled";
+
+export interface InvoiceLine {
+  line_id: number;
+  invoice_id: number;
+  sort_order: number;
+  description: string;
+  quantity: MoneyString;
+  unit: string;
+  unit_price: MoneyString;
+  discount_percent: MoneyString;
+  vat_rate: number;
+  line_total: MoneyString;
+  vat_amount: MoneyString;
+  account_no: number;
+}
+
+export interface Invoice {
+  invoice_id: number;
+  company_id: number;
+  customer_id: number;
+  invoice_number: number;
+  ocr_number: string;
+  status: InvoiceStatus;
+  invoice_date: string;
+  due_date: string;
+  payment_terms_days: number;
+  currency: string;
+  subtotal: MoneyString;
+  vat_total: MoneyString;
+  rounding: MoneyString;
+  total: MoneyString;
+  amount_paid: MoneyString;
+  notes?: string;
+  your_reference?: string;
+  our_reference?: string;
+  bankgiro?: string;
+  plusgiro?: string;
+  f_skatt_text?: string;
+  sales_voucher_id?: number | null;
+  payment_voucher_id?: number | null;
+  payment_account: number;
+  revenue_account: number;
+  paid_at?: string | null;
+  sent_at?: string | null;
+  cancelled_at?: string | null;
+  created_by: number;
+  created_at: string;
+  updated_at: string;
+  lines?: InvoiceLine[];
+  customer?: Customer;
+}
+
+export interface CreateInvoiceLineRequest {
+  description: string;
+  quantity: MoneyString | number;
+  unit?: string;
+  unit_price: MoneyString | number;
+  discount_percent?: MoneyString | number;
+  vat_rate: number;
+  account_no?: number;
+}
+
+export interface CreateInvoiceRequest {
+  customer_id: number;
+  invoice_date: string;
+  payment_terms_days?: number;
+  notes?: string;
+  your_reference?: string;
+  our_reference?: string;
+  revenue_account?: number;
+  lines: CreateInvoiceLineRequest[];
+}
+
+export interface MarkAsPaidRequest {
+  payment_date: string;
+  payment_account?: number;
+}

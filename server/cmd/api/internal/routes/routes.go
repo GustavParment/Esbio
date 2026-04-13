@@ -21,6 +21,10 @@ func SetupRoutes(
 	companyHandler *handlers.CompanyHandler,
 	receiptHandler *handlers.ReceiptHandler,
 	stripeHandler *handlers.StripeHandler,
+	customerHandler *handlers.CustomerHandler,
+	invoiceSettingsHandler *handlers.InvoiceSettingsHandler,
+	invoiceHandler *handlers.InvoiceHandler,
+	invoicePDFHandler *handlers.InvoicePDFHandler,
 	authMiddleware gin.HandlerFunc,
 	companyMiddleware gin.HandlerFunc) {
 
@@ -115,6 +119,30 @@ func SetupRoutes(
 			agent.PUT("/tasks/:id/toggle", agentHandler.ToggleScheduledTask)
 			agent.DELETE("/tasks/:id", agentHandler.DeleteScheduledTask)
 			agent.GET("/usage", agentHandler.GetUsage)
+		}
+
+		invoices := v1.Group("/invoices", authMiddleware, companyMiddleware)
+		{
+			invoices.POST("", middleware.RequireRole("Admin", "Bookkeeper"), invoiceHandler.CreateInvoice)
+			invoices.GET("", invoiceHandler.ListInvoices)
+			invoices.GET("/settings", invoiceSettingsHandler.GetSettings)
+			invoices.PUT("/settings", middleware.RequireRole("Admin", "Bookkeeper"), invoiceSettingsHandler.UpdateSettings)
+			invoices.GET("/:id", invoiceHandler.GetInvoiceByID)
+			invoices.GET("/:id/pdf", invoicePDFHandler.GenerateInvoicePDF)
+			invoices.POST("/:id/finalize", middleware.RequireRole("Admin", "Bookkeeper"), invoiceHandler.FinalizeInvoice)
+			invoices.POST("/:id/pay", middleware.RequireRole("Admin", "Bookkeeper"), invoiceHandler.MarkAsPaid)
+			invoices.POST("/:id/cancel", middleware.RequireRole("Admin", "Bookkeeper"), invoiceHandler.CancelInvoice)
+			invoices.DELETE("/:id", middleware.RequireRole("Admin"), invoiceHandler.DeleteInvoice)
+		}
+
+		customers := v1.Group("/customers", authMiddleware, companyMiddleware)
+		{
+			customers.POST("", middleware.RequireRole("Admin", "Bookkeeper"), customerHandler.CreateCustomer)
+			customers.GET("", customerHandler.ListCustomers)
+			customers.GET("/search", customerHandler.SearchCustomers)
+			customers.GET("/:id", customerHandler.GetCustomerByID)
+			customers.PUT("/:id", middleware.RequireRole("Admin", "Bookkeeper"), customerHandler.UpdateCustomer)
+			customers.DELETE("/:id", middleware.RequireRole("Admin"), customerHandler.DeleteCustomer)
 		}
 
 		stripeGroup := v1.Group("/stripe")

@@ -156,57 +156,37 @@ export default function VouchersPage() {
             </Link>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="text-left py-3 px-6 text-sm font-semibold text-gray-700">Ver.nr</th>
-                  <th className="text-left py-3 px-6 text-sm font-semibold text-gray-700">Datum</th>
-                  <th className="text-left py-3 px-6 text-sm font-semibold text-gray-700">Beskrivning</th>
-                  <th className="text-left py-3 px-6 text-sm font-semibold text-gray-700">Referens</th>
-                  <th className="text-left py-3 px-6 text-sm font-semibold text-gray-700">Period</th>
-                  <th className="text-right py-3 px-6 text-sm font-semibold text-gray-700">Belopp</th>
-                  <th className="text-right py-3 px-6 text-sm font-semibold text-gray-700">Åtgärder</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {filteredVouchers.map((voucher) => (
-                  <tr
-                    key={voucher.voucher_id}
-                    className={`hover:bg-gray-50 ${voucher.corrected_by_voucher_id ? 'bg-red-50 opacity-60' : ''}`}
-                  >
-                    <td className="py-4 px-6 text-sm font-semibold text-blue-600">
-                      #{voucher.voucher_number}
-                      {voucher.corrected_by_voucher_id && (
-                        <span className="ml-2 text-xs text-red-600 font-normal">(rättad)</span>
-                      )}
-                    </td>
-                    <td className="py-4 px-6 text-sm text-gray-600">
-                      {new Date(voucher.date).toLocaleDateString("sv-SE")}
-                    </td>
-                    <td className="py-4 px-6 text-sm text-gray-900">{voucher.description}</td>
-                    <td className="py-4 px-6 text-sm text-gray-600">{voucher.reference}</td>
-                    <td className="py-4 px-6 text-sm text-gray-600">
-                      {new Date(voucher.period + "-01").toLocaleDateString("sv-SE", {
-                        year: "numeric",
-                        month: "short",
-                      })}
-                    </td>
-                    <td className="py-4 px-6 text-sm text-gray-900 text-right font-medium">
-                      {formatSEK(voucher.total_amount)} kr
-                    </td>
-                    <td className="py-4 px-6 text-sm text-right">
-                      <Link
-                        href={`/vouchers/${voucher.voucher_id}`}
-                        className="text-blue-600 hover:text-blue-700 font-medium"
-                      >
-                        Visa →
-                      </Link>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <div className="divide-y divide-gray-100">
+            {filteredVouchers.map((voucher) => (
+              <Link
+                key={voucher.voucher_id}
+                href={`/vouchers/${voucher.voucher_id}`}
+                className={`block p-4 hover:bg-gray-50 transition-colors ${voucher.corrected_by_voucher_id ? 'bg-red-50 opacity-60' : ''}`}
+              >
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-sm font-semibold text-blue-600">
+                    #{voucher.voucher_number}
+                    {voucher.corrected_by_voucher_id && (
+                      <span className="ml-2 text-xs text-red-600 font-normal">(rättad)</span>
+                    )}
+                  </span>
+                  <span className="text-sm font-medium text-gray-900">
+                    {formatSEK(voucher.total_amount)} kr
+                  </span>
+                </div>
+                <p className="text-sm text-gray-900 truncate">{voucher.description}</p>
+                <div className="flex items-center gap-3 mt-1 text-xs text-gray-500">
+                  <span>{new Date(voucher.date).toLocaleDateString("sv-SE")}</span>
+                  {voucher.reference && <span>{voucher.reference}</span>}
+                  <span>
+                    {new Date(voucher.period + "-01").toLocaleDateString("sv-SE", {
+                      year: "numeric",
+                      month: "short",
+                    })}
+                  </span>
+                </div>
+              </Link>
+            ))}
           </div>
         )}
       </div>

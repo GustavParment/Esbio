@@ -7,16 +7,20 @@ import (
 )
 
 type SchedulerService struct {
-	taskService  *ScheduledTaskService
-	agentService *AgentService
-	stopChan     chan struct{}
+	taskService    *ScheduledTaskService
+	agentService   *AgentService
+	invoiceService *InvoiceService
+	companyIDs     func() []int // fetches all company IDs for overdue check
+	stopChan       chan struct{}
 }
 
-func NewSchedulerService(taskService *ScheduledTaskService, agentService *AgentService) *SchedulerService {
+func NewSchedulerService(taskService *ScheduledTaskService, agentService *AgentService, invoiceService *InvoiceService, companyIDs func() []int) *SchedulerService {
 	return &SchedulerService{
-		taskService:  taskService,
-		agentService: agentService,
-		stopChan:     make(chan struct{}),
+		taskService:    taskService,
+		agentService:   agentService,
+		invoiceService: invoiceService,
+		companyIDs:     companyIDs,
+		stopChan:       make(chan struct{}),
 	}
 }
 
@@ -28,11 +32,13 @@ func (s *SchedulerService) Start() {
 
 		// Check immediately on start
 		s.checkAndRunTasks()
+		s.checkOverdueInvoices()
 
 		for {
 			select {
 			case <-ticker.C:
 				s.checkAndRunTasks()
+				s.checkOverdueInvoices()
 			case <-s.stopChan:
 				log.Println("[Scheduler] Stopped")
 				return
@@ -83,6 +89,18 @@ func (s *SchedulerService) checkAndRunTasks() {
 		// Update last run time and calculate next run
 		if err := s.taskService.MarkTaskRun(task.TaskID); err != nil {
 			log.Printf("[Scheduler] Error updating task #%d run time: %v", task.TaskID, err)
+		}
+	}
+}
+
+func (s *SchedulerService) checkOverdueInvoices() {
+	if s.invoiceService == nil || s.companyIDs == nil {
+		return
+	}
+	ids := s.companyIDs()
+	for _, companyID := range ids {
+		if err := s.invoiceService.CheckOverdueInvoices(companyID); err != nil {
+			log.Printf("[Scheduler] Error checking overdue invoices for company %d: %v", companyID, err)
 		}
 	}
 }
