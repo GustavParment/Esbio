@@ -1,9 +1,82 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
+import { invoicesApi } from "@/lib/api/invoices";
+import { customersApi } from "@/lib/api/customers";
+import { Invoice, Customer, InvoiceStatus } from "@/types";
+import { formatSEK } from "@/lib/money";
+import { useAuth } from "@/lib/contexts/AuthContext";
 import Link from "next/link";
 
+const STATUS_LABELS: Record<InvoiceStatus, string> = {
+  draft: "Utkast",
+  sent: "Skickad",
+  paid: "Betald",
+  overdue: "Förfallen",
+  cancelled: "Makulerad",
+};
+
+const STATUS_COLORS: Record<InvoiceStatus, string> = {
+  draft: "bg-gray-100 text-gray-700",
+  sent: "bg-blue-100 text-blue-700",
+  paid: "bg-green-100 text-green-700",
+  overdue: "bg-red-100 text-red-700",
+  cancelled: "bg-gray-100 text-gray-400 line-through",
+};
+
+const TABS: { label: string; value: string }[] = [
+  { label: "Alla", value: "" },
+  { label: "Utkast", value: "draft" },
+  { label: "Skickade", value: "sent" },
+  { label: "Förfallna", value: "overdue" },
+  { label: "Betalda", value: "paid" },
+  { label: "Makulerade", value: "cancelled" },
+];
+
 export default function InvoicesPage() {
+  const { user } = useAuth();
+  const [invoices, setInvoices] = useState<Invoice[]>([]);
+  const [customers, setCustomers] = useState<Record<number, Customer>>({});
+  const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState("");
+
+  useEffect(() => {
+    if (user) fetchData();
+  }, [user, activeTab]);
+
+  const fetchData = async () => {
+    setLoading(true);
+    try {
+      const [invData, custData] = await Promise.all([
+        activeTab
+          ? invoicesApi.getAll({ status: activeTab })
+          : invoicesApi.getAll(),
+        customersApi.getAll(),
+      ]);
+      setInvoices(Array.isArray(invData) ? invData : []);
+      const custMap: Record<number, Customer> = {};
+      for (const c of custData || []) {
+        custMap[c.customer_id] = c;
+      }
+      setCustomers(custMap);
+    } catch (error) {
+      console.error("Failed to fetch invoices:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <DashboardLayout>
+        <div className="flex items-center justify-center h-64">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
   return (
     <DashboardLayout>
       <div className="mb-8">
@@ -15,38 +88,114 @@ export default function InvoicesPage() {
           <div className="flex gap-3">
             <Link
               href="/invoices/settings"
-              className="px-4 py-2.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-medium text-sm text-center"
+              className="px-4 py-2.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-medium text-sm"
             >
               Inställningar
+            </Link>
+            <Link
+              href="/invoices/new"
+              className="px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium text-sm"
+            >
+              + Ny faktura
             </Link>
           </div>
         </div>
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
-        <div className="text-gray-400 mb-4">
-          <svg className="mx-auto w-16 h-16" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
-          </svg>
-        </div>
-        <h2 className="text-xl font-semibold text-gray-900 mb-2">Fakturering kommer snart</h2>
-        <p className="text-gray-500 mb-6">
-          Konfigurera dina betalningsuppgifter och registrera kunder medan vi bygger färdigt faktureringsflödet.
-        </p>
-        <div className="flex gap-4 justify-center">
-          <Link
-            href="/invoices/settings"
-            className="px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium text-sm"
+      {/* Status tabs */}
+      <div className="flex gap-1 mb-6 bg-gray-100 rounded-lg p-1 overflow-x-auto">
+        {TABS.map((tab) => (
+          <button
+            key={tab.value}
+            onClick={() => setActiveTab(tab.value)}
+            className={`px-4 py-2 rounded-md text-sm font-medium transition-colors whitespace-nowrap ${
+              activeTab === tab.value
+                ? "bg-white text-gray-900 shadow-sm"
+                : "text-gray-600 hover:text-gray-900"
+            }`}
           >
-            Konfigurera betalningsuppgifter
-          </Link>
-          <Link
-            href="/customers"
-            className="px-4 py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium text-sm"
-          >
-            Hantera kunder
-          </Link>
-        </div>
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Invoice table */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+        {invoices.length === 0 ? (
+          <div className="text-center py-12">
+            <p className="text-gray-500 mb-4">
+              {activeTab
+                ? `Inga ${STATUS_LABELS[activeTab as InvoiceStatus]?.toLowerCase() || ""} fakturor`
+                : "Inga fakturor skapade än"}
+            </p>
+            {!activeTab && (
+              <Link
+                href="/invoices/new"
+                className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                Skapa din första faktura
+              </Link>
+            )}
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="text-left py-3 px-6 text-sm font-semibold text-gray-700">Nr</th>
+                  <th className="text-left py-3 px-6 text-sm font-semibold text-gray-700">Kund</th>
+                  <th className="text-left py-3 px-6 text-sm font-semibold text-gray-700">Datum</th>
+                  <th className="text-left py-3 px-6 text-sm font-semibold text-gray-700">Förfaller</th>
+                  <th className="text-left py-3 px-6 text-sm font-semibold text-gray-700">Status</th>
+                  <th className="text-right py-3 px-6 text-sm font-semibold text-gray-700">Belopp</th>
+                  <th className="text-right py-3 px-6 text-sm font-semibold text-gray-700"></th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {invoices.map((inv) => (
+                  <tr key={inv.invoice_id} className="hover:bg-gray-50">
+                    <td className="py-4 px-6 text-sm font-semibold text-blue-600">
+                      #{inv.invoice_number}
+                    </td>
+                    <td className="py-4 px-6 text-sm text-gray-900">
+                      {customers[inv.customer_id]?.name || `Kund #${inv.customer_id}`}
+                    </td>
+                    <td className="py-4 px-6 text-sm text-gray-600">
+                      {new Date(inv.invoice_date).toLocaleDateString("sv-SE")}
+                    </td>
+                    <td className="py-4 px-6 text-sm text-gray-600">
+                      {new Date(inv.due_date).toLocaleDateString("sv-SE")}
+                    </td>
+                    <td className="py-4 px-6 text-sm">
+                      <span
+                        className={`inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                          STATUS_COLORS[inv.status as InvoiceStatus] || ""
+                        }`}
+                      >
+                        {STATUS_LABELS[inv.status as InvoiceStatus] || inv.status}
+                      </span>
+                    </td>
+                    <td className="py-4 px-6 text-sm text-gray-900 text-right font-medium">
+                      {formatSEK(inv.total)} kr
+                    </td>
+                    <td className="py-4 px-6 text-sm text-right">
+                      <Link
+                        href={`/invoices/${inv.invoice_id}`}
+                        className="text-blue-600 hover:text-blue-700 font-medium"
+                      >
+                        Visa
+                      </Link>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+      <div className="mt-6 text-sm text-gray-600">
+        Visar {invoices.length} fakturor
       </div>
     </DashboardLayout>
   );
