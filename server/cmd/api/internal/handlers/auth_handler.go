@@ -1,13 +1,19 @@
 package handlers
 
 import (
+	"crypto/rand"
+	"encoding/hex"
 	"esbio/api/internal/auth"
 	"esbio/api/internal/domain"
 	"esbio/api/internal/dto"
+	"esbio/api/internal/repository"
 	"esbio/api/internal/service"
+	"fmt"
+	"log"
 	"net/http"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"golang.org/x/crypto/bcrypt"
@@ -36,17 +42,35 @@ func setCookie(c *gin.Context, name, value string, maxAge int) {
 }
 
 type AuthHandler struct {
-	userService *service.UserService
-	jwtManager  *auth.JWTManager
+	userService  *service.UserService
+	jwtManager   *auth.JWTManager
+	emailService *service.EmailService
+	userRepo     repository.UserRepository
+	frontendURL  string
 }
 
 func NewAuthHandler(
-	userService *service.UserService, 
-	jwtManager *auth.JWTManager) *AuthHandler {
+	userService *service.UserService,
+	jwtManager *auth.JWTManager,
+	emailService *service.EmailService,
+	userRepo repository.UserRepository,
+	frontendURL string,
+) *AuthHandler {
 	return &AuthHandler{
-		userService: userService,
-		jwtManager:  jwtManager,
+		userService:  userService,
+		jwtManager:   jwtManager,
+		emailService: emailService,
+		userRepo:     userRepo,
+		frontendURL:  frontendURL,
 	}
+}
+
+func generateToken() (string, error) {
+	b := make([]byte, 32)
+	if _, err := rand.Read(b); err != nil {
+		return "", err
+	}
+	return hex.EncodeToString(b), nil
 }
 
 // Register handles POST /auth/register
@@ -68,11 +92,12 @@ func (h *AuthHandler) Register(c *gin.Context) {
 	}
 
 	user := &domain.User{
-		FirstName:    firstName,
-		LastName:     lastName,
-		Email:        req.Email,
-		PasswordHash: req.Password,
-		Role:         "Bookkeeper",
+		FirstName:     firstName,
+		LastName:      lastName,
+		Email:         req.Email,
+		PasswordHash:  req.Password,
+		Role:          "Bookkeeper",
+		EmailVerified: false,
 	}
 
 	if err := h.userService.CreateUser(user); err != nil {
@@ -80,21 +105,135 @@ func (h *AuthHandler) Register(c *gin.Context) {
 		return
 	}
 
-	token, err := h.jwtManager.GenerateToken(user.UserID, user.Email, user.Role)
+	// Generate verification token
+	token, err := generateToken()
+	if err != nil {
+		log.Printf("[ERROR] Failed to generate verification token: %v", err)
+	} else {
+		expires := time.Now().Add(24 * time.Hour).Format(time.RFC3339)
+		if err := h.userRepo.SetVerificationToken(user.UserID, token, expires); err != nil {
+			log.Printf("[ERROR] Failed to save verification token: %v", err)
+		} else {
+			verifyURL := fmt.Sprintf("%s/auth/verify?token=%s", h.frontendURL, token)
+			if _, err := h.emailService.SendVerificationEmail(user.Email, firstName, verifyURL); err != nil {
+				log.Printf("[ERROR] Failed to send verification email: %v", err)
+			}
+		}
+	}
+
+	jwtToken, err := h.jwtManager.GenerateToken(user.UserID, user.Email, user.Role)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to generate token"})
 		return
 	}
 
 	// Set JWT as httpOnly cookie
-	setCookie(c, "token", token, 604800)
+	setCookie(c, "token", jwtToken, 604800)
 
 	user.PasswordHash = ""
 
 	c.JSON(http.StatusCreated, gin.H{
-		"message": "user registered successfully",
+		"message": "user registered successfully — check your email to verify",
 		"user":    user,
 	})
+}
+
+// VerifyEmail handles GET /auth/verify?token=xxx
+func (h *AuthHandler) VerifyEmail(c *gin.Context) {
+	token := c.Query("token")
+	if token == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "missing token"})
+		return
+	}
+
+	user, err := h.userRepo.VerifyEmail(token)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "ogiltig eller utgången verifieringslänk"})
+		return
+	}
+
+	// Send welcome email
+	if _, err := h.emailService.SendWelcomeEmail(user.Email, user.FirstName); err != nil {
+		log.Printf("[ERROR] Failed to send welcome email to %s: %v", user.Email, err)
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "e-post verifierad"})
+}
+
+// ForgotPassword handles POST /auth/forgot-password
+func (h *AuthHandler) ForgotPassword(c *gin.Context) {
+	var req struct {
+		Email string `json:"email" binding:"required,email"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "ange en giltig e-postadress"})
+		return
+	}
+
+	// Always return success to avoid email enumeration
+	token, err := generateToken()
+	if err != nil {
+		c.JSON(http.StatusOK, gin.H{"message": "om kontot finns skickas ett mail"})
+		return
+	}
+
+	expires := time.Now().Add(1 * time.Hour).Format(time.RFC3339)
+	if err := h.userRepo.SetResetToken(req.Email, token, expires); err != nil {
+		// User not found — still return success
+		c.JSON(http.StatusOK, gin.H{"message": "om kontot finns skickas ett mail"})
+		return
+	}
+
+	user, _ := h.userService.GetUserByEmail(req.Email)
+	firstName := ""
+	if user != nil {
+		firstName = user.FirstName
+	}
+
+	resetURL := fmt.Sprintf("%s/auth/reset-password?token=%s", h.frontendURL, token)
+	if _, err := h.emailService.SendPasswordResetEmail(req.Email, firstName, resetURL); err != nil {
+		log.Printf("[ERROR] Failed to send reset email to %s: %v", req.Email, err)
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "om kontot finns skickas ett mail"})
+}
+
+// ResetPassword handles POST /auth/reset-password
+func (h *AuthHandler) ResetPassword(c *gin.Context) {
+	var req struct {
+		Token    string `json:"token" binding:"required"`
+		Password string `json:"password" binding:"required,min=8"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "ogiltig begäran"})
+		return
+	}
+
+	user, err := h.userRepo.GetUserByResetToken(req.Token)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "ogiltig eller utgången återställningslänk"})
+		return
+	}
+
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
+	if err != nil {
+		internalError(c, err)
+		return
+	}
+
+	// Set the already-hashed password and clear the reset token.
+	// We use the repo directly to avoid UserService.UpdateUser which would hash again.
+	user.PasswordHash = string(hashedPassword)
+	if err := h.userRepo.UpdatePassword(user.UserID, user.PasswordHash); err != nil {
+		internalError(c, err)
+		return
+	}
+	if err := h.userRepo.ClearResetToken(user.UserID); err != nil {
+		internalError(c, err)
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "lösenord uppdaterat"})
 }
 
 // Login handles POST /auth/login
@@ -115,6 +254,11 @@ func (h *AuthHandler) Login(c *gin.Context) {
 	err = bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(req.Password))
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid email or password"})
+		return
+	}
+
+	if !user.EmailVerified {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Verifiera din e-postadress först — kolla din inbox."})
 		return
 	}
 

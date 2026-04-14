@@ -147,38 +147,34 @@ export default function VoucherDetailPage() {
           >
             &larr; Tillbaka
           </button>
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">
-                Verifikat #{voucher.voucher_number}
-              </h1>
-              <p className="text-gray-600 mt-2">{voucher.description}</p>
-            </div>
-            <div className="flex gap-3">
-              <button
-                onClick={handleDownloadPdf}
-                disabled={actionLoading}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium disabled:opacity-50"
+          <h1 className="text-3xl font-bold text-gray-900">
+            Verifikat #{voucher.voucher_number}
+          </h1>
+          <p className="text-gray-600 mt-1">{voucher.description}</p>
+          <div className="flex flex-wrap gap-2 mt-4">
+            <button
+              onClick={handleDownloadPdf}
+              disabled={actionLoading}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium disabled:opacity-50"
+            >
+              Ladda ner PDF
+            </button>
+            {!isCorrected && !isCorrection && (
+              <Link
+                href={`/vouchers/${voucher.voucher_id}/correct`}
+                className="px-4 py-2 border border-orange-500 text-orange-600 rounded-lg hover:bg-orange-50 transition-colors text-sm font-medium"
               >
-                Ladda ner PDF
-              </button>
-              {!isCorrected && !isCorrection && (
-                <Link
-                  href={`/vouchers/${voucher.voucher_id}/correct`}
-                  className="px-4 py-2 border border-orange-500 text-orange-600 rounded-lg hover:bg-orange-50 transition-colors font-medium"
-                >
-                  Skapa rättelse
-                </Link>
-              )}
-              {isAdmin && (
-                <Link
-                  href={`/vouchers/${voucher.voucher_id}/edit`}
-                  className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
-                >
-                  Redigera
-                </Link>
-              )}
-            </div>
+                Skapa rättelse
+              </Link>
+            )}
+            {isAdmin && (
+              <Link
+                href={`/vouchers/${voucher.voucher_id}/edit`}
+                className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium"
+              >
+                Redigera
+              </Link>
+            )}
           </div>
         </div>
 
@@ -254,15 +250,19 @@ export default function VoucherDetailPage() {
             <p className="text-gray-900">{voucher.description}</p>
           </div>
 
-          <div className="mt-4 pt-4 border-t border-gray-100 flex gap-8 text-sm text-gray-500">
-            <div>
-              Skapad:{" "}
-              {new Date(voucher.created_at).toLocaleString("sv-SE")}
-            </div>
-            <div>
-              Uppdaterad:{" "}
-              {new Date(voucher.updated_at).toLocaleString("sv-SE")}
-            </div>
+          <div className="mt-4 pt-4 border-t border-gray-100 flex flex-wrap gap-4 text-sm text-gray-500">
+            {voucher.created_at && (
+              <div>
+                Skapad:{" "}
+                {(() => { const d = new Date(voucher.created_at); return isNaN(d.getTime()) ? "-" : d.toLocaleString("sv-SE"); })()}
+              </div>
+            )}
+            {voucher.updated_at && (
+              <div>
+                Uppdaterad:{" "}
+                {(() => { const d = new Date(voucher.updated_at); return isNaN(d.getTime()) ? "-" : d.toLocaleString("sv-SE"); })()}
+              </div>
+            )}
           </div>
         </div>
 
@@ -277,63 +277,29 @@ export default function VoucherDetailPage() {
               <p className="text-gray-500">Inga konteringsrader</p>
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="text-left py-3 px-6 text-sm font-semibold text-gray-700">
-                      Konto
-                    </th>
-                    <th className="text-left py-3 px-6 text-sm font-semibold text-gray-700">
-                      Kontonamn
-                    </th>
-                    <th className="text-right py-3 px-6 text-sm font-semibold text-gray-700">
-                      Debet
-                    </th>
-                    <th className="text-right py-3 px-6 text-sm font-semibold text-gray-700">
-                      Kredit
-                    </th>
-                    <th className="text-center py-3 px-6 text-sm font-semibold text-gray-700">
-                      Moms
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100">
-                  {lineItems.map((item) => (
-                    <tr key={item.line_id} className="hover:bg-gray-50">
-                      <td className="py-4 px-6 text-sm font-medium text-gray-900">
-                        {item.account_no}
-                      </td>
-                      <td className="py-4 px-6 text-sm text-gray-600">
-                        {accounts[item.account_no]?.account_name || "-"}
-                      </td>
-                      <td className="py-4 px-6 text-sm text-gray-900 text-right">
-                        {parseMoney(item.debit_amount) > 0 ? formatSEK(item.debit_amount) : "-"}
-                      </td>
-                      <td className="py-4 px-6 text-sm text-gray-900 text-right">
-                        {parseMoney(item.credit_amount) > 0 ? formatSEK(item.credit_amount) : "-"}
-                      </td>
-                      <td className="py-4 px-6 text-sm text-gray-600 text-center">
-                        {item.tax_code}%
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-                <tfoot className="bg-gray-50">
-                  <tr className="font-semibold">
-                    <td colSpan={2} className="py-4 px-6 text-sm text-gray-900">
-                      Summa
-                    </td>
-                    <td className="py-4 px-6 text-sm text-gray-900 text-right">
-                      {formatSEK(totalDebit)}
-                    </td>
-                    <td className="py-4 px-6 text-sm text-gray-900 text-right">
-                      {formatSEK(totalCredit)}
-                    </td>
-                    <td></td>
-                  </tr>
-                </tfoot>
-              </table>
+            <div className="divide-y divide-gray-100">
+              {lineItems.map((item) => (
+                <div key={item.line_id} className="p-4">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-sm font-medium text-gray-900">
+                      {item.account_no} — {accounts[item.account_no]?.account_name || "-"}
+                    </span>
+                    <span className="text-xs text-gray-500">{item.tax_code}%</span>
+                  </div>
+                  <div className="flex gap-4 text-sm">
+                    {parseMoney(item.debit_amount) > 0 && (
+                      <span className="text-gray-900">Debet: <span className="font-medium">{formatSEK(item.debit_amount)}</span></span>
+                    )}
+                    {parseMoney(item.credit_amount) > 0 && (
+                      <span className="text-gray-900">Kredit: <span className="font-medium">{formatSEK(item.credit_amount)}</span></span>
+                    )}
+                  </div>
+                </div>
+              ))}
+              <div className="p-4 bg-gray-50 flex justify-between text-sm font-semibold text-gray-900">
+                <span>Summa</span>
+                <span>D: {formatSEK(totalDebit)} / K: {formatSEK(totalCredit)}</span>
+              </div>
             </div>
           )}
         </div>

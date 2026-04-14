@@ -19,9 +19,10 @@ type Config struct {
 	TinkClientSecret string
 	TinkCallbackURL  string
 	TinkEncryptionKey string
-	StripeSecretKey    string
+	StripeSecretKey     string
 	StripeWebhookSecret string
-	FrontendURL        string
+	FrontendURL         string
+	ResendAPIKey        string
 }
 
 func LoadConfig() *Config {
@@ -51,6 +52,7 @@ func LoadConfig() *Config {
 		StripeSecretKey:     getEnv("STRIPE_SECRET_KEY", ""),
 		StripeWebhookSecret: getEnv("STRIPE_WEBHOOK_SECRET", ""),
 		FrontendURL:         getEnv("FRONTEND_URL", "http://localhost:3000"),
+		ResendAPIKey:        getEnv("RESEND_API_KEY", ""),
 	}
 }
 

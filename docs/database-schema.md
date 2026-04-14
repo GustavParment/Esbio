@@ -23,15 +23,23 @@ All data (vouchers, reports, scheduled tasks, agent messages) is scoped to a com
 
 | Column        | Type          | Constraints                    |
 |---------------|---------------|--------------------------------|
-| user_id       | SERIAL        | PRIMARY KEY                    |
-| name          | VARCHAR(100)  | NOT NULL                       |
-| email         | VARCHAR(255)  | UNIQUE, NOT NULL               |
-| password_hash | VARCHAR(255)  | NOT NULL                       |
-| role          | VARCHAR(50)   | NOT NULL, DEFAULT 'Bookkeeper' |
-| created_at    | TIMESTAMP     | DEFAULT CURRENT_TIMESTAMP      |
-| updated_at    | TIMESTAMP     | DEFAULT CURRENT_TIMESTAMP      |
+| user_id                    | SERIAL        | PRIMARY KEY                    |
+| first_name                 | VARCHAR(50)   | NOT NULL                       |
+| last_name                  | VARCHAR(50)   | NOT NULL                       |
+| company_name               | VARCHAR(255)  | Nullable                       |
+| org_number                 | VARCHAR(20)   | Nullable                       |
+| email                      | VARCHAR(255)  | UNIQUE, NOT NULL               |
+| password_hash              | VARCHAR(255)  | NOT NULL                       |
+| role                       | VARCHAR(50)   | NOT NULL, DEFAULT 'Bookkeeper' |
+| email_verified             | BOOLEAN       | NOT NULL, DEFAULT FALSE        |
+| verification_token         | VARCHAR(64)   | Nullable                       |
+| verification_token_expires | TIMESTAMP     | Nullable                       |
+| reset_token                | VARCHAR(64)   | Nullable                       |
+| reset_token_expires        | TIMESTAMP     | Nullable                       |
+| created_at                 | TIMESTAMP     | DEFAULT CURRENT_TIMESTAMP      |
+| updated_at                 | TIMESTAMP     | DEFAULT CURRENT_TIMESTAMP      |
 
-**Indexes:** `idx_users_email` on email
+**Indexes:** `idx_users_email`, `idx_users_verification_token`, `idx_users_reset_token`
 
 **Roles:** `Admin`, `Bookkeeper`, `Manager`
 

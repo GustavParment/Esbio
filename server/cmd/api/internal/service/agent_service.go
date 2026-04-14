@@ -24,6 +24,9 @@ type AgentService struct {
 	reportService        *ReportService
 	scheduledTaskService *ScheduledTaskService
 	usageRepo            repository.AgentUsageRepository
+	invoiceService       *InvoiceService
+	companyService       *CompanyService
+	emailService         *EmailService
 }
 
 func NewAgentService(
@@ -44,6 +47,13 @@ func NewAgentService(
 		scheduledTaskService: scheduledTaskService,
 		usageRepo:            usageRepo,
 	}
+}
+
+// SetInvoiceEmailServices injects invoice and email services (called after construction to avoid circular deps)
+func (s *AgentService) SetInvoiceEmailServices(invoiceService *InvoiceService, companyService *CompanyService, emailService *EmailService) {
+	s.invoiceService = invoiceService
+	s.companyService = companyService
+	s.emailService = emailService
 }
 
 const systemPromptTemplate = `Du är Ester AI, en intelligent bokföringsassistent för Esbio — ett svenskt bokföringssystem som använder BAS-kontoplanen.
@@ -72,6 +82,12 @@ Regler:
 - Alla verifikat MÅSTE balansera (debet = kredit)
 - Moms i Sverige: 25%%, 12%%, 6%%, eller 0%%
 - Separera ALLTID momsen på eget konto (2611 för utgående moms 25%%)
+
+FAKTURERING:
+- Du kan lista fakturor med list_invoices (filtrera på status: draft, sent, overdue, paid, cancelled)
+- Du kan skicka fakturor via e-post med send_invoice_email (kräver att fakturan är finaliserad och kunden har e-post)
+- Om användaren ber dig "skicka alla obetalda fakturor" — lista dem först, sedan skicka varje en i taget
+- Om en kund saknar e-postadress, berätta det istället för att försöka skicka
 
 VIKTIGT OM BATCH-OPERATIONER:
 - Du KAN rätta, skapa eller söka FLERA verifikat i en och samma förfrågan
@@ -407,6 +423,33 @@ func (s *AgentService) getToolDeclarations() []geminiToolDecl {
 					},
 				},
 				{
+					Name:        "send_invoice_email",
+					Description: "Skicka en faktura via e-post till kunden. Fakturan måste vara finaliserad (status 'sent' eller 'overdue') och kunden måste ha en e-postadress.",
+					Parameters: map[string]interface{}{
+						"type": "object",
+						"properties": map[string]interface{}{
+							"invoice_id": map[string]interface{}{
+								"type":        "integer",
+								"description": "Fakturans ID",
+							},
+						},
+						"required": []string{"invoice_id"},
+					},
+				},
+				{
+					Name:        "list_invoices",
+					Description: "Lista alla fakturor för företaget, valfritt filtrerat på status (draft, sent, overdue, paid, cancelled)",
+					Parameters: map[string]interface{}{
+						"type": "object",
+						"properties": map[string]interface{}{
+							"status": map[string]interface{}{
+								"type":        "string",
+								"description": "Filtrera på status (draft, sent, overdue, paid, cancelled). Lämna tomt för alla.",
+							},
+						},
+					},
+				},
+				{
 					Name:        "list_scheduled_tasks",
 					Description: "Lista alla schemalagda uppgifter för en användare",
 					Parameters: map[string]interface{}{
@@ -701,6 +744,60 @@ func (s *AgentService) executeTool(name string, args map[string]interface{}, aut
 			return fmt.Sprintf("Fel: %s", sanitizeError(err)), nil
 		}
 		data, _ := json.Marshal(tasks)
+		return string(data), nil
+
+	case "send_invoice_email":
+		if s.invoiceService == nil || s.emailService == nil {
+			return "Fel: E-posttjänsten är inte konfigurerad", nil
+		}
+		invoiceID := intFromArg(args["invoice_id"])
+		invoice, err := s.invoiceService.GetInvoiceWithDetails(invoiceID)
+		if err != nil {
+			return fmt.Sprintf("Fel: Faktura %d hittades inte", invoiceID), nil
+		}
+		if invoice.CompanyID != companyID {
+			return "Fel: Fakturan tillhör inte ditt företag", nil
+		}
+		if invoice.Status == "draft" {
+			return "Fel: Fakturan är ett utkast — den måste finaliseras innan den kan skickas via e-post", nil
+		}
+		if invoice.Customer == nil || invoice.Customer.Email == "" {
+			return fmt.Sprintf("Fel: Kunden på faktura %d saknar e-postadress", invoiceID), nil
+		}
+		company, err := s.companyService.GetCompanyByID(companyID)
+		if err != nil {
+			return "Fel: Kunde inte hämta företagsinformation", nil
+		}
+		_, err = s.emailService.SendInvoiceEmail(
+			invoice.Customer.Email,
+			invoice.Customer.Name,
+			company.CompanyName,
+			invoice.InvoiceNumber,
+			invoice.Total.StringFixed(2),
+			invoice.DueDate.Time.Format("2006-01-02"),
+			nil, // PDF bytes — generate inline if needed
+		)
+		if err != nil {
+			return fmt.Sprintf("Fel: Kunde inte skicka e-post: %s", sanitizeError(err)), nil
+		}
+		return fmt.Sprintf("Faktura %d skickad via e-post till %s", invoice.InvoiceNumber, invoice.Customer.Email), nil
+
+	case "list_invoices":
+		if s.invoiceService == nil {
+			return "Fel: Fakturatjänsten är inte konfigurerad", nil
+		}
+		status, _ := args["status"].(string)
+		var invoices []*domain.Invoice
+		var invoiceErr error
+		if status != "" {
+			invoices, invoiceErr = s.invoiceService.GetInvoicesByStatus(companyID, status)
+		} else {
+			invoices, invoiceErr = s.invoiceService.GetInvoicesByCompanyID(companyID)
+		}
+		if invoiceErr != nil {
+			return fmt.Sprintf("Fel: %s", sanitizeError(invoiceErr)), nil
+		}
+		data, _ := json.Marshal(invoices)
 		return string(data), nil
 
 	default:

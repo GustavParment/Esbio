@@ -40,15 +40,20 @@ func (fd FlexibleDate) MarshalJSON() ([]byte, error) {
 }
 
 type User struct {
-    UserID       int    `json:"user_id" validate:"omitempty,gt=0"`
-    FirstName    string `json:"first_name" validate:"required,min=1,max=50"`
-    LastName     string `json:"last_name" validate:"required,min=1,max=50"`
-    Name         string `json:"name"`
-    CompanyName  string `json:"company_name"`
-    OrgNumber    string `json:"org_number"`
-    Email        string `json:"email" validate:"required,email"`
-    PasswordHash string `json:"password_hash" validate:"required,min=8"`
-    Role         string `json:"role" validate:"omitempty,oneof=Admin Bookkeeper Manager"`
+    UserID                   int     `json:"user_id" validate:"omitempty,gt=0"`
+    FirstName                string  `json:"first_name" validate:"required,min=1,max=50"`
+    LastName                 string  `json:"last_name" validate:"required,min=1,max=50"`
+    Name                     string  `json:"name"`
+    CompanyName              string  `json:"company_name"`
+    OrgNumber                string  `json:"org_number"`
+    Email                    string  `json:"email" validate:"required,email"`
+    PasswordHash             string  `json:"password_hash" validate:"required,min=8"`
+    Role                     string  `json:"role" validate:"omitempty,oneof=Admin Bookkeeper Manager"`
+    EmailVerified            bool    `json:"email_verified"`
+    VerificationToken        *string `json:"-"`
+    VerificationTokenExpires *string `json:"-"`
+    ResetToken               *string `json:"-"`
+    ResetTokenExpires        *string `json:"-"`
 }
 
 type Company struct {
@@ -312,4 +317,98 @@ type CategorizationRule struct {
     UseCount            int     `json:"use_count"`
     CreatedAt           string  `json:"created_at"`
     UpdatedAt           string  `json:"updated_at"`
+}
+
+// === Invoicing (Fakturering) ===
+
+type Customer struct {
+    CustomerID            int    `json:"customer_id"`
+    CompanyID             int    `json:"company_id"`
+    Name                  string `json:"name" validate:"required,min=1,max=200"`
+    OrgNumber             string `json:"org_number"`
+    VATNumber             string `json:"vat_number"`
+    AddressLine1          string `json:"address_line1"`
+    AddressLine2          string `json:"address_line2"`
+    PostalCode            string `json:"postal_code"`
+    City                  string `json:"city"`
+    Country               string `json:"country"`
+    Email                 string `json:"email"`
+    Phone                 string `json:"phone"`
+    PaymentTermsDays      int    `json:"payment_terms_days"`
+    DefaultRevenueAccount *int   `json:"default_revenue_account"`
+    Notes                 string `json:"notes"`
+    CreatedAt             string `json:"created_at"`
+    UpdatedAt             string `json:"updated_at"`
+}
+
+type InvoiceSettings struct {
+    SettingsID              int    `json:"settings_id"`
+    CompanyID               int    `json:"company_id"`
+    Bankgiro                string `json:"bankgiro"`
+    Plusgiro                 string `json:"plusgiro"`
+    Swish                   string `json:"swish"`
+    IBAN                    string `json:"iban"`
+    BIC                     string `json:"bic"`
+    FSkattText              string `json:"f_skatt_text"`
+    DefaultPaymentTermsDays int    `json:"default_payment_terms_days"`
+    NextInvoiceNumber       int    `json:"next_invoice_number"`
+    InvoicePrefix           string `json:"invoice_prefix"`
+    DefaultRevenueAccount   int    `json:"default_revenue_account"`
+    DefaultPaymentAccount   int    `json:"default_payment_account"`
+    FooterText              string `json:"footer_text"`
+    CreatedAt               string `json:"created_at"`
+    UpdatedAt               string `json:"updated_at"`
+}
+
+type Invoice struct {
+    InvoiceID        int              `json:"invoice_id"`
+    CompanyID        int              `json:"company_id"`
+    CustomerID       int              `json:"customer_id"`
+    InvoiceNumber    int              `json:"invoice_number"`
+    OCRNumber        string           `json:"ocr_number"`
+    Status           string           `json:"status"`
+    InvoiceDate      FlexibleDate     `json:"invoice_date"`
+    DueDate          FlexibleDate     `json:"due_date"`
+    PaymentTermsDays int              `json:"payment_terms_days"`
+    Currency         string           `json:"currency"`
+    Subtotal         decimal.Decimal  `json:"subtotal"`
+    VATTotal         decimal.Decimal  `json:"vat_total"`
+    Rounding         decimal.Decimal  `json:"rounding"`
+    Total            decimal.Decimal  `json:"total"`
+    AmountPaid       decimal.Decimal  `json:"amount_paid"`
+    Notes            string           `json:"notes"`
+    YourReference    string           `json:"your_reference"`
+    OurReference     string           `json:"our_reference"`
+    Bankgiro         string           `json:"bankgiro"`
+    Plusgiro          string           `json:"plusgiro"`
+    FSkattText       string           `json:"f_skatt_text"`
+    SalesVoucherID   *int             `json:"sales_voucher_id"`
+    PaymentVoucherID *int             `json:"payment_voucher_id"`
+    PaymentAccount   int              `json:"payment_account"`
+    RevenueAccount   int              `json:"revenue_account"`
+    PaidAt           *string          `json:"paid_at"`
+    SentAt           *string          `json:"sent_at"`
+    CancelledAt      *string          `json:"cancelled_at"`
+    CreatedBy        int              `json:"created_by"`
+    CreatedAt        string           `json:"created_at"`
+    UpdatedAt        string           `json:"updated_at"`
+    Lines            []InvoiceLine    `json:"lines,omitempty"`
+    Customer         *Customer        `json:"customer,omitempty"`
+}
+
+type InvoiceLine struct {
+    LineID          int             `json:"line_id"`
+    InvoiceID       int             `json:"invoice_id"`
+    SortOrder       int             `json:"sort_order"`
+    Description     string          `json:"description" validate:"required"`
+    Quantity        decimal.Decimal `json:"quantity"`
+    Unit            string          `json:"unit"`
+    UnitPrice       decimal.Decimal `json:"unit_price"`
+    DiscountPercent decimal.Decimal `json:"discount_percent"`
+    VATRate         int             `json:"vat_rate"`
+    LineTotal       decimal.Decimal `json:"line_total"`
+    VATAmount       decimal.Decimal `json:"vat_amount"`
+    AccountNo       int             `json:"account_no"`
+    CreatedAt       string          `json:"created_at"`
+    UpdatedAt       string          `json:"updated_at"`
 }

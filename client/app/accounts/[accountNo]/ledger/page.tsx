@@ -143,69 +143,44 @@ export default function AccountLedgerPage() {
             <p className="text-gray-500">Inga transaktioner för denna period</p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="text-left py-3 px-6 text-sm font-semibold text-gray-700">Datum</th>
-                  <th className="text-left py-3 px-6 text-sm font-semibold text-gray-700">Ver.nr</th>
-                  <th className="text-left py-3 px-6 text-sm font-semibold text-gray-700">Beskrivning</th>
-                  <th className="text-left py-3 px-6 text-sm font-semibold text-gray-700">Referens</th>
-                  <th className="text-right py-3 px-6 text-sm font-semibold text-gray-700">Debet</th>
-                  <th className="text-right py-3 px-6 text-sm font-semibold text-gray-700">Kredit</th>
-                  <th className="text-right py-3 px-6 text-sm font-semibold text-gray-700">Saldo</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {/* Opening balance row */}
-                <tr className="bg-blue-50 font-medium">
-                  <td className="py-3 px-6 text-sm text-gray-900" colSpan={6}>
-                    Ingående balans
-                  </td>
-                  <td className="py-3 px-6 text-sm text-gray-900 text-right">
-                    {formatSEK(openingBalance)} kr
-                  </td>
-                </tr>
+          <div className="divide-y divide-gray-100">
+            {/* Opening balance */}
+            <div className="p-4 bg-blue-50 flex justify-between">
+              <span className="text-sm font-medium text-gray-900">Ingående balans</span>
+              <span className="text-sm font-medium text-gray-900">{formatSEK(openingBalance)} kr</span>
+            </div>
 
-                {/* Transaction rows */}
-                {entries.map((entry) => (
-                  <tr key={`${entry.voucher_id}-${entry.date}`} className="hover:bg-gray-50">
-                    <td className="py-3 px-6 text-sm text-gray-600">
-                      {new Date(entry.date).toLocaleDateString("sv-SE")}
-                    </td>
-                    <td className="py-3 px-6 text-sm font-semibold text-blue-600">
-                      <Link
-                        href={`/vouchers/${entry.voucher_id}`}
-                        className="hover:underline"
-                      >
-                        #{entry.voucher_number}
-                      </Link>
-                    </td>
-                    <td className="py-3 px-6 text-sm text-gray-900">{entry.description}</td>
-                    <td className="py-3 px-6 text-sm text-gray-600">{entry.reference}</td>
-                    <td className="py-3 px-6 text-sm text-gray-900 text-right">
-                      {parseMoney(entry.debit_amount) > 0 && <>{formatSEK(entry.debit_amount)} kr</>}
-                    </td>
-                    <td className="py-3 px-6 text-sm text-gray-900 text-right">
-                      {parseMoney(entry.credit_amount) > 0 && <>{formatSEK(entry.credit_amount)} kr</>}
-                    </td>
-                    <td className="py-3 px-6 text-sm text-gray-900 text-right font-medium">
-                      {formatSEK(entry.balance)} kr
-                    </td>
-                  </tr>
-                ))}
+            {/* Transactions */}
+            {entries.map((entry) => (
+              <Link
+                key={`${entry.voucher_id}-${entry.date}`}
+                href={`/vouchers/${entry.voucher_id}`}
+                className="block p-4 hover:bg-gray-50 transition-colors"
+              >
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-sm font-semibold text-blue-600">#{entry.voucher_number}</span>
+                  <span className="text-sm font-medium text-gray-900">{formatSEK(entry.balance)} kr</span>
+                </div>
+                <p className="text-sm text-gray-900 truncate">{entry.description}</p>
+                <div className="flex items-center justify-between mt-1">
+                  <span className="text-xs text-gray-500">
+                    {new Date(entry.date).toLocaleDateString("sv-SE")}
+                    {entry.reference ? ` · ${entry.reference}` : ""}
+                  </span>
+                  <span className="text-xs text-gray-600">
+                    {parseMoney(entry.debit_amount) > 0 && `D: ${formatSEK(entry.debit_amount)}`}
+                    {parseMoney(entry.debit_amount) > 0 && parseMoney(entry.credit_amount) > 0 && " / "}
+                    {parseMoney(entry.credit_amount) > 0 && `K: ${formatSEK(entry.credit_amount)}`}
+                  </span>
+                </div>
+              </Link>
+            ))}
 
-                {/* Closing balance row */}
-                <tr className="bg-blue-50 font-medium">
-                  <td className="py-3 px-6 text-sm text-gray-900" colSpan={6}>
-                    Utgående balans
-                  </td>
-                  <td className="py-3 px-6 text-sm text-gray-900 text-right">
-                    {formatSEK(closingBalance)} kr
-                  </td>
-                </tr>
-              </tbody>
-            </table>
+            {/* Closing balance */}
+            <div className="p-4 bg-blue-50 flex justify-between">
+              <span className="text-sm font-medium text-gray-900">Utgående balans</span>
+              <span className="text-sm font-medium text-gray-900">{formatSEK(closingBalance)} kr</span>
+            </div>
           </div>
         )}
       </div>

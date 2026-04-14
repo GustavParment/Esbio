@@ -7,8 +7,8 @@ import { useCompany } from "@/lib/contexts/CompanyContext";
 import { companiesApi } from "@/lib/api/companies";
 import { authApi } from "@/lib/api/auth";
 import { stripeApi } from "@/lib/api/stripe";
-import { agentApi, AgentUsageSummary } from "@/lib/api/agent";
 import { useRouter } from "next/navigation";
+import { apiClient } from "@/lib/api/client";
 import Link from "next/link";
 
 export default function SettingsPage() {
@@ -20,10 +20,13 @@ export default function SettingsPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
-  const [usage, setUsage] = useState<AgentUsageSummary | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState("");
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState("");
+  const [supportSubject, setSupportSubject] = useState("");
+  const [supportMessage, setSupportMessage] = useState("");
+  const [supportLoading, setSupportLoading] = useState(false);
+  const [supportStatus, setSupportStatus] = useState<"" | "success" | "error">("");
 
   useEffect(() => {
     if (selectedCompany) {
@@ -31,18 +34,6 @@ export default function SettingsPage() {
       setOrgNumber(selectedCompany.org_number || "");
     }
   }, [selectedCompany]);
-
-  useEffect(() => {
-    const fetchUsage = async () => {
-      try {
-        const data = await agentApi.getUsage();
-        setUsage(data);
-      } catch {
-        // Ignore
-      }
-    };
-    fetchUsage();
-  }, []);
 
   const handleSave = async () => {
     if (!selectedCompany) return;
@@ -121,7 +112,7 @@ export default function SettingsPage() {
         <button
           onClick={handleSave}
           disabled={loading}
-          className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium disabled:opacity-50"
+          className="w-full px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium text-sm disabled:opacity-50"
         >
           {loading ? "Sparar..." : "Spara"}
         </button>
@@ -131,36 +122,34 @@ export default function SettingsPage() {
       {selectedCompany && (
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
           <h2 className="text-lg font-semibold text-gray-900 mb-4">Prenumeration</h2>
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="flex items-center gap-3">
-                <span className="text-2xl font-bold text-gray-900">
-                  {selectedCompany.plan === "free" && "Gratis (provperiod)"}
-                  {selectedCompany.plan === "starter" && "Starter"}
-                  {selectedCompany.plan === "growth" && "Tillväxt"}
+          <div>
+            <div className="flex flex-wrap items-center gap-2 mb-1">
+              <span className="text-2xl font-bold text-gray-900">
+                {selectedCompany.plan === "free" && "Gratis (provperiod)"}
+                {selectedCompany.plan === "starter" && "Starter"}
+                {selectedCompany.plan === "growth" && "Tillväxt"}
+              </span>
+              {selectedCompany.plan !== "free" && (
+                <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                  selectedCompany.plan_status === "active"
+                    ? "bg-green-100 text-green-700"
+                    : selectedCompany.plan_status === "past_due"
+                    ? "bg-red-100 text-red-700"
+                    : "bg-gray-100 text-gray-700"
+                }`}>
+                  {selectedCompany.plan_status === "active" && "Aktiv"}
+                  {selectedCompany.plan_status === "past_due" && "Betalning förfallen"}
+                  {selectedCompany.plan_status === "canceled" && "Avslutad"}
+                  {selectedCompany.plan_status === "trialing" && "Provperiod"}
                 </span>
-                {selectedCompany.plan !== "free" && (
-                  <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                    selectedCompany.plan_status === "active"
-                      ? "bg-green-100 text-green-700"
-                      : selectedCompany.plan_status === "past_due"
-                      ? "bg-red-100 text-red-700"
-                      : "bg-gray-100 text-gray-700"
-                  }`}>
-                    {selectedCompany.plan_status === "active" && "Aktiv"}
-                    {selectedCompany.plan_status === "past_due" && "Betalning förfallen"}
-                    {selectedCompany.plan_status === "canceled" && "Avslutad"}
-                    {selectedCompany.plan_status === "trialing" && "Provperiod"}
-                  </span>
-                )}
-              </div>
-              <p className="text-sm text-gray-500 mt-1">
-                {selectedCompany.plan === "free" && "Uppgradera för att låsa upp alla funktioner"}
-                {selectedCompany.plan === "starter" && "199 kr/mån"}
-                {selectedCompany.plan === "growth" && "399 kr/mån"}
-              </p>
+              )}
             </div>
-            <div className="flex gap-3">
+            <p className="text-sm text-gray-500 mb-4">
+              {selectedCompany.plan === "free" && "Uppgradera för att låsa upp alla funktioner"}
+              {selectedCompany.plan === "starter" && "199 kr/mån"}
+              {selectedCompany.plan === "growth" && "399 kr/mån"}
+            </p>
+            <div className="flex flex-wrap gap-2">
               {selectedCompany.plan === "free" && (
                 <Link
                   href="/upgrade"
@@ -197,39 +186,6 @@ export default function SettingsPage() {
         </div>
       )}
 
-      {/* AI Usage */}
-      {usage && (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Ester AI — Användning</h2>
-
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="bg-gray-50 rounded-lg p-4">
-              <p className="text-sm text-gray-500">Denna månad</p>
-              <p className="text-xl font-bold text-gray-900">{usage.month_request_count}</p>
-              <p className="text-xs text-gray-500">förfrågningar</p>
-            </div>
-            <div className="bg-gray-50 rounded-lg p-4">
-              <p className="text-sm text-gray-500">Tokens denna månad</p>
-              <p className="text-xl font-bold text-gray-900">{usage.month_total_tokens.toLocaleString("sv-SE")}</p>
-              <p className="text-xs text-gray-500">tokens</p>
-            </div>
-            <div className="bg-gray-50 rounded-lg p-4">
-              <p className="text-sm text-gray-500">Kostnad denna månad</p>
-              <p className="text-xl font-bold text-gray-900">
-                {usage.month_estimated_cost_sek.toLocaleString("sv-SE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} kr
-              </p>
-              <p className="text-xs text-gray-500">uppskattad</p>
-            </div>
-            <div className="bg-gray-50 rounded-lg p-4">
-              <p className="text-sm text-gray-500">Totalt alla tider</p>
-              <p className="text-xl font-bold text-gray-900">
-                {usage.estimated_cost_sek.toLocaleString("sv-SE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} kr
-              </p>
-              <p className="text-xs text-gray-500">{usage.request_count} förfrågningar</p>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* User Info */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
@@ -248,6 +204,79 @@ export default function SettingsPage() {
             <p className="font-medium text-gray-900">{user?.role}</p>
           </div>
         </div>
+      </div>
+
+      {/* Support */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
+        <h2 className="text-lg font-semibold text-gray-900 mb-2">Kontakta support</h2>
+        <p className="text-sm text-gray-500 mb-4">Har du frågor eller behöver hjälp? Skicka ett meddelande så återkommer vi.</p>
+
+        {supportStatus === "success" ? (
+          <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
+            <p className="text-green-700 font-medium">Tack! Vi har tagit emot ditt meddelande och återkommer så snart vi kan.</p>
+            <button
+              onClick={() => { setSupportStatus(""); setSupportSubject(""); setSupportMessage(""); }}
+              className="mt-2 text-sm text-green-600 hover:text-green-700 font-medium"
+            >
+              Skicka ett till
+            </button>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            <div>
+              <label htmlFor="support_subject" className="block text-sm font-medium text-gray-700 mb-1">
+                Ämne
+              </label>
+              <input
+                id="support_subject"
+                type="text"
+                value={supportSubject}
+                onChange={(e) => setSupportSubject(e.target.value)}
+                placeholder="Vad gäller det?"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 placeholder:text-gray-400"
+              />
+            </div>
+            <div>
+              <label htmlFor="support_message" className="block text-sm font-medium text-gray-700 mb-1">
+                Meddelande
+              </label>
+              <textarea
+                id="support_message"
+                rows={4}
+                value={supportMessage}
+                onChange={(e) => setSupportMessage(e.target.value)}
+                placeholder="Beskriv ditt ärende..."
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 placeholder:text-gray-400 resize-none"
+              />
+            </div>
+
+            {supportStatus === "error" && (
+              <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+                <p className="text-red-700 text-sm">Kunde inte skicka meddelandet. Försök igen eller maila info@esbio.se direkt.</p>
+              </div>
+            )}
+
+            <button
+              onClick={async () => {
+                if (!supportSubject.trim() || !supportMessage.trim()) return;
+                setSupportLoading(true);
+                setSupportStatus("");
+                try {
+                  await apiClient.post("/support", { subject: supportSubject, message: supportMessage });
+                  setSupportStatus("success");
+                } catch {
+                  setSupportStatus("error");
+                } finally {
+                  setSupportLoading(false);
+                }
+              }}
+              disabled={supportLoading || !supportSubject.trim() || !supportMessage.trim()}
+              className="px-6 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {supportLoading ? "Skickar..." : "Skicka meddelande"}
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Delete Account */}

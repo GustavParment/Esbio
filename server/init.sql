@@ -669,3 +669,118 @@ CREATE TABLE IF NOT EXISTS tink_oauth_state (
 ALTER TABLE companies ADD COLUMN IF NOT EXISTS stripe_customer_id VARCHAR(255);
 ALTER TABLE companies ADD COLUMN IF NOT EXISTS stripe_subscription_id VARCHAR(255);
 ALTER TABLE companies ADD COLUMN IF NOT EXISTS plan_status VARCHAR(20) DEFAULT 'trialing';
+
+-- Migration 013: Create customers table
+CREATE TABLE IF NOT EXISTS customers (
+    customer_id SERIAL PRIMARY KEY,
+    company_id INT NOT NULL,
+    name VARCHAR(200) NOT NULL,
+    org_number VARCHAR(20),
+    vat_number VARCHAR(30),
+    address_line1 VARCHAR(255),
+    address_line2 VARCHAR(255),
+    postal_code VARCHAR(10),
+    city VARCHAR(100),
+    country VARCHAR(100) DEFAULT 'Sverige',
+    email VARCHAR(255),
+    phone VARCHAR(50),
+    payment_terms_days INT NOT NULL DEFAULT 30,
+    default_revenue_account INT DEFAULT 3010,
+    notes TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (company_id) REFERENCES companies(company_id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_customers_company ON customers(company_id);
+CREATE INDEX IF NOT EXISTS idx_customers_name ON customers(company_id, name);
+
+-- Migration 014: Create invoices table
+CREATE TABLE IF NOT EXISTS invoices (
+    invoice_id SERIAL PRIMARY KEY,
+    company_id INT NOT NULL,
+    customer_id INT NOT NULL,
+    invoice_number INT NOT NULL,
+    ocr_number VARCHAR(25) NOT NULL,
+    status VARCHAR(20) NOT NULL DEFAULT 'draft'
+        CHECK (status IN ('draft', 'sent', 'paid', 'overdue', 'cancelled')),
+    invoice_date DATE NOT NULL,
+    due_date DATE NOT NULL,
+    payment_terms_days INT NOT NULL,
+    currency VARCHAR(3) NOT NULL DEFAULT 'SEK',
+    subtotal DECIMAL(15, 2) NOT NULL DEFAULT 0,
+    vat_total DECIMAL(15, 2) NOT NULL DEFAULT 0,
+    rounding DECIMAL(15, 2) NOT NULL DEFAULT 0,
+    total DECIMAL(15, 2) NOT NULL DEFAULT 0,
+    amount_paid DECIMAL(15, 2) NOT NULL DEFAULT 0,
+    notes TEXT,
+    your_reference VARCHAR(255),
+    our_reference VARCHAR(255),
+    bankgiro VARCHAR(20),
+    plusgiro VARCHAR(20),
+    f_skatt_text VARCHAR(500),
+    sales_voucher_id INT,
+    payment_voucher_id INT,
+    payment_account INT DEFAULT 1930,
+    revenue_account INT DEFAULT 3010,
+    paid_at TIMESTAMP,
+    sent_at TIMESTAMP,
+    cancelled_at TIMESTAMP,
+    created_by INT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (company_id) REFERENCES companies(company_id) ON DELETE RESTRICT,
+    FOREIGN KEY (customer_id) REFERENCES customers(customer_id) ON DELETE RESTRICT,
+    FOREIGN KEY (sales_voucher_id) REFERENCES vouchers(voucher_id) ON DELETE SET NULL,
+    FOREIGN KEY (payment_voucher_id) REFERENCES vouchers(voucher_id) ON DELETE SET NULL,
+    FOREIGN KEY (created_by) REFERENCES users(user_id) ON DELETE RESTRICT
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_invoices_company_number ON invoices(company_id, invoice_number);
+CREATE INDEX IF NOT EXISTS idx_invoices_company ON invoices(company_id);
+CREATE INDEX IF NOT EXISTS idx_invoices_customer ON invoices(customer_id);
+CREATE INDEX IF NOT EXISTS idx_invoices_status ON invoices(company_id, status);
+CREATE INDEX IF NOT EXISTS idx_invoices_due_date ON invoices(company_id, due_date);
+
+-- Migration 015: Create invoice_lines table
+CREATE TABLE IF NOT EXISTS invoice_lines (
+    line_id SERIAL PRIMARY KEY,
+    invoice_id INT NOT NULL,
+    sort_order INT NOT NULL DEFAULT 0,
+    description TEXT NOT NULL,
+    quantity DECIMAL(15, 4) NOT NULL DEFAULT 1,
+    unit VARCHAR(20) DEFAULT 'st',
+    unit_price DECIMAL(15, 2) NOT NULL,
+    discount_percent DECIMAL(5, 2) NOT NULL DEFAULT 0,
+    vat_rate INT NOT NULL DEFAULT 25 CHECK (vat_rate IN (0, 6, 12, 25)),
+    line_total DECIMAL(15, 2) NOT NULL,
+    vat_amount DECIMAL(15, 2) NOT NULL,
+    account_no INT NOT NULL DEFAULT 3010,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (invoice_id) REFERENCES invoices(invoice_id) ON DELETE CASCADE,
+    FOREIGN KEY (account_no) REFERENCES accounts(account_no) ON DELETE RESTRICT
+);
+
+CREATE INDEX IF NOT EXISTS idx_invoice_lines_invoice ON invoice_lines(invoice_id);
+
+-- Migration 016: Create invoice_settings table
+CREATE TABLE IF NOT EXISTS invoice_settings (
+    settings_id SERIAL PRIMARY KEY,
+    company_id INT NOT NULL UNIQUE,
+    bankgiro VARCHAR(20),
+    plusgiro VARCHAR(20),
+    swish VARCHAR(20),
+    iban VARCHAR(34),
+    bic VARCHAR(11),
+    f_skatt_text VARCHAR(500) DEFAULT 'Godkänd för F-skatt',
+    default_payment_terms_days INT NOT NULL DEFAULT 30,
+    next_invoice_number INT NOT NULL DEFAULT 1,
+    invoice_prefix VARCHAR(10) DEFAULT '',
+    default_revenue_account INT DEFAULT 3010,
+    default_payment_account INT DEFAULT 1930,
+    footer_text TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (company_id) REFERENCES companies(company_id) ON DELETE CASCADE
+);

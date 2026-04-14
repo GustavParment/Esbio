@@ -14,11 +14,14 @@ Frontend: parse with `parseMoney()` from `client/lib/money.ts` for display, or u
 
 | Method | Endpoint              | Description            | Auth |
 |--------|-----------------------|------------------------|------|
-| POST   | `/auth/register`      | Register a new user    | No   |
-| POST   | `/auth/login`         | Login, sets JWT cookie | No   |
+| POST   | `/auth/register`      | Register a new user, sends verification email | No   |
+| POST   | `/auth/login`         | Login, sets JWT cookie (requires verified email) | No   |
 | POST   | `/auth/logout`        | Clears JWT cookie      | No   |
 | POST   | `/auth/refresh`       | Refresh JWT token      | No   |
 | GET    | `/auth/me`            | Get current user       | Yes  |
+| GET    | `/auth/verify`        | Verify email via token | No   |
+| POST   | `/auth/forgot-password` | Request password reset email | No |
+| POST   | `/auth/reset-password`  | Set new password via reset token | No |
 
 ### POST /auth/register
 
@@ -42,7 +45,25 @@ Roles: `Admin`, `Bookkeeper`, `Manager`. Defaults to `Bookkeeper`.
 }
 ```
 
-Response sets an httpOnly cookie named `token` (7-day expiry). After login, the user should be directed to `/companies` to select a company before accessing the app.
+Response sets an httpOnly cookie named `token` (7-day expiry). Login is blocked if `email_verified = false` (returns 403).
+
+### GET /auth/verify?token=xxx
+
+Verifies the user's email address. Token is valid for 24 hours. On success, sends a welcome email.
+
+### POST /auth/forgot-password
+
+```json
+{ "email": "anna@example.com" }
+```
+
+Always returns 200 (prevents email enumeration). If the email exists, sends a reset link valid for 1 hour.
+
+### POST /auth/reset-password
+
+```json
+{ "token": "reset-token-from-email", "password": "newpassword" }
+```
 
 ---
 
@@ -340,6 +361,8 @@ The agent has access to the following tools:
 - `get_balance_sheet` — balance sheet as of a date
 - `create_scheduled_task` — schedule a recurring monthly voucher
 - `list_scheduled_tasks` — list a user's scheduled tasks
+- `list_invoices` — list invoices, optionally filtered by status
+- `send_invoice_email` — send a finalized invoice via email to the customer
 
 ### Scheduled Tasks
 
@@ -357,3 +380,31 @@ Scheduled tasks are recurring jobs that the agent executes automatically. A back
   "last_run_at": "2025-06-30T08:00:00",
   "next_run_at": "2025-07-30T08:00:00"
 }
+```
+
+---
+
+## Invoice Email
+
+| Method | Endpoint                       | Description                        | Auth  |
+|--------|--------------------------------|------------------------------------|-------|
+| POST   | `/invoices/:id/send-email`     | Send invoice via email to customer | Yes   |
+
+Requires finalized invoice (not draft) and customer with email address. Sends HTML email with invoice details and PDF attachment via Resend. Sender: `{CompanyName} <noreply@esbio.se>`.
+
+---
+
+## Support
+
+| Method | Endpoint     | Description                  | Auth |
+|--------|-------------|------------------------------|------|
+| POST   | `/support`   | Send support message         | Yes  |
+
+```json
+{
+  "subject": "Fråga om moms",
+  "message": "Hur bokför jag omvänd moms?"
+}
+```
+
+Sends email to info@esbio.se with reply-to set to the user's email address.

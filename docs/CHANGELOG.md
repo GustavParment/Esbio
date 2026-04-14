@@ -4,9 +4,80 @@ Notable changes grouped by session / branch. For day-to-day history, use `git lo
 
 ---
 
-## Unreleased — branch `refactor/money-int64` (2026-04-11)
+## Email integration + auth improvements — `dev` (2026-04-14)
 
-All changes below are **uncommitted** on the `refactor/money-int64` branch and not yet deployed. Prod backend is still paused (`ingress=internal`, applied 2026-04-11). See individual doc links for full details.
+### Invoice email (Fas 5)
+- Send invoices via email with PDF attachment using Resend API
+- "Skicka via e-post" button on invoice detail page (requires finalized invoice + customer email)
+- Sender: `{CompanyName} <noreply@esbio.se>`, Swedish HTML template
+- Resend domain verified with DKIM/SPF on Cloudflare
+
+### Email verification & password reset (Fas 6)
+- Verification email on registration (24h link), login blocked until verified
+- Welcome email after successful verification
+- Forgot password flow: request reset → email with 1h link → set new password
+- "Glömt lösenord?" link on login page
+- Frontend pages: `/auth/verify`, `/auth/forgot-password`, `/auth/reset-password`
+- DB migration 014: `email_verified`, `verification_token`, `reset_token` columns on users
+
+### OCR number improvement
+- OCR now includes company ID + invoice number (10 digits + Luhn check), was previously just invoice number
+
+### Support contact form
+- Contact form in Settings page (subject + message)
+- Sends email to info@esbio.se via Resend with reply-to set to user's email
+- POST `/api/v1/support` endpoint
+
+### Ester AI — invoice tools
+- `list_invoices` — list invoices filtered by status
+- `send_invoice_email` — send invoice via email to customer
+- Ester can now handle "skicka alla obetalda fakturor" type commands
+
+### Help page
+- New `/help` page with 7 guide sections: Getting started, Bookkeeping basics, Ester AI, Receipt scanning, Invoicing, Reports, Bookkeeping tips
+- Includes common journal entries, VAT rates, important tax dates, links to Skatteverket
+- Added to sidebar navigation
+
+### Settings cleanup
+- Removed AI usage statistics section (confused users)
+
+---
+
+## On dev, awaiting testing — `feature/invoicing` (2026-04-12)
+
+Invoicing module merged to `dev`. NOT on `main`/prod yet — awaiting manual testing.
+
+### Invoicing module (Fas 1-4)
+
+Full Swedish invoicing with auto-bokforing:
+- **Customer registry**: CRUD + search (6 API endpoints, 3 frontend pages)
+- **Invoice settings**: bankgiro, plusgiro, swish, F-skatt, payment terms, invoice number sequence
+- **Invoice CRUD**: create draft, finalize (auto-generates sales voucher: 1510/3010/2610-2612/3740), mark as paid (payment voucher: bank/1510), cancel (correction voucher), delete draft
+- **Invoice PDF**: Swedish layout via fpdf (company/customer info, lines, VAT summary, OCR, payment details, F-skatt)
+- **Overdue detection**: scheduler checks all companies every 60s, flips sent→overdue past due date
+- **Dashboard widget**: outstanding, overdue, and paid invoice summaries
+- OCR number generation (Luhn), oresavrundning (round to whole krona, diff to 3740)
+- 4 DB tables: `customers`, `invoice_settings`, `invoices`, `invoice_lines`
+- 17 API endpoints, ~20 new Go files, ~10 new frontend pages
+
+See [invoicing-plan.md](./invoicing-plan.md) and [invoicing-test-guide.md](./invoicing-test-guide.md).
+
+### Mobile-first UI overhaul
+
+Replaced all HTML tables across the entire app with card-based layouts:
+- Lists: vouchers, invoices, customers, accounts, ledger, dashboard — all clickable cards
+- Forms: voucher line editor, invoice line editor — vertical cards with full-width fields
+- Detail views: voucher lines, invoice lines — compact card display
+- Settings: full-width buttons, wrapping subscription section
+- Sidebar: full screen width on mobile (was w-64 leaving black strip)
+- Voucher detail: buttons wrap, Invalid Date bug fixed
+- 12 files, net -200 lines
+
+---
+
+## Deployed to prod — `refactor/money-int64` (2026-04-11/12)
+
+Deployed to prod on 2026-04-12. Stripe key rotated. All changes below are live.
 
 ### Fixes
 
