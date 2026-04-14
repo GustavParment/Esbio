@@ -180,7 +180,7 @@ func (s *InvoiceService) CreateInvoice(companyID, userID int, req CreateInvoiceR
 	rounding := roundedTotal.Sub(rawTotal)
 
 	// Generate OCR
-	ocrNumber := GenerateOCRNumber(invoiceNumber)
+	ocrNumber := GenerateOCRNumber(companyID, invoiceNumber)
 
 	invoice := &domain.Invoice{
 		CompanyID:        companyID,
@@ -500,9 +500,17 @@ func (s *InvoiceService) CheckOverdueInvoices(companyID int) error {
 	return nil
 }
 
-// GenerateOCRNumber creates a Swedish OCR reference using Luhn check digit
-func GenerateOCRNumber(invoiceNumber int) string {
-	numStr := strconv.Itoa(invoiceNumber)
+// GenerateOCRNumber creates a Swedish OCR reference using Luhn check digit.
+// Format: CCCCFFFFF + check digit, where C = company ID (4 digits, zero-padded)
+// and F = invoice number (5 digits, zero-padded). Minimum 10 digits total.
+// Company ID ensures global uniqueness across tenants.
+func GenerateOCRNumber(companyID, invoiceNumber int) string {
+	numStr := fmt.Sprintf("%04d%05d", companyID, invoiceNumber)
+	checkDigit := luhnCheckDigit(numStr)
+	return numStr + strconv.Itoa(checkDigit)
+}
+
+func luhnCheckDigit(numStr string) int {
 	sum := 0
 	double := true
 	for i := len(numStr) - 1; i >= 0; i-- {
@@ -516,8 +524,7 @@ func GenerateOCRNumber(invoiceNumber int) string {
 		sum += digit
 		double = !double
 	}
-	checkDigit := (10 - (sum % 10)) % 10
-	return numStr + strconv.Itoa(checkDigit)
+	return (10 - (sum % 10)) % 10
 }
 
 func vatAccountForRate(rate int) int {

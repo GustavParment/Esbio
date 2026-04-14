@@ -12,6 +12,7 @@ Esbio is a full-stack Swedish bookkeeping application built around double-entry 
 | Database     | PostgreSQL 15 (Docker)              |
 | Auth         | JWT (HS256) in httpOnly cookies     |
 | PDF          | go-pdf/fpdf                         |
+| Email        | Resend API (noreply@esbio.se)       |
 
 ## High-Level Architecture
 
@@ -71,14 +72,17 @@ The client uses the **Next.js App Router** with client-side rendering for protec
 app/
 ├── layout.tsx              Root layout with AuthProvider
 ├── page.tsx                Redirects to /auth/login
-├── auth/                   Login & register pages
+├── auth/                   Login, register, verify email, forgot/reset password
 ├── companies/              Company selector ("Mina Företag") + create company
 ├── dashboard/              Main dashboard
 ├── vouchers/               Voucher CRUD + corrections
 ├── accounts/               Account CRUD + ledger
 ├── reports/                Income statement, balance sheet, VAT report
 ├── agent/                  AI assistant chat + scheduled tasks
-├── settings/               Company settings (edits company info)
+├── settings/               Company settings, support contact form
+├── help/                   User guides (bookkeeping, Ester, invoicing, etc.)
+├── invoices/               Invoice CRUD, PDF, send email
+├── customers/              Customer registry
 └── users/                  User management (Admin)
 
 components/
@@ -147,7 +151,7 @@ User message → Agent Handler → Gemini API (with tool definitions)
 
 **Key components:**
 - **AgentService** — orchestrates Gemini API calls with a tool-use loop (max 10 iterations)
-- **12 tools** — wrapping existing services (voucher CRUD incl. corrections and search, reports, account ledger, scheduled tasks)
+- **14 tools** — wrapping existing services (voucher CRUD incl. corrections and search, reports, account ledger, scheduled tasks, invoice listing and email sending)
 - **SchedulerService** — background goroutine checking for due tasks every 60 seconds
 - **ScheduledTaskService** — CRUD for recurring monthly tasks with next-run calculation
 - **System prompt** — Swedish-language, BAS-aware, with security rules against prompt injection
@@ -160,6 +164,8 @@ User message → Agent Handler → Gemini API (with tool definitions)
 For the internal pentest playbook (tools, commands, Esbio-specific tests, findings), see [pentest-guide.md](./pentest-guide.md).
 
 - Passwords hashed with **bcrypt**
+- **Email verification** required before login (24h token, blocks unverified users)
+- **Password reset** via email with 1h expiring token (response always 200 to prevent enumeration)
 - JWT stored in **httpOnly cookies** (not accessible via JavaScript)
 - CORS whitelist for allowed origins
 - **CompanyMiddleware** verifies company ownership on every request

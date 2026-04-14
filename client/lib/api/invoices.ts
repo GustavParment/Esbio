@@ -31,6 +31,8 @@ export const invoicesApi = {
     apiClient.post(`/invoices/${id}/cancel`, {}),
   delete: async (id: number): Promise<void> =>
     apiClient.delete(`/invoices/${id}`),
+  sendEmail: async (id: number): Promise<{ message: string; email_id: string }> =>
+    apiClient.post(`/invoices/${id}/send-email`, {}),
   getSettings: async (): Promise<InvoiceSettings> =>
     apiClient.get("/invoices/settings"),
   updateSettings: async (

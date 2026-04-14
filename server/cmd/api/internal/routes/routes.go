@@ -25,6 +25,8 @@ func SetupRoutes(
 	invoiceSettingsHandler *handlers.InvoiceSettingsHandler,
 	invoiceHandler *handlers.InvoiceHandler,
 	invoicePDFHandler *handlers.InvoicePDFHandler,
+	invoiceEmailHandler *handlers.InvoiceEmailHandler,
+	supportHandler *handlers.SupportHandler,
 	authMiddleware gin.HandlerFunc,
 	companyMiddleware gin.HandlerFunc) {
 
@@ -38,6 +40,9 @@ func SetupRoutes(
 			auth.POST("/logout", authHandler.Logout)
 			auth.POST("/refresh", authHandler.RefreshToken)
 			auth.GET("/me", authMiddleware, authHandler.GetCurrentUser)
+			auth.GET("/verify", authHandler.VerifyEmail)
+			auth.POST("/forgot-password", authRateLimit, authHandler.ForgotPassword)
+			auth.POST("/reset-password", authRateLimit, authHandler.ResetPassword)
 			auth.DELETE("/account", authMiddleware, authHandler.DeleteAccount)
 		}
 
@@ -132,6 +137,7 @@ func SetupRoutes(
 			invoices.POST("/:id/finalize", middleware.RequireRole("Admin", "Bookkeeper"), invoiceHandler.FinalizeInvoice)
 			invoices.POST("/:id/pay", middleware.RequireRole("Admin", "Bookkeeper"), invoiceHandler.MarkAsPaid)
 			invoices.POST("/:id/cancel", middleware.RequireRole("Admin", "Bookkeeper"), invoiceHandler.CancelInvoice)
+			invoices.POST("/:id/send-email", middleware.RequireRole("Admin", "Bookkeeper"), invoiceEmailHandler.SendInvoiceEmail)
 			invoices.DELETE("/:id", middleware.RequireRole("Admin"), invoiceHandler.DeleteInvoice)
 		}
 
@@ -144,6 +150,8 @@ func SetupRoutes(
 			customers.PUT("/:id", middleware.RequireRole("Admin", "Bookkeeper"), customerHandler.UpdateCustomer)
 			customers.DELETE("/:id", middleware.RequireRole("Admin"), customerHandler.DeleteCustomer)
 		}
+
+		v1.POST("/support", authMiddleware, companyMiddleware, supportHandler.SendSupportMessage)
 
 		stripeGroup := v1.Group("/stripe")
 		{

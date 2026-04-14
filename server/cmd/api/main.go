@@ -54,11 +54,13 @@ func main() {
 		agentUsageRepo,
 	)
 
+	emailService := service.NewEmailService(cfg.ResendAPIKey)
+
 	userHandler := handlers.NewUserHandler(userService)
 	accountHandler := handlers.NewAccountHandler(accountService)
 	lineItemHandler := handlers.NewLineItemHandler(lineItemService)
 	voucherHandler := handlers.NewVoucherHandler(voucherService)
-	authHandler := handlers.NewAuthHandler(userService, jwtManager)
+	authHandler := handlers.NewAuthHandler(userService, jwtManager, emailService, userRepo, cfg.FrontendURL)
 	pdfHandler := handlers.NewPDFHandler(voucherService, accountService)
 	reportHandler := handlers.NewReportHandler(reportService)
 	companyHandler := handlers.NewCompanyHandler(companyService)
@@ -81,6 +83,9 @@ func main() {
 	invoiceService := service.NewInvoiceService(invoiceRepo, invoiceLineRepo, invoiceSettingsRepo, customerRepo, voucherService, lineItemRepo)
 	invoiceHandler := handlers.NewInvoiceHandler(invoiceService)
 	invoicePDFHandler := handlers.NewInvoicePDFHandler(invoiceService, companyService)
+	agentService.SetInvoiceEmailServices(invoiceService, companyService, emailService)
+	invoiceEmailHandler := handlers.NewInvoiceEmailHandler(invoiceService, companyService, emailService)
+	supportHandler := handlers.NewSupportHandler(emailService, companyService)
 
 	authMiddleware := middleware.AuthMiddleware(jwtManager)
 	companyMiddleware := middleware.CompanyMiddleware(companyRepo)
@@ -100,7 +105,7 @@ func main() {
 	// Add rate limiting (100 req/min per IP)
 	router.Use(middleware.RateLimitMiddleware())
 
-	routes.SetupRoutes(router, userHandler, accountHandler, lineItemHandler, voucherHandler, authHandler, pdfHandler, reportHandler, sieHandler, agentHandler, companyHandler, receiptHandler, stripeHandler, customerHandler, invoiceSettingsHandler, invoiceHandler, invoicePDFHandler, authMiddleware, companyMiddleware)
+	routes.SetupRoutes(router, userHandler, accountHandler, lineItemHandler, voucherHandler, authHandler, pdfHandler, reportHandler, sieHandler, agentHandler, companyHandler, receiptHandler, stripeHandler, customerHandler, invoiceSettingsHandler, invoiceHandler, invoicePDFHandler, invoiceEmailHandler, supportHandler, authMiddleware, companyMiddleware)
 
 	// Start the scheduler for recurring tasks
 	schedulerService := service.NewSchedulerService(scheduledTaskService, agentService, invoiceService, func() []int {

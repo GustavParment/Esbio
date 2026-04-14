@@ -40,15 +40,20 @@ func (fd FlexibleDate) MarshalJSON() ([]byte, error) {
 }
 
 type User struct {
-    UserID       int    `json:"user_id" validate:"omitempty,gt=0"`
-    FirstName    string `json:"first_name" validate:"required,min=1,max=50"`
-    LastName     string `json:"last_name" validate:"required,min=1,max=50"`
-    Name         string `json:"name"`
-    CompanyName  string `json:"company_name"`
-    OrgNumber    string `json:"org_number"`
-    Email        string `json:"email" validate:"required,email"`
-    PasswordHash string `json:"password_hash" validate:"required,min=8"`
-    Role         string `json:"role" validate:"omitempty,oneof=Admin Bookkeeper Manager"`
+    UserID                   int     `json:"user_id" validate:"omitempty,gt=0"`
+    FirstName                string  `json:"first_name" validate:"required,min=1,max=50"`
+    LastName                 string  `json:"last_name" validate:"required,min=1,max=50"`
+    Name                     string  `json:"name"`
+    CompanyName              string  `json:"company_name"`
+    OrgNumber                string  `json:"org_number"`
+    Email                    string  `json:"email" validate:"required,email"`
+    PasswordHash             string  `json:"password_hash" validate:"required,min=8"`
+    Role                     string  `json:"role" validate:"omitempty,oneof=Admin Bookkeeper Manager"`
+    EmailVerified            bool    `json:"email_verified"`
+    VerificationToken        *string `json:"-"`
+    VerificationTokenExpires *string `json:"-"`
+    ResetToken               *string `json:"-"`
+    ResetTokenExpires        *string `json:"-"`
 }
 
 type Company struct {

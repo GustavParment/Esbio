@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"bytes"
+	"esbio/api/internal/domain"
 	"esbio/api/internal/service"
 	"fmt"
 	"net/http"
@@ -50,6 +51,22 @@ func (h *InvoicePDFHandler) GenerateInvoicePDF(c *gin.Context) {
 		return
 	}
 
+	pdfBytes, err := renderInvoicePDF(invoice, company)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to generate PDF"})
+		return
+	}
+
+	filename := fmt.Sprintf("faktura_%d.pdf", invoice.InvoiceNumber)
+	c.Header("Content-Type", "application/pdf")
+	c.Header("Content-Disposition", fmt.Sprintf("attachment; filename=%s", filename))
+	c.Header("Content-Length", strconv.Itoa(len(pdfBytes)))
+	c.Data(http.StatusOK, "application/pdf", pdfBytes)
+}
+
+// renderInvoicePDF generates PDF bytes for an invoice. Used by both the PDF download
+// endpoint and the email handler.
+func renderInvoicePDF(invoice *domain.Invoice, company *domain.Company) ([]byte, error) {
 	pdf := fpdf.New("P", "mm", "A4", "")
 	pdf.AddPage()
 	tr := pdf.UnicodeTranslatorFromDescriptor("cp1252")
@@ -224,17 +241,11 @@ func (h *InvoicePDFHandler) GenerateInvoicePDF(c *gin.Context) {
 
 	// Output
 	var buf bytes.Buffer
-	err = pdf.Output(&buf)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to generate PDF"})
-		return
+	if err := pdf.Output(&buf); err != nil {
+		return nil, fmt.Errorf("failed to generate PDF: %w", err)
 	}
 
-	filename := fmt.Sprintf("faktura_%d.pdf", invoice.InvoiceNumber)
-	c.Header("Content-Type", "application/pdf")
-	c.Header("Content-Disposition", fmt.Sprintf("attachment; filename=%s", filename))
-	c.Header("Content-Length", strconv.Itoa(buf.Len()))
-	c.Data(http.StatusOK, "application/pdf", buf.Bytes())
+	return buf.Bytes(), nil
 }
 
 func fmtMoney(d decimal.Decimal) string {

@@ -27,6 +27,8 @@ export default function InvoiceDetailPage() {
   const [actionLoading, setActionLoading] = useState(false);
   const [error, setError] = useState("");
   const [paymentDate, setPaymentDate] = useState(new Date().toISOString().split("T")[0]);
+  const [emailSending, setEmailSending] = useState(false);
+  const [emailSent, setEmailSent] = useState(false);
 
   useEffect(() => {
     const fetchInvoice = async () => {
@@ -81,6 +83,23 @@ export default function InvoiceDetailPage() {
     }
   };
 
+  const handleSendEmail = async () => {
+    if (!invoice) return;
+    const customerEmail = invoice.customer?.email;
+    if (!customerEmail) { setError("Kunden saknar e-postadress"); return; }
+    if (!confirm(`Skicka faktura ${invoice.invoice_number} till ${customerEmail}?`)) return;
+    setEmailSending(true);
+    setError("");
+    try {
+      await invoicesApi.sendEmail(invoiceId);
+      setEmailSent(true);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Kunde inte skicka e-post");
+    } finally {
+      setEmailSending(false);
+    }
+  };
+
   const handleDelete = async () => {
     if (!confirm("Radera utkastet? Detta kan inte ångras.")) return;
     try {
@@ -129,14 +148,29 @@ export default function InvoiceDetailPage() {
               {STATUS_LABELS[status] || status}
             </span>
           </div>
-          <a
-            href={`${process.env.NEXT_PUBLIC_API_URL || "https://api.esbio.se/api/v1"}/invoices/${invoice.invoice_id}/pdf`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="px-4 py-2.5 bg-gray-700 text-white rounded-lg hover:bg-gray-800 transition-colors font-medium text-sm"
-          >
-            Ladda ner PDF
-          </a>
+          <div className="flex gap-3">
+            {status !== "draft" && invoice.customer?.email && (
+              <button
+                onClick={handleSendEmail}
+                disabled={emailSending || emailSent}
+                className={`px-4 py-2.5 rounded-lg transition-colors font-medium text-sm ${
+                  emailSent
+                    ? "bg-green-100 text-green-700"
+                    : "bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50"
+                }`}
+              >
+                {emailSending ? "Skickar..." : emailSent ? "Skickad!" : "Skicka via e-post"}
+              </button>
+            )}
+            <a
+              href={`${process.env.NEXT_PUBLIC_API_URL || "https://api.esbio.se/api/v1"}/invoices/${invoice.invoice_id}/pdf`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="px-4 py-2.5 bg-gray-700 text-white rounded-lg hover:bg-gray-800 transition-colors font-medium text-sm"
+            >
+              Ladda ner PDF
+            </a>
+          </div>
         </div>
       </div>
 

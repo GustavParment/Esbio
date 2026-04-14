@@ -4,6 +4,45 @@ Notable changes grouped by session / branch. For day-to-day history, use `git lo
 
 ---
 
+## Email integration + auth improvements — `dev` (2026-04-14)
+
+### Invoice email (Fas 5)
+- Send invoices via email with PDF attachment using Resend API
+- "Skicka via e-post" button on invoice detail page (requires finalized invoice + customer email)
+- Sender: `{CompanyName} <noreply@esbio.se>`, Swedish HTML template
+- Resend domain verified with DKIM/SPF on Cloudflare
+
+### Email verification & password reset (Fas 6)
+- Verification email on registration (24h link), login blocked until verified
+- Welcome email after successful verification
+- Forgot password flow: request reset → email with 1h link → set new password
+- "Glömt lösenord?" link on login page
+- Frontend pages: `/auth/verify`, `/auth/forgot-password`, `/auth/reset-password`
+- DB migration 014: `email_verified`, `verification_token`, `reset_token` columns on users
+
+### OCR number improvement
+- OCR now includes company ID + invoice number (10 digits + Luhn check), was previously just invoice number
+
+### Support contact form
+- Contact form in Settings page (subject + message)
+- Sends email to info@esbio.se via Resend with reply-to set to user's email
+- POST `/api/v1/support` endpoint
+
+### Ester AI — invoice tools
+- `list_invoices` — list invoices filtered by status
+- `send_invoice_email` — send invoice via email to customer
+- Ester can now handle "skicka alla obetalda fakturor" type commands
+
+### Help page
+- New `/help` page with 7 guide sections: Getting started, Bookkeeping basics, Ester AI, Receipt scanning, Invoicing, Reports, Bookkeeping tips
+- Includes common journal entries, VAT rates, important tax dates, links to Skatteverket
+- Added to sidebar navigation
+
+### Settings cleanup
+- Removed AI usage statistics section (confused users)
+
+---
+
 ## On dev, awaiting testing — `feature/invoicing` (2026-04-12)
 
 Invoicing module merged to `dev`. NOT on `main`/prod yet — awaiting manual testing.

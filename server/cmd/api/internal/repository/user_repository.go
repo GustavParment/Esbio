@@ -13,6 +13,12 @@ type UserRepository interface {
 	UpdateUser(user *domain.User) error
 	DeleteUser(userID int) error
 	DeleteUserAndData(userID int) error
+	UpdatePassword(userID int, hashedPassword string) error
+	SetVerificationToken(userID int, token string, expires string) error
+	VerifyEmail(token string) (*domain.User, error)
+	SetResetToken(email string, token string, expires string) error
+	GetUserByResetToken(token string) (*domain.User, error)
+	ClearResetToken(userID int) error
 }
 
 type userRepository struct {
@@ -25,11 +31,11 @@ func NewUserRepository(db *sql.DB) UserRepository {
 
 func (r *userRepository) CreateUser(user *domain.User) error {
 	query := `
-		INSERT INTO users (first_name, last_name, company_name, org_number, email, password_hash, role)
-		VALUES ($1, $2, $3, $4, $5, $6, $7)
+		INSERT INTO users (first_name, last_name, company_name, org_number, email, password_hash, role, email_verified)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
 		RETURNING user_id
 	`
-	err := r.db.QueryRow(query, user.FirstName, user.LastName, user.CompanyName, user.OrgNumber, user.Email, user.PasswordHash, user.Role).Scan(&user.UserID)
+	err := r.db.QueryRow(query, user.FirstName, user.LastName, user.CompanyName, user.OrgNumber, user.Email, user.PasswordHash, user.Role, user.EmailVerified).Scan(&user.UserID)
 	if err != nil {
 		return fmt.Errorf("failed to create user: %w", err)
 	}
@@ -49,6 +55,7 @@ func scanUser(row interface{ Scan(...interface{}) error }) (*domain.User, error)
 		&user.Email,
 		&user.PasswordHash,
 		&user.Role,
+		&user.EmailVerified,
 	)
 	if err != nil {
 		return nil, err
@@ -61,7 +68,7 @@ func scanUser(row interface{ Scan(...interface{}) error }) (*domain.User, error)
 
 func (r *userRepository) GetUserByID(userID int) (*domain.User, error) {
 	query := `
-		SELECT user_id, first_name, last_name, company_name, org_number, email, password_hash, role
+		SELECT user_id, first_name, last_name, company_name, org_number, email, password_hash, role, email_verified
 		FROM users
 		WHERE user_id = $1
 	`
@@ -77,7 +84,7 @@ func (r *userRepository) GetUserByID(userID int) (*domain.User, error) {
 
 func (r *userRepository) GetUserByEmail(email string) (*domain.User, error) {
 	query := `
-		SELECT user_id, first_name, last_name, company_name, org_number, email, password_hash, role
+		SELECT user_id, first_name, last_name, company_name, org_number, email, password_hash, role, email_verified
 		FROM users
 		WHERE email = $1
 	`
@@ -199,4 +206,63 @@ func (r *userRepository) DeleteUserAndData(userID int) error {
 	}
 
 	return tx.Commit()
+}
+
+func (r *userRepository) UpdatePassword(userID int, hashedPassword string) error {
+	_, err := r.db.Exec(`UPDATE users SET password_hash = $1 WHERE user_id = $2`, hashedPassword, userID)
+	return err
+}
+
+func (r *userRepository) SetVerificationToken(userID int, token string, expires string) error {
+	_, err := r.db.Exec(
+		`UPDATE users SET verification_token = $1, verification_token_expires = $2 WHERE user_id = $3`,
+		token, expires, userID,
+	)
+	return err
+}
+
+func (r *userRepository) VerifyEmail(token string) (*domain.User, error) {
+	query := `
+		UPDATE users
+		SET email_verified = TRUE, verification_token = NULL, verification_token_expires = NULL
+		WHERE verification_token = $1 AND verification_token_expires > NOW()
+		RETURNING user_id, first_name, last_name, company_name, org_number, email, password_hash, role, email_verified
+	`
+	return scanUser(r.db.QueryRow(query, token))
+}
+
+func (r *userRepository) SetResetToken(email string, token string, expires string) error {
+	result, err := r.db.Exec(
+		`UPDATE users SET reset_token = $1, reset_token_expires = $2 WHERE email = $3`,
+		token, expires, email,
+	)
+	if err != nil {
+		return err
+	}
+	rows, _ := result.RowsAffected()
+	if rows == 0 {
+		return fmt.Errorf("user not found")
+	}
+	return nil
+}
+
+func (r *userRepository) GetUserByResetToken(token string) (*domain.User, error) {
+	query := `
+		SELECT user_id, first_name, last_name, company_name, org_number, email, password_hash, role, email_verified
+		FROM users
+		WHERE reset_token = $1 AND reset_token_expires > NOW()
+	`
+	user, err := scanUser(r.db.QueryRow(query, token))
+	if err != nil {
+		return nil, fmt.Errorf("invalid or expired reset token")
+	}
+	return user, nil
+}
+
+func (r *userRepository) ClearResetToken(userID int) error {
+	_, err := r.db.Exec(
+		`UPDATE users SET reset_token = NULL, reset_token_expires = NULL WHERE user_id = $1`,
+		userID,
+	)
+	return err
 }

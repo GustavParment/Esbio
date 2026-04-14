@@ -331,10 +331,27 @@ Differensen bokförs på konto 3740.
 - Dashboard-widget: utestående fakturor, förfallna
 - **Shippable**: automatisk förfallodetektering, dashboard-integration
 
-### Fas 5 (framtid): E-postutskick
-- SMTP-integration eller extern tjänst (Resend, SendGrid)
-- "Skicka via e-post"-knapp på fakturadetaljen
-- Inte del av initial implementation
+### Fas 5: E-postutskick (klar)
+- Resend-integration (API, ej SMTP) med verifierad domän `esbio.se`
+- "Skicka via e-post"-knapp på fakturadetaljen (POST `/invoices/:id/send-email`)
+- PDF bifogas automatiskt, svensk HTML-mall med belopp och förfallodatum
+- Avsändare: `{Företagsnamn} <noreply@esbio.se>`
+- Validering: kräver finaliserad faktura + kundmail
+
+### Fas 6: Autentisering med e-postverifiering (klar)
+- Verifieringsmail vid registrering (24h giltig länk)
+- Välkomstmail skickas efter verifiering
+- Login blockeras tills e-post är verifierad
+- Lösenordsåterställning via e-post (1h giltig länk)
+- Alla mailmallar med grön knapp och "Parment Software Solutions AB" footer
+- Frontend-sidor: `/auth/verify`, `/auth/forgot-password`, `/auth/reset-password`
+- DB-migration 014: `email_verified`, `verification_token`, `reset_token` på users
+
+### Fas 7: Support & hjälp (klar)
+- Kontaktformulär i Inställningar (POST `/support`, skickar till info@esbio.se)
+- Reply-to sätts till användarens e-post
+- Hjälpsida (`/help`) med 7 guider: Kom igång, Bokföring, Ester AI, Kvittoskanning, Fakturering, Rapporter, Bokföringstips
+- Ester AI kan nu lista fakturor (`list_invoices`) och skicka fakturor via mail (`send_invoice_email`)
 
 ---
 
