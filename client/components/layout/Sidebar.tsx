@@ -103,7 +103,15 @@ export default function Sidebar() {
 
       {/* Navigation */}
       <nav className="flex-1 space-y-1 px-3 py-4">
-        {navigation.map((item) => (
+        {navigation
+          .filter((item) => {
+            // Mini plan: hide AI + invoicing-related tabs
+            if (selectedCompany?.plan === "mini") {
+              return item.href !== "/agent" && item.href !== "/invoices" && item.href !== "/customers";
+            }
+            return true;
+          })
+          .map((item) => (
           <Link
             key={item.name}
             href={item.href}

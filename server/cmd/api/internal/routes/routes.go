@@ -120,7 +120,7 @@ func SetupRoutes(
 			receipts.POST("/scan", middleware.RequireRole("Admin", "Bookkeeper"), receiptHandler.Scan)
 		}
 
-		agent := v1.Group("/agent", authMiddleware, companyMiddleware)
+		agent := v1.Group("/agent", authMiddleware, companyMiddleware, middleware.RequirePlan("free", "starter", "growth"))
 		{
 			agent.POST("/chat", agentHandler.Chat)
 			agent.POST("/stream", agentHandler.ChatStream)
@@ -131,7 +131,7 @@ func SetupRoutes(
 			agent.GET("/usage", agentHandler.GetUsage)
 		}
 
-		invoices := v1.Group("/invoices", authMiddleware, companyMiddleware)
+		invoices := v1.Group("/invoices", authMiddleware, companyMiddleware, middleware.RequirePlan("free", "starter", "growth"))
 		{
 			invoices.POST("", middleware.RequireRole("Admin", "Bookkeeper"), invoiceHandler.CreateInvoice)
 			invoices.GET("", invoiceHandler.ListInvoices)
@@ -146,7 +146,7 @@ func SetupRoutes(
 			invoices.DELETE("/:id", middleware.RequireRole("Admin"), invoiceHandler.DeleteInvoice)
 		}
 
-		customers := v1.Group("/customers", authMiddleware, companyMiddleware)
+		customers := v1.Group("/customers", authMiddleware, companyMiddleware, middleware.RequirePlan("free", "starter", "growth"))
 		{
 			customers.POST("", middleware.RequireRole("Admin", "Bookkeeper"), customerHandler.CreateCustomer)
 			customers.GET("", customerHandler.ListCustomers)
