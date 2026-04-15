@@ -10,6 +10,22 @@ const isLive = typeof window !== "undefined" && window.location.hostname === "es
 
 const plans = [
   {
+    id: "mini",
+    name: "Mini",
+    price: 99,
+    description: "Manuell bokföring för dig som vill ha full kontroll.",
+    features: [
+      "Upp till 50 transaktioner/mån",
+      "Manuell verifikatregistrering",
+      "Momsrapporter & SKV 4700",
+      "SIE-export & import",
+      "Ingen AI-kontering",
+      "Ingen fakturering",
+    ],
+    featured: false,
+    priceId: isLive ? "price_MINI_LIVE_PLACEHOLDER" : "price_MINI_TEST_PLACEHOLDER",
+  },
+  {
     id: "starter",
     name: "Starter",
     price: 199,
@@ -154,7 +170,8 @@ export default function UpgradePage() {
         )}
         <div className={`grid gap-6 mb-12 ${plans.filter(p => p.id !== currentPlan).length === 1 ? "max-w-md mx-auto" : "md:grid-cols-2"}`}>
           {plans.filter((plan) => plan.id !== currentPlan).map((plan) => {
-            const isDowngrade = currentPlan === "growth" && plan.id === "starter";
+            const planRank: Record<string, number> = { mini: 1, starter: 2, growth: 3 };
+            const isDowngrade = (planRank[currentPlan] ?? 0) > (planRank[plan.id] ?? 0);
             return (
             <div
               key={plan.id}

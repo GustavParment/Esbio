@@ -28,6 +28,7 @@ func SetupRoutes(
 	invoiceEmailHandler *handlers.InvoiceEmailHandler,
 	supportHandler *handlers.SupportHandler,
 	vatPDFHandler *handlers.VATPDFHandler,
+	sieImportHandler *handlers.SIEImportHandler,
 	authMiddleware gin.HandlerFunc,
 	companyMiddleware gin.HandlerFunc) {
 
@@ -110,6 +111,8 @@ func SetupRoutes(
 			reports.GET("/vat", reportHandler.GetVATReport)
 			reports.GET("/vat/pdf", vatPDFHandler.GenerateVATDeclarationPDF)
 			reports.GET("/sie", sieHandler.ExportSIE)
+			reports.POST("/sie/import/preview", sieImportHandler.PreviewSIE)
+			reports.POST("/sie/import", sieImportHandler.ImportSIE)
 		}
 
 		receipts := v1.Group("/receipts", authMiddleware, companyMiddleware)

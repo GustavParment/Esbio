@@ -1,0 +1,54 @@
+#FLAGGA 0
+#FORMAT PC8
+#SIETYP 4
+#PROGRAM "TestExport" "1.0"
+#GEN 20250115
+#FNAMN "Demo Aktiebolag"
+#ORGNR 556677-8899
+#KPTYP BAS2024
+#RAR 0 20250101 20251231
+
+#KONTO 1510 "Kundfordringar"
+#KONTO 1930 "Företagskonto"
+#KONTO 2440 "Leverantörsskulder"
+#KONTO 2611 "Utgående moms 25%"
+#KONTO 2641 "Ingående moms 25%"
+#KONTO 3010 "Försäljning 25%"
+#KONTO 4010 "Inköp varor 25%"
+#KONTO 5010 "Lokalhyra"
+
+#IB 0 1930 50000.00
+#IB 0 2440 0.00
+
+#VER "A" 1 20250110 "Faktura #100 till Kund AB"
+{
+  #TRANS 1510 {} 12500.00
+  #TRANS 3010 {} -10000.00
+  #TRANS 2611 {} -2500.00
+}
+
+#VER "A" 2 20250115 "Inbetalning från Kund AB"
+{
+  #TRANS 1930 {} 12500.00
+  #TRANS 1510 {} -12500.00
+}
+
+#VER "A" 3 20250120 "Hyra januari"
+{
+  #TRANS 5010 {} 8000.00
+  #TRANS 2641 {} 2000.00
+  #TRANS 1930 {} -10000.00
+}
+
+#VER "A" 4 20250125 "Inköp lager från Leverantör AB"
+{
+  #TRANS 4010 {} 4000.00
+  #TRANS 2641 {} 1000.00
+  #TRANS 2440 {} -5000.00
+}
+
+#VER "A" 5 20250130 "Betalning Leverantör AB"
+{
+  #TRANS 2440 {} 5000.00
+  #TRANS 1930 {} -5000.00
+}

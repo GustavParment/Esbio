@@ -295,10 +295,12 @@ export default function LandingPage() {
         .pricing-grid {
           display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
           gap: 1.5rem; max-width: 860px; margin: 0 auto;
+          align-items: stretch;
         }
         .price-card {
           background: var(--ink-2); border: 1px solid var(--l-border);
           border-radius: 20px; padding: 2rem; transition: transform 0.2s;
+          display: flex; flex-direction: column;
         }
         .price-card:hover { transform: translateY(-3px); }
         .price-card.featured {
@@ -335,6 +337,7 @@ export default function LandingPage() {
           border: 1px solid var(--l-border); background: transparent;
           color: var(--l-text); transition: all 0.2s;
           text-decoration: none; display: block; text-align: center;
+          margin-top: auto;
         }
         .price-card.featured .plan-btn {
           background: var(--teal); color: var(--ink); border-color: var(--teal);
@@ -601,9 +604,22 @@ export default function LandingPage() {
         <section id="pricing" className="landing-section">
           <div className="section-label">Priser</div>
           <h2 className="section-title">Enkla priser utan överraskningar</h2>
-          <p className="section-sub">Alla planer inkluderar AI-kontering, bankkoppling och momsrapporter.</p>
+          <p className="section-sub">Tre planer — välj den som passar din verksamhet. Alla priser exkl. moms.</p>
 
           <div className="pricing-grid">
+            <div className="price-card">
+              <div className="plan-name">Mini</div>
+              <div className="plan-price">99 <span>kr/mån</span></div>
+              <div className="plan-desc">Manuell bokföring för dig som vill ha full kontroll.</div>
+              <ul className="plan-features">
+                <li>Upp till 50 transaktioner/mån</li>
+                <li>Manuell verifikatregistrering</li>
+                <li>Momsrapporter & SKV 4700</li>
+                <li>SIE-export & import</li>
+              </ul>
+              <Link href="/auth/register" className="plan-btn">Kom igång</Link>
+            </div>
+
             <div className="price-card">
               <div className="plan-name">Starter</div>
               <div className="plan-price">199 <span>kr/mån</span></div>
@@ -613,7 +629,7 @@ export default function LandingPage() {
                 <li>AI-kontering</li>
                 <li>Bankkoppling</li>
                 <li>Momsrapporter</li>
-                <li>5 fakturor/mån</li>
+                <li>Fakturering</li>
               </ul>
               <Link href="/auth/register" className="plan-btn">Kom igång</Link>
             </div>
@@ -634,21 +650,11 @@ export default function LandingPage() {
               </ul>
               <Link href="/auth/register" className="plan-btn">Testa gratis 30 dagar</Link>
             </div>
-
-            <div className="price-card">
-              <div className="plan-name">Enterprise</div>
-              <div className="plan-price">Offert</div>
-              <div className="plan-desc">För bolag med komplexa behov och redovisningsbyråer.</div>
-              <ul className="plan-features">
-                <li>Allt i Tillväxt</li>
-                <li>Flertalet bolag</li>
-                <li>API-access</li>
-                <li>Dedikerad kontaktperson</li>
-                <li>Anpassad onboarding</li>
-              </ul>
-              <Link href="/auth/register" className="plan-btn">Kontakta oss</Link>
-            </div>
           </div>
+
+          <p className="section-sub" style={{ marginTop: "2rem" }}>
+            Behöver du Enterprise (redovisningsbyrå, flera bolag, API-access)? <a href="mailto:info@esbio.se" style={{ color: "var(--teal)", textDecoration: "underline" }}>Kontakta oss</a> för en skräddarsydd offert.
+          </p>
         </section>
 
         {/* TESTIMONIALS - removed, will add real reviews later */}

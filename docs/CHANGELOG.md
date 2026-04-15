@@ -4,7 +4,44 @@ Notable changes grouped by session / branch. For day-to-day history, use `git lo
 
 ---
 
-## Email integration + auth improvements — `dev` (2026-04-14)
+## SIE import + Mini plan + SKV 4700 PDF + org.nr validation (2026-04-15)
+
+**Status:** On `dev`, awaiting deploy.
+
+### Momsdeklaration (SKV 4700) PDF export
+- New endpoint `GET /api/v1/reports/vat/pdf?from_date=&to_date=`
+- Generates a Skatteverket-styled PDF mapping existing VAT report data to boxes 05, 10/11/12, 42, 48, 49 — user transcribes to Skatteverket's e-tjänst
+- "Ladda ner momsdeklaration (PDF)" button on `/reports/vat`
+
+### SIE 4 import (Fortnox/Visma migration)
+- New parser `service/sie_parser.go` — auto-detects encoding (UTF-8 / CP437 / ISO-8859-1), handles quoted strings with escapes, brace blocks, validates voucher balance
+- New import service `service/sie_import_service.go` — preview (dry-run) + commit; infers BAS account type/side/group from account number; skips unbalanced vouchers
+- New endpoints `POST /reports/sie/import/preview` and `POST /reports/sie/import` (multipart, 25MB cap)
+- Frontend: `/inställningar` → "Importera bokföring (SIE)" section with file picker, preview card (company/period/account/voucher counts, warnings), confirm-then-import flow
+- Test fixture at `server/testdata/sample_import.se`
+- Parser unit tests in `service/sie_parser_test.go` (6 cases)
+- **Bugfix:** initial implementation only persisted voucher headers; now also writes line items via `LineItemService`
+
+### Mini plan (99 kr/mån)
+- New plan tier added to Stripe price-to-plan mapping (`mini` for both test + live placeholders — replace `price_MINI_*_PLACEHOLDER` once Stripe products are created)
+- `/upgrade` page: third Mini card with limited feature list
+- Landing `/` pricing grid: Mini replaces Enterprise (which moves to small "Kontakta oss" line); pricing cards now use flexbox so all CTA buttons align horizontally
+- Sidebar plan badge shows "Mini / 99 kr/mån"
+- **Note:** no backend feature gating yet — Mini plan currently doesn't block AI/invoicing endpoints; gating middleware is a follow-up
+
+### Org.nummer validation (mandatory)
+- Shared FE helper `lib/utils/orgNumber.ts`: `formatOrgNumber()` auto-formats as XXXXXX-XXXX, `validateOrgNumber()` checks 10 digits + Luhn checksum
+- Applied to `/companies/new` and `/inställningar` forms — auto-format on input, error on blur, blocks submit on invalid
+- Backend defense in depth: `CompanyService.CreateCompany` and `UpdateCompany` reject empty/invalid org numbers and normalize to canonical form
+
+### Mobile sidebar fix
+- Logout + dark-mode toggle now appear inside nav (just below Hjälp) on mobile so iPhone Safari chrome doesn't hide them; desktop layout unchanged
+
+---
+
+## Email integration + auth improvements — DEPLOYED to prod (2026-04-14)
+
+**Status:** Live on `https://esbio.se` and `https://api.esbio.se`. Backend revision `esbio-backend-00040-grn`, frontend revision `esbio-frontend-00018-kgv`. DB migration 014 applied to prod Cloud SQL. `RESEND_API_KEY` configured in Cloud Run.
 
 ### Invoice email (Fas 5)
 - Send invoices via email with PDF attachment using Resend API
