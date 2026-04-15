@@ -149,10 +149,42 @@ func CompanyMiddleware(companyRepo repository.CompanyRepository) gin.HandlerFunc
 			}
 
 			c.Set("companyName", company.CompanyName)
+			c.Set("companyPlan", company.Plan)
 		}
 
 		c.Set("companyID", companyID)
 		c.Next()
+	}
+}
+
+// RequirePlan blocks the request unless the active company's plan is in
+// allowedPlans. Returns 402 with code FEATURE_NOT_IN_PLAN so the frontend
+// can route the user to /upgrade. Must run after CompanyMiddleware.
+//
+// The 30-day free trial is handled separately in CompanyMiddleware
+// (TRIAL_EXPIRED), and "free" is included in the allow-list for AI/invoicing
+// so trial users keep full feature access during their evaluation.
+func RequirePlan(allowedPlans ...string) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		planVal, exists := c.Get("companyPlan")
+		if !exists {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "company plan not loaded"})
+			c.Abort()
+			return
+		}
+		plan, _ := planVal.(string)
+		for _, p := range allowedPlans {
+			if plan == p {
+				c.Next()
+				return
+			}
+		}
+		c.JSON(http.StatusPaymentRequired, gin.H{
+			"error": "den här funktionen ingår inte i din plan",
+			"code":  "FEATURE_NOT_IN_PLAN",
+			"plan":  plan,
+		})
+		c.Abort()
 	}
 }
 

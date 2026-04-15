@@ -45,6 +45,12 @@ export class ApiClient {
           throw new Error("TRIAL_EXPIRED");
         }
 
+        // Feature not in current plan — surface message but don't redirect,
+        // caller can decide (e.g. show upgrade CTA inline).
+        if (response.status === 402 && errorData.code === "FEATURE_NOT_IN_PLAN") {
+          throw new Error(errorData.error || "Den här funktionen ingår inte i din plan");
+        }
+
         throw new Error(errorData.error || errorData.message || "Request failed");
       }
 
