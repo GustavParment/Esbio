@@ -216,7 +216,7 @@ func (s *StripeService) priceToPlan(priceID string) string {
 	case "price_1TKFFGF27XxV0Ooj3uaT41ho":
 		return "growth"
 	// Live/production prices
-	case "price_MINI_LIVE_PLACEHOLDER":
+	case "price_1TMRaZFQgVJ3jY3cOXaxsp29":
 		return "mini"
 	case "price_1TKG9DFQgVJ3jY3cTQwpxKd7":
 		return "starter"
