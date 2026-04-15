@@ -5,10 +5,12 @@ import { useRouter } from "next/navigation";
 import { companiesApi } from "@/lib/api/companies";
 import { useCompany } from "@/lib/contexts/CompanyContext";
 import Link from "next/link";
+import { formatOrgNumber, validateOrgNumber } from "@/lib/utils/orgNumber";
 
 export default function CreateCompanyPage() {
   const [companyName, setCompanyName] = useState("");
   const [orgNumber, setOrgNumber] = useState("");
+  const [orgError, setOrgError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const { refreshCompanies } = useCompany();
@@ -20,13 +22,18 @@ export default function CreateCompanyPage() {
       setError("Företagsnamn krävs");
       return;
     }
+    const orgErr = validateOrgNumber(orgNumber);
+    if (orgErr) {
+      setOrgError(orgErr);
+      return;
+    }
 
     setLoading(true);
     setError("");
     try {
       await companiesApi.create({
         company_name: companyName.trim(),
-        org_number: orgNumber.trim() || undefined,
+        org_number: orgNumber.trim(),
       });
       await refreshCompanies();
       router.push("/companies");
@@ -69,17 +76,28 @@ export default function CreateCompanyPage() {
 
             <div>
               <label htmlFor="org_number" className="block text-sm font-medium text-gray-700 mb-2">
-                Organisationsnummer (valfritt)
+                Organisationsnummer
               </label>
               <input
                 id="org_number"
                 type="text"
+                required
+                inputMode="numeric"
                 value={orgNumber}
-                onChange={(e) => setOrgNumber(e.target.value)}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 placeholder:text-gray-400"
+                onChange={(e) => {
+                  setOrgNumber(formatOrgNumber(e.target.value));
+                  setOrgError(null);
+                }}
+                onBlur={() => setOrgError(validateOrgNumber(orgNumber))}
+                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:border-transparent text-gray-900 placeholder:text-gray-400 ${
+                  orgError ? "border-red-400 focus:ring-red-500" : "border-gray-300 focus:ring-blue-500"
+                }`}
                 placeholder="559123-4567"
                 style={{ fontSize: "16px" }}
               />
+              {orgError && (
+                <p className="mt-1 text-xs text-red-600">{orgError}</p>
+              )}
             </div>
 
             {error && (

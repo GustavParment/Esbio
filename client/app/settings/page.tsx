@@ -10,6 +10,8 @@ import { stripeApi } from "@/lib/api/stripe";
 import { useRouter } from "next/navigation";
 import { apiClient } from "@/lib/api/client";
 import Link from "next/link";
+import SIEImportSection from "@/components/settings/SIEImportSection";
+import { formatOrgNumber, validateOrgNumber } from "@/lib/utils/orgNumber";
 
 export default function SettingsPage() {
   const { user, logout } = useAuth();
@@ -27,6 +29,7 @@ export default function SettingsPage() {
   const [supportMessage, setSupportMessage] = useState("");
   const [supportLoading, setSupportLoading] = useState(false);
   const [supportStatus, setSupportStatus] = useState<"" | "success" | "error">("");
+  const [orgError, setOrgError] = useState<string | null>(null);
 
   useEffect(() => {
     if (selectedCompany) {
@@ -37,6 +40,11 @@ export default function SettingsPage() {
 
   const handleSave = async () => {
     if (!selectedCompany) return;
+    const orgErr = validateOrgNumber(orgNumber);
+    if (orgErr) {
+      setOrgError(orgErr);
+      return;
+    }
     setLoading(true);
     setError("");
     setSuccess("");
@@ -89,11 +97,21 @@ export default function SettingsPage() {
             <input
               id="org_number"
               type="text"
+              inputMode="numeric"
               value={orgNumber}
-              onChange={(e) => setOrgNumber(e.target.value)}
+              onChange={(e) => {
+                setOrgNumber(formatOrgNumber(e.target.value));
+                setOrgError(null);
+              }}
+              onBlur={() => setOrgError(validateOrgNumber(orgNumber))}
               placeholder="559123-4567"
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 placeholder:text-gray-400"
+              className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:border-transparent text-gray-900 placeholder:text-gray-400 ${
+                orgError ? "border-red-400 focus:ring-red-500" : "border-gray-300 focus:ring-blue-500"
+              }`}
             />
+            {orgError && (
+              <p className="mt-1 text-xs text-red-600">{orgError}</p>
+            )}
           </div>
         </div>
 
@@ -117,6 +135,9 @@ export default function SettingsPage() {
           {loading ? "Sparar..." : "Spara"}
         </button>
       </div>
+
+      {/* SIE Import */}
+      <SIEImportSection />
 
       {/* Subscription */}
       {selectedCompany && (

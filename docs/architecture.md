@@ -59,7 +59,7 @@ All layers are wired up in `server/cmd/api/main.go`:
 2. Connect to PostgreSQL
 3. Create JWT manager
 4. Instantiate repositories (User, Company, Account, LineItem, Voucher, Report)
-5. Instantiate services with their repositories
+5. Instantiate services with their repositories (incl. `SIEGenerator` for export and `SIEImportService` for import — the latter wires `VoucherService`, `AccountService`, and `LineItemService` together because creating a voucher and its line items are two separate writes)
 6. Instantiate handlers with their services
 7. Register routes with Gin router
 8. Start server

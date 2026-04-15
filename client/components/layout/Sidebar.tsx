@@ -202,10 +202,18 @@ export default function Sidebar() {
         <div className="mx-3 mb-2">
           <div className="block px-3 py-3 rounded-lg text-sm bg-emerald-900/30 border border-emerald-700/50 text-emerald-300">
             <p className="font-medium">
-              {selectedCompany.plan === "starter" ? "Starter" : "Tillväxt"}
+              {selectedCompany.plan === "mini"
+                ? "Mini"
+                : selectedCompany.plan === "starter"
+                ? "Starter"
+                : "Tillväxt"}
             </p>
             <p className="text-xs mt-0.5 opacity-75">
-              {selectedCompany.plan === "starter" ? "199 kr/mån" : "399 kr/mån"}
+              {selectedCompany.plan === "mini"
+                ? "99 kr/mån"
+                : selectedCompany.plan === "starter"
+                ? "199 kr/mån"
+                : "399 kr/mån"}
             </p>
           </div>
         </div>

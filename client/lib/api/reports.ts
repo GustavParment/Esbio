@@ -60,6 +60,29 @@ export interface VATReport {
   net_vat: MoneyString;
 }
 
+export interface SIEImportResult {
+  accounts_created: number;
+  accounts_skipped: number;
+  vouchers_created: number;
+  vouchers_skipped: number;
+}
+
+export interface SIEImportSummary {
+  company_name: string;
+  org_number: string;
+  chart_type: string;
+  fiscal_from: string;
+  fiscal_to: string;
+  encoding: string;
+  accounts_in_file: number;
+  accounts_to_add: number;
+  vouchers_in_file: number;
+  unbalanced_count: number;
+  warnings: string[];
+  dry_run: boolean;
+  imported?: SIEImportResult;
+}
+
 export const reportsApi = {
   getIncomeStatement: async (fromDate: string, toDate: string): Promise<IncomeStatement> => {
     return apiClient.get<IncomeStatement>(`/reports/income-statement?from_date=${fromDate}&to_date=${toDate}`);
@@ -71,6 +94,23 @@ export const reportsApi = {
 
   getVATReport: async (fromDate: string, toDate: string): Promise<VATReport> => {
     return apiClient.get<VATReport>(`/reports/vat?from_date=${fromDate}&to_date=${toDate}`);
+  },
+
+  uploadSIE: async (file: File, dryRun: boolean): Promise<SIEImportSummary> => {
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL || "https://api.esbio.se/api/v1";
+    const path = dryRun ? "/reports/sie/import/preview" : "/reports/sie/import";
+    const form = new FormData();
+    form.append("file", file);
+    const response = await fetch(`${baseUrl}${path}`, {
+      method: "POST",
+      credentials: "include",
+      body: form,
+    });
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({ error: "Import failed" }));
+      throw new Error(err.error || "Failed to import SIE");
+    }
+    return response.json();
   },
 
   downloadVATDeclaration: async (fromDate: string, toDate: string): Promise<void> => {

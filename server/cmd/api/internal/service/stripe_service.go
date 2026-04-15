@@ -209,11 +209,15 @@ func (s *StripeService) HandleCheckoutCompleted(session *stripe.CheckoutSession)
 func (s *StripeService) priceToPlan(priceID string) string {
 	switch priceID {
 	// Test/sandbox prices
+	case "price_MINI_TEST_PLACEHOLDER":
+		return "mini"
 	case "price_1TKFEmF27XxV0OojLLuaOAfg":
 		return "starter"
 	case "price_1TKFFGF27XxV0Ooj3uaT41ho":
 		return "growth"
 	// Live/production prices
+	case "price_MINI_LIVE_PLACEHOLDER":
+		return "mini"
 	case "price_1TKG9DFQgVJ3jY3cTQwpxKd7":
 		return "starter"
 	case "price_1TKG9HFQgVJ3jY3cQWf0Tq16":
