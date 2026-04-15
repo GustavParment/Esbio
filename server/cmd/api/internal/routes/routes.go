@@ -27,6 +27,7 @@ func SetupRoutes(
 	invoicePDFHandler *handlers.InvoicePDFHandler,
 	invoiceEmailHandler *handlers.InvoiceEmailHandler,
 	supportHandler *handlers.SupportHandler,
+	vatPDFHandler *handlers.VATPDFHandler,
 	authMiddleware gin.HandlerFunc,
 	companyMiddleware gin.HandlerFunc) {
 
@@ -107,6 +108,7 @@ func SetupRoutes(
 			reports.GET("/income-statement", reportHandler.GetIncomeStatement)
 			reports.GET("/balance-sheet", reportHandler.GetBalanceSheet)
 			reports.GET("/vat", reportHandler.GetVATReport)
+			reports.GET("/vat/pdf", vatPDFHandler.GenerateVATDeclarationPDF)
 			reports.GET("/sie", sieHandler.ExportSIE)
 		}
 

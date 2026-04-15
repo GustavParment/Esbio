@@ -86,6 +86,7 @@ func main() {
 	agentService.SetInvoiceEmailServices(invoiceService, companyService, emailService)
 	invoiceEmailHandler := handlers.NewInvoiceEmailHandler(invoiceService, companyService, emailService)
 	supportHandler := handlers.NewSupportHandler(emailService, companyService)
+	vatPDFHandler := handlers.NewVATPDFHandler(reportService, companyService)
 
 	authMiddleware := middleware.AuthMiddleware(jwtManager)
 	companyMiddleware := middleware.CompanyMiddleware(companyRepo)
@@ -105,7 +106,7 @@ func main() {
 	// Add rate limiting (100 req/min per IP)
 	router.Use(middleware.RateLimitMiddleware())
 
-	routes.SetupRoutes(router, userHandler, accountHandler, lineItemHandler, voucherHandler, authHandler, pdfHandler, reportHandler, sieHandler, agentHandler, companyHandler, receiptHandler, stripeHandler, customerHandler, invoiceSettingsHandler, invoiceHandler, invoicePDFHandler, invoiceEmailHandler, supportHandler, authMiddleware, companyMiddleware)
+	routes.SetupRoutes(router, userHandler, accountHandler, lineItemHandler, voucherHandler, authHandler, pdfHandler, reportHandler, sieHandler, agentHandler, companyHandler, receiptHandler, stripeHandler, customerHandler, invoiceSettingsHandler, invoiceHandler, invoicePDFHandler, invoiceEmailHandler, supportHandler, vatPDFHandler, authMiddleware, companyMiddleware)
 
 	// Start the scheduler for recurring tasks
 	schedulerService := service.NewSchedulerService(scheduledTaskService, agentService, invoiceService, func() []int {

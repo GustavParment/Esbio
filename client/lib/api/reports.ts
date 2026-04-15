@@ -73,6 +73,23 @@ export const reportsApi = {
     return apiClient.get<VATReport>(`/reports/vat?from_date=${fromDate}&to_date=${toDate}`);
   },
 
+  downloadVATDeclaration: async (fromDate: string, toDate: string): Promise<void> => {
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL || "https://api.esbio.se/api/v1";
+    const response = await fetch(`${baseUrl}/reports/vat/pdf?from_date=${fromDate}&to_date=${toDate}`, {
+      credentials: "include",
+    });
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({ error: "Download failed" }));
+      throw new Error(err.error || "Failed to download momsdeklaration");
+    }
+    const blob = await response.blob();
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = `momsdeklaration_${fromDate}_${toDate}.pdf`;
+    a.click();
+    URL.revokeObjectURL(a.href);
+  },
+
   downloadSIE: async (fromDate: string, toDate: string): Promise<void> => {
     const baseUrl = process.env.NEXT_PUBLIC_API_URL || "https://api.esbio.se/api/v1";
     const response = await fetch(`${baseUrl}/reports/sie?from_date=${fromDate}&to_date=${toDate}`, {

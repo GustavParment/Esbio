@@ -10,6 +10,7 @@ export default function VATReportPage() {
   const [report, setReport] = useState<VATReport | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [downloading, setDownloading] = useState(false);
 
   // Default to current year
   const currentYear = new Date().getFullYear();
@@ -37,6 +38,19 @@ export default function VATReportPage() {
   useEffect(() => {
     fetchReport();
   }, []);
+
+  const downloadDeclaration = async () => {
+    if (!fromDate || !toDate) return;
+    setDownloading(true);
+    setError("");
+    try {
+      await reportsApi.downloadVATDeclaration(fromDate, toDate);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Kunde inte ladda ner momsdeklaration");
+    } finally {
+      setDownloading(false);
+    }
+  };
 
   const formatCurrency = (value: string | number) =>
     parseMoney(value).toLocaleString("sv-SE", {
@@ -109,11 +123,18 @@ export default function VATReportPage() {
       {/* Results */}
       {report && !loading && (
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-          <div className="p-6">
-            <h2 className="text-xl font-bold text-gray-900 mb-2">
+          <div className="p-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <h2 className="text-xl font-bold text-gray-900">
               Period: {new Date(report.period.from_date).toLocaleDateString("sv-SE")} till{" "}
               {new Date(report.period.to_date).toLocaleDateString("sv-SE")}
             </h2>
+            <button
+              onClick={downloadDeclaration}
+              disabled={downloading}
+              className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors font-medium text-sm disabled:opacity-50 whitespace-nowrap"
+            >
+              {downloading ? "Laddar ner..." : "Ladda ner momsdeklaration (PDF)"}
+            </button>
           </div>
 
           {/* VAT Entries Table */}
