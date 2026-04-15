@@ -23,7 +23,7 @@ const plans = [
       "Ingen fakturering",
     ],
     featured: false,
-    priceId: isLive ? "price_MINI_LIVE_PLACEHOLDER" : "price_MINI_TEST_PLACEHOLDER",
+    priceId: isLive ? "price_1TMRaZFQgVJ3jY3cOXaxsp29" : "price_MINI_TEST_PLACEHOLDER",
   },
   {
     id: "starter",
