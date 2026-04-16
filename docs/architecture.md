@@ -9,10 +9,11 @@ Esbio is a full-stack Swedish bookkeeping application built around double-entry 
 | Frontend     | Next.js 16, React 19, TypeScript    |
 | Styling      | Tailwind CSS 4                      |
 | Backend      | Go with Gin web framework           |
-| Database     | PostgreSQL 15 (Docker)              |
+| Database     | PostgreSQL 15 — Cloud SQL (prod), Docker (dev) |
 | Auth         | JWT (HS256) in httpOnly cookies     |
 | PDF          | go-pdf/fpdf                         |
 | Email        | Resend API (noreply@esbio.se)       |
+| Payments     | Stripe Checkout + webhooks          |
 
 ## High-Level Architecture
 
@@ -188,3 +189,143 @@ Monetary values are handled with `github.com/shopspring/decimal` end-to-end:
 This is an end-to-end correctness guarantee: `0.1 + 0.2` equals `0.3` exactly, voucher balance checks use strict equality (no epsilon), and SIE4 exports emit `.StringFixed(2)` directly from decimal.
 
 See [money-refactor-plan.md](./money-refactor-plan.md) for the rationale and rollout history.
+
+## SIE 4 Import
+
+SIE (Standard Import Export) is the Swedish standard for exchanging bookkeeping data. Esbio supports importing SIE 4 files to onboard existing companies.
+
+**Files:** `sie_parser.go`, `sie_import_service.go`, `sie_import_handler.go`
+
+**Endpoints:**
+- `POST /reports/sie/import/preview` — dry-run, returns summary without persisting
+- `POST /reports/sie/import` — parses, validates, and persists
+
+**Encoding auto-detection** (three-tier):
+1. Valid UTF-8 containing Swedish characters (åäöÅÄÖ) → UTF-8
+2. `#FORMAT PC8` directive in first 1KB → CP437
+3. Fallback → ISO-8859-1
+
+**Preview vs Commit:**
+- `PreviewImport()` parses the file and returns an `SIEImportSummary` (company name, org number, fiscal dates, encoding, account/voucher/unbalanced counts) — no database writes
+- `Import()` calls `PreviewImport()`, then:
+  1. Creates missing accounts via `AccountService` (skips existing)
+  2. Rejects unbalanced vouchers (never persists invalid bookkeeping)
+  3. Converts SIE amount convention (positive = debit, negative = credit) to debit/credit line items
+  4. Persists via `VoucherService.CreateVoucher()` + `LineItemService.CreateLineItem()`
+
+The `SIEImportService` constructor wires `VoucherService`, `AccountService`, and `LineItemService` together because creating a voucher and its line items are separate writes that need coordinated orchestration.
+
+## Plan Tiers & Feature Gating
+
+### Plans
+
+| Plan      | Price      | AI Agent | Invoicing | Notes                         |
+|-----------|------------|----------|-----------|-------------------------------|
+| `free`    | 0 kr       | Yes      | Yes       | 30-day trial, full access     |
+| `mini`    | 99 kr/mån  | No       | No        | Core bookkeeping only         |
+| `starter` | 199 kr/mån | Yes      | Yes       | Up to 100 transactions        |
+| `growth`  | 399 kr/mån | Yes      | Yes       | Unlimited, priority support   |
+
+### Middleware chain
+
+```
+AuthMiddleware → CompanyMiddleware → RequirePlan → Handler
+```
+
+1. **CompanyMiddleware** loads the company, checks trial expiration (30-day window for `free` plan → `TRIAL_EXPIRED`), checks payment status (`past_due` → `PAYMENT_PAST_DUE`), and sets `companyPlan` in the Gin context. Stripe routes are exempt from trial/payment checks so users can always reach the payment page.
+2. **RequirePlan(allowedPlans ...string)** reads `companyPlan` from context. Returns `402 FEATURE_NOT_IN_PLAN` if the plan isn't in the allow-list.
+
+**Gated routes:**
+- `/agent/*` → `RequirePlan("free", "starter", "growth")` — Mini blocked
+- `/invoices/*`, `/customers/*` → `RequirePlan("free", "starter", "growth")` — Mini blocked
+
+The sidebar hides gated tabs in the UI so Mini users don't see features they can't access.
+
+## Stripe Integration
+
+**File:** `stripe_service.go`, `stripe_handler.go`
+
+### Checkout flow
+
+1. Frontend calls `POST /stripe/checkout` with the desired plan
+2. Backend creates a Stripe Checkout Session with `company_id` in subscription metadata
+3. User completes payment on Stripe's hosted page
+4. Stripe fires `checkout.session.completed` webhook → backend processes it
+
+### Webhook defense-in-depth
+
+1. **Signature verification** — handler verifies Stripe webhook signature before passing to service
+2. **Re-fetch from Stripe API** — even with a valid signature, the service re-fetches the subscription directly from Stripe. A forged payload with a fake subscription ID will 404.
+3. **Company ID from metadata** — extracted from subscription metadata, not from the webhook payload body
+4. **Price mapping with rejection** — `priceToPlan(priceID)` returns empty string for unknown prices; callers reject rather than defaulting to a paid tier
+
+### Price → Plan mapping
+
+| Environment | Mini | Starter | Growth |
+|-------------|------|---------|--------|
+| Test | `price_MINI_TEST_PLACEHOLDER` | `price_1TKFEmF27XxV0OojLLuaOAfg` | `price_1TKFFGF27XxV0Ooj3uaT41ho` |
+| Live | `price_1TMRaZFQgVJ3jY3cOXaxsp29` | `price_1TKG9DFQgVJ3jY3cTQwpxKd7` | `price_1TKG9HFQgVJ3jY3cQWf0Tq16` |
+
+### Status mapping
+
+- `active` → plan active
+- `past_due` → blocked by CompanyMiddleware (402)
+- `canceled` / `unpaid` → reverts to `plan = "free"`, trial check kicks in
+- `trialing` → Stripe-side trial (not currently used; we use our own 30-day trial)
+
+## Organisationsnummer Validation
+
+Swedish org numbers are validated on both sides with a Luhn checksum and normalized to `XXXXXX-XXXX` format.
+
+**Frontend** (`lib/utils/orgNumber.ts`):
+- `validateOrgNumber()` — returns Swedish error message or null (empty, wrong length, bad checksum)
+- `formatOrgNumber()` — auto-formats input as the user types
+- `luhnValid()` — standard Luhn algorithm
+
+**Backend** (`company_service.go`, `normalizeOrgNumber()`):
+- Strips non-digits, validates length = 10, validates Luhn checksum
+- Returns canonical `XXXXXX-XXXX` form
+- Called on both `CreateCompany()` and `UpdateCompany()`
+
+Both layers validate independently — frontend for UX, backend for defense-in-depth.
+
+## SKV 4700 Momsdeklaration PDF
+
+**File:** `vat_pdf_handler.go`
+
+**Endpoint:** `GET /reports/vat/pdf?from_date=YYYY-MM-DD&to_date=YYYY-MM-DD`
+
+Generates a PDF matching the Skatteverket 4700 form (Swedish VAT declaration). VAT entries from `ReportService.GetVATReport()` are mapped to SKV boxes:
+
+| Box | Description | Source |
+|-----|-------------|--------|
+| 05 | Försäljning som beskattas i Sverige (ex moms) | Sum of sales at 25% + 12% + 6% |
+| 10 | Utgående moms 25% | VAT amount at 25% rate |
+| 11 | Utgående moms 12% | VAT amount at 12% rate |
+| 12 | Utgående moms 6% | VAT amount at 6% rate |
+| 42 | Övrig försäljning m.m. (momsfri) | Sales at 0% rate |
+| 48 | Ingående moms att dra av | Total input VAT (purchases) |
+| 49 | Moms att betala / få tillbaka | Net VAT (positive = pay, negative = refund) |
+
+The PDF includes sections A (taxable sales), B (output VAT), H (input VAT), and a final net amount with conditional labeling.
+
+## Cloud SQL & Database Connectivity
+
+### Development
+- PostgreSQL 15 in Docker, exposed on port **5433** (not 5432)
+- Connection: `postgres://postgres:postgres@localhost:5433/bookkeeping?sslmode=disable`
+
+### Production
+- **Google Cloud SQL** instance `esbio-app:europe-north1:esbio-db`
+- Backend connects via Cloud SQL Unix socket (`/cloudsql/esbio-app:europe-north1:esbio-db`), configured through the `DATABASE_URL` env var on Cloud Run
+- **Hardened** (2026-04-15):
+  - `authorizedNetworks: []` — no internet access to DB
+  - `sslMode: ENCRYPTED_ONLY` — unencrypted connections rejected
+  - Public IP still present (Cloud SQL requires at least one of public/private/PSC) but unreachable from outside
+- Full private IP migration (VPC + Serverless VPC Access connector) deferred due to cost (~$36/mo)
+
+### Connection pooling
+- Max open connections: 25
+- Max idle connections: 5
+- Ping validation on creation
+- Deferred close on graceful shutdown
