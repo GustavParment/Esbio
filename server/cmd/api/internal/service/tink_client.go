@@ -43,18 +43,37 @@ type TinkTokenResponse struct {
 }
 
 type TinkAccount struct {
-	ID            string             `json:"id"`
-	Name          string             `json:"name"`
-	Type          string             `json:"type"`
-	IBAN          string             `json:"iban"`
-	AccountNumber TinkAccountNumber  `json:"identifiers"`
-	Balances      TinkBalances       `json:"balances"`
+	ID          string             `json:"id"`
+	Name        string             `json:"name"`
+	Type        string             `json:"type"`
+	Identifiers TinkIdentifiers    `json:"identifiers"`
+	Balances    TinkBalances       `json:"balances"`
+	HolderName  string             `json:"holderName"`
+	Dates       *TinkAccountDates  `json:"dates,omitempty"`
 }
 
-type TinkAccountNumber struct {
-	SortCode      string `json:"sortCode"`
+type TinkAccountDates struct {
+	LastRefreshed string `json:"lastRefreshed"`
+}
+
+type TinkIdentifiers struct {
+	IBAN      *TinkIBAN      `json:"iban,omitempty"`
+	SortCode  *TinkSortCode  `json:"sortCode,omitempty"`
+	PAN       *TinkPAN       `json:"pan,omitempty"`
+}
+
+type TinkIBAN struct {
+	IBAN string `json:"iban"`
+	BBAN string `json:"bban"`
+}
+
+type TinkSortCode struct {
 	AccountNumber string `json:"accountNumber"`
-	IBAN          string `json:"iban"`
+	Code          string `json:"code"`
+}
+
+type TinkPAN struct {
+	Masked string `json:"masked"`
 }
 
 type TinkBalances struct {
@@ -62,13 +81,17 @@ type TinkBalances struct {
 }
 
 type TinkAmount struct {
-	Amount   TinkCurrencyAmount `json:"amount"`
+	Amount TinkCurrencyAmount `json:"amount"`
 }
 
 type TinkCurrencyAmount struct {
-	Value        string `json:"unscaledValue"`
-	Scale        int    `json:"scale"`
-	CurrencyCode string `json:"currencyCode"`
+	CurrencyCode string         `json:"currencyCode"`
+	Value        TinkScaledValue `json:"value"`
+}
+
+type TinkScaledValue struct {
+	UnscaledValue string `json:"unscaledValue"`
+	Scale         string `json:"scale"`
 }
 
 type TinkAccountsResponse struct {

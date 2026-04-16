@@ -389,3 +389,55 @@ export interface MarkAsPaidRequest {
   payment_date: string;
   payment_account?: number;
 }
+
+// Bank feed types
+
+export type BankImportStatus = 'pending' | 'suggested' | 'approved' | 'skipped' | 'booked';
+
+export interface BankConnection {
+  connection_id: number;
+  company_id: number;
+  bank_name: string;
+  status: string;
+  consent_expires_at: string;
+  last_synced_at?: string;
+  created_at: string;
+}
+
+export interface BankAccount {
+  bank_account_id: number;
+  connection_id: number;
+  company_id: number;
+  tink_account_id: string;
+  account_name: string;
+  holder_name?: string;
+  account_type?: string;
+  iban?: string;
+  account_number?: string;
+  currency: string;
+  balance_amount?: MoneyString;
+  balance_updated_at?: string;
+  mapped_account_no?: number;
+}
+
+export interface BankTransaction {
+  bank_transaction_id: number;
+  bank_account_id: number;
+  company_id: number;
+  booked_date: string;
+  amount: MoneyString;
+  currency: string;
+  description_original: string;
+  description_display?: string;
+  merchant_name?: string;
+  import_status: BankImportStatus;
+  suggested_account_no?: number;
+  suggested_description?: string;
+  voucher_id?: number;
+}
+
+export interface ImportTransactionRequest {
+  account_no: number;
+  description: string;
+  tax_code: number;
+}

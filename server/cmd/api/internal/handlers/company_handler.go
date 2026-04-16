@@ -97,6 +97,41 @@ func (h *CompanyHandler) CreateCompany(c *gin.Context) {
 	c.JSON(http.StatusCreated, company)
 }
 
+// GetSelectedCompany handles GET /companies/selected — returns the currently selected company from the cookie.
+func (h *CompanyHandler) GetSelectedCompany(c *gin.Context) {
+	userID, exists := c.Get("userID")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "not authenticated"})
+		return
+	}
+
+	companyIDStr, err := c.Cookie("company_id")
+	if err != nil || companyIDStr == "" {
+		c.JSON(http.StatusOK, gin.H{"company": nil})
+		return
+	}
+
+	companyID, err := strconv.Atoi(companyIDStr)
+	if err != nil {
+		c.JSON(http.StatusOK, gin.H{"company": nil})
+		return
+	}
+
+	owns, err := h.companyService.UserOwnsCompany(userID.(int), companyID)
+	if err != nil || !owns {
+		c.JSON(http.StatusOK, gin.H{"company": nil})
+		return
+	}
+
+	company, err := h.companyService.GetCompanyByID(companyID)
+	if err != nil {
+		c.JSON(http.StatusOK, gin.H{"company": nil})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"company": company})
+}
+
 // SelectCompany handles POST /companies/select
 func (h *CompanyHandler) SelectCompany(c *gin.Context) {
 	userID, exists := c.Get("userID")
@@ -120,8 +155,8 @@ func (h *CompanyHandler) SelectCompany(c *gin.Context) {
 		return
 	}
 
-	// Set company_id cookie
-	setCookie(c, "company_id", strconv.Itoa(req.CompanyID), 604800)
+	// Set company_id cookie (readable by JS so CompanyContext can restore it on page load)
+	setReadableCookie(c, "company_id", strconv.Itoa(req.CompanyID), 604800)
 
 	company, _ := h.companyService.GetCompanyByID(req.CompanyID)
 	c.JSON(http.StatusOK, gin.H{"message": "company selected", "company": company})

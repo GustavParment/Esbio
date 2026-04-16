@@ -27,10 +27,12 @@ func NewBankAccountRepository(db *sql.DB) BankAccountRepository {
 
 func (r *bankAccountRepository) Create(account *domain.BankAccount) error {
 	query := `
-		INSERT INTO bank_accounts (connection_id, company_id, tink_account_id, account_name, iban, account_number, currency, balance_amount, balance_updated_at, mapped_account_no)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+		INSERT INTO bank_accounts (connection_id, company_id, tink_account_id, account_name, holder_name, account_type, iban, account_number, currency, balance_amount, balance_updated_at, mapped_account_no)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
 		ON CONFLICT (tink_account_id) DO UPDATE SET
 			account_name = EXCLUDED.account_name,
+			holder_name = EXCLUDED.holder_name,
+			account_type = EXCLUDED.account_type,
 			balance_amount = EXCLUDED.balance_amount,
 			balance_updated_at = EXCLUDED.balance_updated_at,
 			updated_at = CURRENT_TIMESTAMP
@@ -38,7 +40,8 @@ func (r *bankAccountRepository) Create(account *domain.BankAccount) error {
 	`
 	return r.db.QueryRow(query,
 		account.ConnectionID, account.CompanyID, account.TinkAccountID,
-		account.AccountName, account.IBAN, account.AccountNumber,
+		account.AccountName, account.HolderName, account.AccountType,
+		account.IBAN, account.AccountNumber,
 		account.Currency, account.BalanceAmount, account.BalanceUpdatedAt,
 		account.MappedAccountNo,
 	).Scan(&account.BankAccountID, &account.CreatedAt, &account.UpdatedAt)
@@ -46,13 +49,13 @@ func (r *bankAccountRepository) Create(account *domain.BankAccount) error {
 
 func (r *bankAccountRepository) GetByID(bankAccountID int) (*domain.BankAccount, error) {
 	query := `
-		SELECT bank_account_id, connection_id, company_id, tink_account_id, account_name, iban, account_number, currency, balance_amount, balance_updated_at, mapped_account_no, created_at, updated_at
+		SELECT bank_account_id, connection_id, company_id, tink_account_id, account_name, holder_name, account_type, iban, account_number, currency, balance_amount, balance_updated_at, mapped_account_no, created_at, updated_at
 		FROM bank_accounts WHERE bank_account_id = $1
 	`
 	a := &domain.BankAccount{}
 	err := r.db.QueryRow(query, bankAccountID).Scan(
 		&a.BankAccountID, &a.ConnectionID, &a.CompanyID, &a.TinkAccountID,
-		&a.AccountName, &a.IBAN, &a.AccountNumber, &a.Currency,
+		&a.AccountName, &a.HolderName, &a.AccountType, &a.IBAN, &a.AccountNumber, &a.Currency,
 		&a.BalanceAmount, &a.BalanceUpdatedAt, &a.MappedAccountNo,
 		&a.CreatedAt, &a.UpdatedAt,
 	)
@@ -67,7 +70,7 @@ func (r *bankAccountRepository) GetByID(bankAccountID int) (*domain.BankAccount,
 
 func (r *bankAccountRepository) GetByCompanyID(companyID int) ([]*domain.BankAccount, error) {
 	query := `
-		SELECT bank_account_id, connection_id, company_id, tink_account_id, account_name, iban, account_number, currency, balance_amount, balance_updated_at, mapped_account_no, created_at, updated_at
+		SELECT bank_account_id, connection_id, company_id, tink_account_id, account_name, holder_name, account_type, iban, account_number, currency, balance_amount, balance_updated_at, mapped_account_no, created_at, updated_at
 		FROM bank_accounts WHERE company_id = $1
 		ORDER BY account_name
 	`
@@ -82,7 +85,7 @@ func (r *bankAccountRepository) GetByCompanyID(companyID int) ([]*domain.BankAcc
 		a := &domain.BankAccount{}
 		if err := rows.Scan(
 			&a.BankAccountID, &a.ConnectionID, &a.CompanyID, &a.TinkAccountID,
-			&a.AccountName, &a.IBAN, &a.AccountNumber, &a.Currency,
+			&a.AccountName, &a.HolderName, &a.AccountType, &a.IBAN, &a.AccountNumber, &a.Currency,
 			&a.BalanceAmount, &a.BalanceUpdatedAt, &a.MappedAccountNo,
 			&a.CreatedAt, &a.UpdatedAt,
 		); err != nil {
@@ -95,7 +98,7 @@ func (r *bankAccountRepository) GetByCompanyID(companyID int) ([]*domain.BankAcc
 
 func (r *bankAccountRepository) GetByConnectionID(connectionID int) ([]*domain.BankAccount, error) {
 	query := `
-		SELECT bank_account_id, connection_id, company_id, tink_account_id, account_name, iban, account_number, currency, balance_amount, balance_updated_at, mapped_account_no, created_at, updated_at
+		SELECT bank_account_id, connection_id, company_id, tink_account_id, account_name, holder_name, account_type, iban, account_number, currency, balance_amount, balance_updated_at, mapped_account_no, created_at, updated_at
 		FROM bank_accounts WHERE connection_id = $1
 		ORDER BY account_name
 	`
@@ -110,7 +113,7 @@ func (r *bankAccountRepository) GetByConnectionID(connectionID int) ([]*domain.B
 		a := &domain.BankAccount{}
 		if err := rows.Scan(
 			&a.BankAccountID, &a.ConnectionID, &a.CompanyID, &a.TinkAccountID,
-			&a.AccountName, &a.IBAN, &a.AccountNumber, &a.Currency,
+			&a.AccountName, &a.HolderName, &a.AccountType, &a.IBAN, &a.AccountNumber, &a.Currency,
 			&a.BalanceAmount, &a.BalanceUpdatedAt, &a.MappedAccountNo,
 			&a.CreatedAt, &a.UpdatedAt,
 		); err != nil {
@@ -123,13 +126,13 @@ func (r *bankAccountRepository) GetByConnectionID(connectionID int) ([]*domain.B
 
 func (r *bankAccountRepository) GetByTinkAccountID(tinkAccountID string) (*domain.BankAccount, error) {
 	query := `
-		SELECT bank_account_id, connection_id, company_id, tink_account_id, account_name, iban, account_number, currency, balance_amount, balance_updated_at, mapped_account_no, created_at, updated_at
+		SELECT bank_account_id, connection_id, company_id, tink_account_id, account_name, holder_name, account_type, iban, account_number, currency, balance_amount, balance_updated_at, mapped_account_no, created_at, updated_at
 		FROM bank_accounts WHERE tink_account_id = $1
 	`
 	a := &domain.BankAccount{}
 	err := r.db.QueryRow(query, tinkAccountID).Scan(
 		&a.BankAccountID, &a.ConnectionID, &a.CompanyID, &a.TinkAccountID,
-		&a.AccountName, &a.IBAN, &a.AccountNumber, &a.Currency,
+		&a.AccountName, &a.HolderName, &a.AccountType, &a.IBAN, &a.AccountNumber, &a.Currency,
 		&a.BalanceAmount, &a.BalanceUpdatedAt, &a.MappedAccountNo,
 		&a.CreatedAt, &a.UpdatedAt,
 	)

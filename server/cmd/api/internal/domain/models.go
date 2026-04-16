@@ -252,6 +252,8 @@ type BankAccount struct {
     CompanyID        int              `json:"company_id"`
     TinkAccountID    string           `json:"tink_account_id"`
     AccountName      string           `json:"account_name"`
+    HolderName       *string          `json:"holder_name"`
+    AccountType      *string          `json:"account_type"`
     IBAN             *string          `json:"iban"`
     AccountNumber    *string          `json:"account_number"`
     Currency         string           `json:"currency"`

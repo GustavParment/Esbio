@@ -50,6 +50,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = async () => {
     await authApi.logout();
+    localStorage.removeItem("selectedCompanyId");
     setUser(null);
     router.push("/auth/login");
   };

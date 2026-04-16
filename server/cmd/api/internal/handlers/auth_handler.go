@@ -20,6 +20,14 @@ import (
 )
 
 func setCookie(c *gin.Context, name, value string, maxAge int) {
+	setCookieWithOptions(c, name, value, maxAge, true)
+}
+
+func setReadableCookie(c *gin.Context, name, value string, maxAge int) {
+	setCookieWithOptions(c, name, value, maxAge, false)
+}
+
+func setCookieWithOptions(c *gin.Context, name, value string, maxAge int, httpOnly bool) {
 	sameSite := http.SameSiteNoneMode
 	secure := true
 
@@ -36,7 +44,7 @@ func setCookie(c *gin.Context, name, value string, maxAge int) {
 		MaxAge:   maxAge,
 		Path:     "/",
 		Secure:   secure,
-		HttpOnly: true,
+		HttpOnly: httpOnly,
 		SameSite: sameSite,
 	})
 }
@@ -355,7 +363,7 @@ func (h *AuthHandler) DeleteAccount(c *gin.Context) {
 
 	// Clear auth cookies
 	setCookie(c, "token", "", -1)
-	setCookie(c, "company_id", "", -1)
+	setReadableCookie(c, "company_id", "", -1)
 
 	c.JSON(http.StatusOK, gin.H{"message": "account deleted successfully"})
 }

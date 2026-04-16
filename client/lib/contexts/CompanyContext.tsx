@@ -24,17 +24,28 @@ const CompanyContext = createContext<CompanyContextType>({
 export function CompanyProvider({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
   const [companies, setCompanies] = useState<Company[]>([]);
-  const [selectedCompany, setSelectedCompany] = useState<Company | null>(null);
+  const [selectedCompany, setSelectedCompany] = useState<Company | null>(() => {
+    // Sync restore from localStorage to prevent ProtectedRoute redirect before API loads
+    if (typeof window !== "undefined") {
+      const savedId = localStorage.getItem("selectedCompanyId");
+      if (savedId) {
+        return { company_id: parseInt(savedId) } as Company;
+      }
+    }
+    return null;
+  });
   const [loading, setLoading] = useState(true);
 
   const refreshCompanies = useCallback(async () => {
     if (!user) {
       setCompanies([]);
-      setSelectedCompany(null);
+      // Don't clear selectedCompany or localStorage here — auth might still be loading.
+      // These get cleared on explicit logout (user goes from set → null).
       setLoading(false);
       return;
     }
 
+    setLoading(true);
     try {
       const data = await companiesApi.list();
       const list = Array.isArray(data) ? data : [];
@@ -44,6 +55,14 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
       if (selectedCompany) {
         const updated = list.find(c => c.company_id === selectedCompany.company_id);
         if (updated) setSelectedCompany(updated);
+      } else {
+        // Restore selected company from localStorage (survives page reloads + external redirects)
+        const savedId = localStorage.getItem("selectedCompanyId");
+        if (savedId) {
+          const id = parseInt(savedId);
+          const company = list.find(c => c.company_id === id);
+          if (company) setSelectedCompany(company);
+        }
       }
     } catch {
       setCompanies([]);
@@ -62,6 +81,7 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
       const company = companies.find(c => c.company_id === companyId);
       if (company) {
         setSelectedCompany(company);
+        localStorage.setItem("selectedCompanyId", String(companyId));
       }
     } catch (err) {
       console.error("Failed to select company:", err);

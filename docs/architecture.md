@@ -329,3 +329,84 @@ The PDF includes sections A (taxable sales), B (output VAT), H (input VAT), and 
 - Max idle connections: 5
 - Ping validation on creation
 - Deferred close on graceful shutdown
+
+## Tink Bank Feed (Open Banking)
+
+Esbio integrates with [Tink](https://tink.com) (Visa) for Swedish bank account connectivity via PSD2 Open Banking.
+
+**Files:**
+- `tink_client.go` — low-level Tink API wrapper (OAuth token exchange, accounts, transactions)
+- `tink_service.go` — business logic (connect, sync, import, categorization, AES-256-GCM token encryption)
+- `bank_handler.go` — HTTP endpoints
+- Repositories: `bank_connection_repository.go`, `bank_account_repository.go`, `bank_transaction_repository.go`, `categorization_rule_repository.go`, `tink_oauth_state_repository.go`
+- Frontend: `app/bank/page.tsx`, `app/bank/callback/page.tsx`, `lib/api/bank.ts`
+
+### Connect flow
+
+```
+User clicks "Koppla bank"
+    → Backend generates CSRF state token (stored in tink_oauth_state, 15min TTL)
+    → Returns Tink Link URL
+    → User redirects to link.tink.com, authenticates with bank
+    → Tink redirects to /bank/callback?code=...&state=...
+    → Frontend POSTs state+code to backend (auth only, no company middleware)
+    → Backend validates state, exchanges code for access token
+    → Encrypts token (AES-256-GCM), stores connection + accounts
+    → Frontend redirects to /bank?connected=true
+```
+
+### Sync flow
+
+Manual sync (user clicks "Synka"):
+1. Decrypt stored access token
+2. Fetch transactions from Tink API for each bank account
+3. Bulk upsert into `bank_transactions` (deduplication via `tink_transaction_id` UNIQUE)
+4. Auto-suggest accounts using `bank_categorization_rules` pattern matching
+5. Update account balances and `last_synced_at`
+
+### Transaction import
+
+When user imports a bank transaction as a voucher:
+1. Create voucher with 2 line items: bank BAS account (e.g. 1930) ↔ target account
+2. Positive amount = income (debit bank, credit target); negative = expense (credit bank, debit target)
+3. Mark transaction as `booked`, link to voucher
+4. Upsert categorization rule from merchant/description → account mapping (learning)
+
+### Categorization rules
+
+The system learns from user imports. When a transaction is imported with account 6110 and merchant "Telia", a rule is created: `match_pattern: "Telia", match_type: "contains", account_no: 6110`. Future syncs auto-suggest 6110 for Telia transactions.
+
+### Token security
+
+- Access tokens encrypted at rest with AES-256-GCM (`TINK_ENCRYPTION_KEY` env var, 32 bytes hex)
+- Dev mode: if no key configured, tokens stored in plaintext with warning log
+- OAuth state tokens are single-use (DELETE on read) with 15-minute expiry
+
+### Endpoints
+
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| POST | `/bank/connect` | auth+company | Returns Tink Link URL |
+| POST | `/bank/callback` | auth only | Processes OAuth callback (companyID from state token) |
+| GET | `/bank/connections` | auth+company | List connections |
+| GET | `/bank/accounts` | auth+company | List bank accounts |
+| GET | `/bank/transactions` | auth+company | List transactions (query: status, limit, offset) |
+| POST | `/bank/sync/:connectionId` | auth+company | Manual sync |
+| PUT | `/bank/accounts/:id/map` | auth+company | Map to BAS account |
+| POST | `/bank/transactions/:id/import` | auth+company | Create voucher from transaction |
+| POST | `/bank/transactions/:id/skip` | auth+company | Mark as skipped |
+| DELETE | `/bank/connections/:id` | auth+company | Disconnect bank |
+
+### Plan gating
+
+Bank feed requires `RequirePlan("free", "starter", "growth")` — Mini plan blocked. Sidebar hides the Bank tab for Mini users.
+
+## Company Selection Persistence
+
+`CompanyContext` persists the selected company across page reloads and external redirects (e.g. Tink OAuth) using `localStorage`:
+
+- **On select:** `localStorage.setItem("selectedCompanyId", id)` + backend `company_id` cookie
+- **On mount:** `useState` initializer reads localStorage synchronously before first render, creating a placeholder `{ company_id }` object. This prevents `ProtectedRoute` from redirecting to `/companies` before the API loads the full company data.
+- **On logout:** `localStorage.removeItem("selectedCompanyId")`
+- The `company_id` cookie is set as non-httpOnly (it's just an integer, not sensitive) so the backend `CompanyMiddleware` can also read it.
+- `GET /companies/selected` endpoint reads the cookie and returns the full company object (used for verification).

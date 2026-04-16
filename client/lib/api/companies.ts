@@ -6,6 +6,11 @@ export const companiesApi = {
     return apiClient.get<Company[]>("/companies");
   },
 
+  getSelected: async (): Promise<Company | null> => {
+    const res = await apiClient.get<{ company: Company | null }>("/companies/selected");
+    return res.company;
+  },
+
   create: async (data: CreateCompanyRequest): Promise<Company> => {
     return apiClient.post<Company>("/companies", data);
   },

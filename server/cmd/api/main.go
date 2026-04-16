@@ -90,6 +90,15 @@ func main() {
 	sieImportService := service.NewSIEImportService(voucherService, accountService, lineItemService)
 	sieImportHandler := handlers.NewSIEImportHandler(sieImportService)
 
+	bankConnRepo := repository.NewBankConnectionRepository(db)
+	bankAcctRepo := repository.NewBankAccountRepository(db)
+	bankTxnRepo := repository.NewBankTransactionRepository(db)
+	catRuleRepo := repository.NewCategorizationRuleRepository(db)
+	tinkStateRepo := repository.NewTinkOAuthStateRepository(db)
+	tinkClient := service.NewTinkClient(cfg.TinkClientID, cfg.TinkClientSecret, cfg.TinkCallbackURL)
+	tinkService := service.NewTinkService(tinkClient, cfg.TinkEncryptionKey, bankConnRepo, bankAcctRepo, bankTxnRepo, catRuleRepo, tinkStateRepo, voucherService, lineItemService, cfg.FrontendURL)
+	bankHandler := handlers.NewBankHandler(tinkService)
+
 	authMiddleware := middleware.AuthMiddleware(jwtManager)
 	companyMiddleware := middleware.CompanyMiddleware(companyRepo)
 
@@ -108,7 +117,7 @@ func main() {
 	// Add rate limiting (100 req/min per IP)
 	router.Use(middleware.RateLimitMiddleware())
 
-	routes.SetupRoutes(router, userHandler, accountHandler, lineItemHandler, voucherHandler, authHandler, pdfHandler, reportHandler, sieHandler, agentHandler, companyHandler, receiptHandler, stripeHandler, customerHandler, invoiceSettingsHandler, invoiceHandler, invoicePDFHandler, invoiceEmailHandler, supportHandler, vatPDFHandler, sieImportHandler, authMiddleware, companyMiddleware)
+	routes.SetupRoutes(router, userHandler, accountHandler, lineItemHandler, voucherHandler, authHandler, pdfHandler, reportHandler, sieHandler, agentHandler, companyHandler, receiptHandler, stripeHandler, customerHandler, invoiceSettingsHandler, invoiceHandler, invoicePDFHandler, invoiceEmailHandler, supportHandler, vatPDFHandler, sieImportHandler, bankHandler, authMiddleware, companyMiddleware)
 
 	// Start the scheduler for recurring tasks
 	schedulerService := service.NewSchedulerService(scheduledTaskService, agentService, invoiceService, func() []int {

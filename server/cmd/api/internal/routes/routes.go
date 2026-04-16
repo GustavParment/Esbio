@@ -29,6 +29,7 @@ func SetupRoutes(
 	supportHandler *handlers.SupportHandler,
 	vatPDFHandler *handlers.VATPDFHandler,
 	sieImportHandler *handlers.SIEImportHandler,
+	bankHandler *handlers.BankHandler,
 	authMiddleware gin.HandlerFunc,
 	companyMiddleware gin.HandlerFunc) {
 
@@ -51,6 +52,7 @@ func SetupRoutes(
 		companies := v1.Group("/companies", authMiddleware)
 		{
 			companies.GET("", companyHandler.ListCompanies)
+			companies.GET("/selected", companyHandler.GetSelectedCompany)
 			companies.POST("", companyHandler.CreateCompany)
 			companies.POST("/select", companyHandler.SelectCompany)
 			companies.PUT("/:id", companyHandler.UpdateCompany)
@@ -165,6 +167,22 @@ func SetupRoutes(
 			stripeGroup.POST("/portal", authMiddleware, companyMiddleware, stripeHandler.CreatePortalSession)
 			// Webhook is called by Stripe — no auth
 			stripeGroup.POST("/webhook", stripeHandler.HandleWebhook)
+		}
+
+		// Bank callback only needs auth — companyID is in the state token
+		v1.POST("/bank/callback", authMiddleware, bankHandler.Callback)
+
+		bank := v1.Group("/bank", authMiddleware, companyMiddleware, middleware.RequirePlan("free", "starter", "growth"))
+		{
+			bank.POST("/connect", bankHandler.Connect)
+			bank.GET("/connections", bankHandler.ListConnections)
+			bank.GET("/accounts", bankHandler.ListAccounts)
+			bank.GET("/transactions", bankHandler.ListTransactions)
+			bank.POST("/sync/:connectionId", bankHandler.SyncTransactions)
+			bank.PUT("/accounts/:id/map", bankHandler.MapAccount)
+			bank.POST("/transactions/:id/import", bankHandler.ImportTransaction)
+			bank.POST("/transactions/:id/skip", bankHandler.SkipTransaction)
+			bank.DELETE("/connections/:id", bankHandler.DisconnectBank)
 		}
 	}
 }
