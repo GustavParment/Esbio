@@ -90,7 +90,7 @@ export default function VouchersPage() {
               href="/vouchers/scan"
               className="px-4 py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium text-sm text-center"
             >
-              Skanna kvitto
+              Skanna kvitto / PDF
             </Link>
             <Link
               href="/vouchers/new"

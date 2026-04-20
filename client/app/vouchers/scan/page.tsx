@@ -29,6 +29,8 @@ export default function ScanReceiptPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [preview, setPreview] = useState<string | null>(null);
+  const [previewKind, setPreviewKind] = useState<"image" | "pdf" | null>(null);
+  const [previewName, setPreviewName] = useState<string>("");
   const [scanResult, setScanResult] = useState<ReceiptScanResult | null>(null);
   const [accounts, setAccounts] = useState<Account[]>([]);
 
@@ -59,10 +61,23 @@ export default function ScanReceiptPage() {
     setError("");
     setScanResult(null);
 
-    // Show preview
-    const reader = new FileReader();
-    reader.onload = (e) => setPreview(e.target?.result as string);
-    reader.readAsDataURL(file);
+    const isPdf = file.type === "application/pdf";
+    const isImage = file.type.startsWith("image/");
+    if (!isPdf && !isImage) {
+      setError("Ogiltigt filformat. Ladda upp en bild (JPEG, PNG, WebP, HEIC) eller PDF.");
+      return;
+    }
+
+    setPreviewKind(isPdf ? "pdf" : "image");
+    setPreviewName(file.name);
+
+    if (isImage) {
+      const reader = new FileReader();
+      reader.onload = (e) => setPreview(e.target?.result as string);
+      reader.readAsDataURL(file);
+    } else {
+      setPreview(null);
+    }
 
     // Scan
     setScanning(true);
@@ -99,7 +114,7 @@ export default function ScanReceiptPage() {
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     const file = e.dataTransfer.files[0];
-    if (file && file.type.startsWith("image/")) {
+    if (file && (file.type.startsWith("image/") || file.type === "application/pdf")) {
       handleFileSelect(file);
     }
   };
@@ -200,8 +215,8 @@ export default function ScanReceiptPage() {
           <button onClick={() => router.back()} className="text-sm text-gray-600 hover:text-gray-900 mb-4 flex items-center gap-2">
             ← Tillbaka
           </button>
-          <h1 className="text-3xl font-bold text-gray-900">Skanna kvitto</h1>
-          <p className="text-gray-600 mt-2">Ladda upp ett kvitto eller faktura — AI:n läser av och föreslår kontering</p>
+          <h1 className="text-3xl font-bold text-gray-900">Skanna kvitto eller PDF</h1>
+          <p className="text-gray-600 mt-2">Ladda upp ett kvitto, faktura eller PDF — AI:n läser av och föreslår kontering</p>
         </div>
 
         {/* Upload area */}
@@ -217,7 +232,7 @@ export default function ScanReceiptPage() {
             <input
               ref={fileInputRef}
               type="file"
-              accept="image/*"
+              accept="image/*,application/pdf"
               className="hidden"
               onChange={(e) => {
                 const file = e.target.files?.[0];
@@ -228,15 +243,15 @@ export default function ScanReceiptPage() {
             {scanning ? (
               <div>
                 <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500 mx-auto mb-4" />
-                <p className="text-lg font-medium text-blue-700">AI:n analyserar kvittot...</p>
+                <p className="text-lg font-medium text-blue-700">AI:n analyserar dokumentet...</p>
                 <p className="text-sm text-blue-500 mt-1">Detta kan ta några sekunder</p>
               </div>
             ) : (
               <div>
-                <div className="text-5xl mb-4">📸</div>
-                <p className="text-lg font-medium text-gray-900">Dra och släpp ett kvitto här</p>
-                <p className="text-sm text-gray-500 mt-2">eller klicka för att välja en bild (JPEG, PNG, WebP)</p>
-                <p className="text-xs text-gray-400 mt-1">Max 10 MB</p>
+                <div className="text-5xl mb-4">📄</div>
+                <p className="text-lg font-medium text-gray-900">Dra och släpp ett kvitto eller PDF här</p>
+                <p className="text-sm text-gray-500 mt-2">eller klicka för att välja fil (JPEG, PNG, WebP, HEIC, PDF)</p>
+                <p className="text-xs text-gray-400 mt-1">Max 20 MB</p>
               </div>
             )}
           </div>
@@ -254,8 +269,14 @@ export default function ScanReceiptPage() {
             {/* AI result summary */}
             <div className="bg-green-50 border border-green-200 rounded-xl p-6">
               <div className="flex items-start gap-4">
-                {preview && (
+                {previewKind === "image" && preview && (
                   <img src={preview} alt="Kvitto" className="w-24 h-24 object-cover rounded-lg border border-green-200 flex-shrink-0" />
+                )}
+                {previewKind === "pdf" && (
+                  <div className="w-24 h-24 rounded-lg border border-green-200 flex-shrink-0 bg-white flex flex-col items-center justify-center text-xs text-gray-600 p-2">
+                    <div className="text-3xl mb-1">📄</div>
+                    <div className="truncate w-full text-center" title={previewName}>PDF</div>
+                  </div>
                 )}
                 <div className="flex-1">
                   <h3 className="font-semibold text-green-900 text-lg">AI-analys klar</h3>
@@ -288,6 +309,8 @@ export default function ScanReceiptPage() {
                 onClick={() => {
                   setScanResult(null);
                   setPreview(null);
+                  setPreviewKind(null);
+                  setPreviewName("");
                   setFormData({ date: new Date().toISOString().split("T")[0], description: "", reference: "" });
                   setLineItems([
                     { id: "1", account_no: "", debit_amount: "", credit_amount: "", tax_code: 0 },
