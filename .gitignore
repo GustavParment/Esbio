@@ -22,3 +22,11 @@ node_modules/
 *.dll
 *.so
 *.dylib
+server/cmd/api/api
+
+# IDE session files
+*.session.sql
+
+# Personal SIE test files
+*.se
+!server/testdata/*.se
